@@ -12,11 +12,11 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
     // 1. Thông tin chung của API (Metadata)
     info = @Info(
-        title = "Todo App API - Spring Boot 3 & JWT",
-        description = "API cho dự án Quản lý công việc cơ bản, bao gồm Authentication (Đăng nhập/Đăng ký) và CRUD.",
+        title = "Foodya API",
+        description = "API cho dự án app đặt món ăn Foodya.",
         version = "v1.0",
         contact = @Contact(
-            name = "Ho Nhat Khanh",
+            name = "Ho Nhat Khanh & Nguyen Quoc Hai",
             email = "hnk.uit.k18@gmail.com"
         )
     ),
