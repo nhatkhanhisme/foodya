@@ -48,18 +48,14 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column (nullable = false)
-    private Role role = Role.USER;
+    private Role role = Role.CUSTOMER;
 
     @NotBlank (message = "Phone number is mandatory")
     @Column (unique = true)
     private String phoneNumber;
 
-    // Delivery address information
-    private String address;
-    private String city;
-    private String  postalCode;
-    private String latitude;
-    private String longitude;
+    @Column (nullable = false)
+    private boolean  isPhoneNumberVerified = false;
 
     // Account Status
     @Column (nullable = false)
@@ -68,35 +64,20 @@ public class User {
     @Column (nullable = false)
     private Boolean isEmailVerified = false;
 
-    private String emailVerificationToken;
-    private LocalDateTime emailVerificationTokenExpiry;
-
-    private String passwordResetToken;
-    private LocalDateTime passwordResetTokenExpiry;
-
     // Timestamps
     @CreationTimestamp
     @Column (updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column (updatable = true)
     private LocalDateTime updatedAt;
 
     private LocalDateTime lastLoginAt;
 
+    @Column (nullable = false)
+    private boolean accountLocked = false;
+
     // Profile Image URL
     private String profileImageUrl;
-    public enum Role {
-        USER,
-        OWNER,
-        DRIVER,
-        ADMIN
-    }
-
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-    public Boolean getIsActiv() {
-        return this.isActive;
-    }
 }

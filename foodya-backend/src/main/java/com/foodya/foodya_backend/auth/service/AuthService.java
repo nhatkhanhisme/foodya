@@ -1,232 +1,144 @@
 package com.foodya.foodya_backend.auth.service;
 
-import com.foodya.foodya_backend.auth.dto.AuthResponse;
-import com.foodya.foodya_backend.auth.dto.LoginRequest;
-import com.foodya.foodya_backend.auth.dto.RegisterRequest;
-import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
-import com.foodya.foodya_backend.jwt.JwtService;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.model.User.Role;
-import com.foodya.foodya_backend.user.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
+import com.foodya.foodya_backend.auth.dto.LoginRequest;
+import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
+import com.foodya.foodya_backend.auth.dto.RegisterRequest;
+import com.foodya.foodya_backend.jwt.JwtService;
+import com.foodya.foodya_backend.user.model.User;
+import com.foodya.foodya_backend.user.repository.UserRepository;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final AuthenticationManager authenticationManager;
+  private final JwtService jwtService;
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
+  public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                     AuthenticationManager authenticationManager, JwtService jwtService) {
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
+    this.authenticationManager = authenticationManager;
+    this.jwtService = jwtService;
+  }
 
-    @Transactional
-    public AuthResponse register(RegisterRequest request) {
-        // Check if username already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
-        }
-
-        // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        // Check if phone number already exists
-        if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new RuntimeException("Phone number already exists");
-        }
-
-        // Create new user
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setFullName(request.getFullName());
-        user.setPhoneNumber(request.getPhoneNumber());
-        user.setRole(request.getRole() != null ? request.getRole() : Role.USER);
-        user.setIsActive(true);
-        user.setIsEmailVerified(false);
-
-        // Generate email verification token
-        user.setEmailVerificationToken(UUID.randomUUID().toString());
-        user.setEmailVerificationTokenExpiry(LocalDateTime.now().plusHours(24));
-
-        // Save user
-        User savedUser = userRepository.save(user);
-
-        // Generate tokens
-        UserDetails userDetails = createUserDetails(savedUser);
-        String accessToken = jwtService.generateToken(createExtraClaims(savedUser), userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
-
-        // TODO: Send verification email
-
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtService.getJwtExpirationTime())
-                .userId(savedUser.getId())
-                .username(savedUser.getUsername())
-                .email(savedUser.getEmail())
-                .role(savedUser.getRole().name())
-                .build();
+  @Transactional
+  public JwtAuthResponse registerUser(RegisterRequest registerRequest) {
+    // Validate unique constraints
+    if (userRepository.existsByUsername(registerRequest.getUsername())) {
+      throw new RuntimeException("Username already exists");
+    }
+    if (userRepository.existsByEmail(registerRequest.getEmail())) {
+      throw new RuntimeException("Email already exists");
+    }
+    if (userRepository.existsByPhoneNumber(registerRequest.getPhoneNumber())) {
+      throw new RuntimeException("Phone number already exists");
     }
 
-    @Transactional
-    public AuthResponse login(LoginRequest request) {
-        // Authenticate user
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+    // Create new user
+    User user = new User();
+    user.setUsername(registerRequest.getUsername());
+    user.setEmail(registerRequest.getEmail());
+    user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+    user.setFullName(registerRequest.getFullName());
+    user.setPhoneNumber(registerRequest.getPhoneNumber());
+    user.setRole(registerRequest.getRole());
+    user.setActive(true);
+    user.setIsEmailVerified(false);
 
-        // Get user from database
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    userRepository.save(user);
 
-        // Check if account is active
-        if (!user.isActive()) {
-            throw new RuntimeException("Account is deactivated");
-        }
+    // Authenticate and generate tokens
+    Authentication authentication = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(
+            registerRequest.getUsername(),
+            registerRequest.getPassword()
+        )
+    );
 
-        // Update last login time
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
+    return generateTokenResponse(authentication);
+  }
 
-        // Generate tokens
-        UserDetails userDetails = createUserDetails(user);
-        String accessToken = jwtService.generateToken(createExtraClaims(user), userDetails);
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
+  public JwtAuthResponse login(LoginRequest loginRequest) {
+    // Authenticate user
+    Authentication authentication = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(
+            loginRequest.getUsername(),
+            loginRequest.getPassword()
+        )
+    );
 
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtService.getJwtExpirationTime())
-                .userId(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build();
+    // Update last login time
+    User user = userRepository.findByUsername(loginRequest.getUsername())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+    user.setLastLoginAt(LocalDateTime.now());
+    userRepository.save(user);
+
+    return generateTokenResponse(authentication);
+  }
+
+  public JwtAuthResponse refreshToken(RefreshTokenRequest request) {
+    String refreshToken = request.getRefreshToken();
+
+    // Validate refresh token
+    if (!jwtService.validateToken(refreshToken)) {
+      throw new RuntimeException("Invalid refresh token");
     }
 
-    @Transactional
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
-        String refreshToken = request.getRefreshToken();
+    // Extract username from refresh token
+    String username = jwtService.extractUsername(refreshToken);
 
-        // Validate refresh token
-        if (!jwtService.isTokenValid(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
-        }
+    // Load user
+    User user = userRepository.findByUsername(username)
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Extract username from token
-        String username = jwtService.extractUsername(refreshToken);
-
-        // Get user from database
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        // Check if account is active
-        if (!user.isActive()) {
-            throw new RuntimeException("Account is deactivated");
-        }
-
-        // Generate new tokens
-        UserDetails userDetails = createUserDetails(user);
-        String newAccessToken = jwtService.generateToken(createExtraClaims(user), userDetails);
-        String newRefreshToken = jwtService.generateRefreshToken(userDetails);
-
-        return AuthResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtService.getJwtExpirationTime())
-                .userId(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build();
+    // Check if account is active
+    if (!user.isActive()) {
+      throw new RuntimeException("Account is deactivated");
     }
 
-    @Transactional
-    public void verifyEmail(String token) {
-        User user = userRepository.findByEmailVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+    // Create new authentication
+    Authentication authentication = new UsernamePasswordAuthenticationToken(
+        username, null, null
+    );
 
-        if (user.getEmailVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification token has expired");
-        }
+    // Generate new access token (keep the same refresh token)
+    String newAccessToken = jwtService.generateToken(authentication);
+    Long expireIn = getExpireIn(newAccessToken);
 
-        user.setIsEmailVerified(true);
-        user.setEmailVerificationToken(null);
-        user.setEmailVerificationTokenExpiry(null);
-        userRepository.save(user);
-    }
+    return JwtAuthResponse.builder()
+        .accessToken(newAccessToken)
+        .refreshToken(refreshToken)
+        .tokenType("Bearer")
+        .expiresIn(expireIn)
+        .build();
+  }
 
-    @Transactional
-    public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+  // Helper method to generate token response
+  private JwtAuthResponse generateTokenResponse(Authentication authentication) {
+    String accessToken = jwtService.generateToken(authentication);
+    String refreshToken = jwtService.generateRefreshToken(authentication);
+    Long expiresIn = getExpireIn(accessToken);
 
-        String resetToken = UUID.randomUUID().toString();
-        user.setPasswordResetToken(resetToken);
-        user.setPasswordResetTokenExpiry(LocalDateTime.now().plusHours(1));
-        userRepository.save(user);
+    return JwtAuthResponse.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .tokenType("Bearer")
+        .expiresIn(expiresIn)
+        .build();
+  }
 
-        // TODO: Send password reset email
-    }
-
-    @Transactional
-    public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByPasswordResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid reset token"));
-
-        if (user.getPasswordResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Reset token has expired");
-        }
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setPasswordResetToken(null);
-        user.setPasswordResetTokenExpiry(null);
-        userRepository.save(user);
-    }
-
-    // Helper method to create UserDetails
-    private UserDetails createUserDetails(User user) {
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(user.getRole().name())
-                .accountExpired(false)
-                .accountLocked(!user.isActive())
-                .credentialsExpired(false)
-                .disabled(!user.isActive())
-                .build();
-    }
-
-    // Helper method to create extra claims for JWT
-    private Map<String, Object> createExtraClaims(User user) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", user.getId());
-        claims.put("email", user.getEmail());
-        claims.put("role", user.getRole().name());
-        claims.put("fullName", user.getFullName());
-        return claims;
-    }
+  public Long getExpireIn(String token) {
+    return jwtService.extractExpirationTime(token) - System.currentTimeMillis();
+  }
 }

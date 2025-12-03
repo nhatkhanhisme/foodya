@@ -1,8 +1,10 @@
 package com.foodya.foodya_backend.auth.dto;
 
-import com.foodya.foodya_backend.user.model.User.Role;
+import com.foodya.foodya_backend.user.model.Role;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,36 +13,23 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterRequest {
-  @NotBlank (message = "Username is required")
+  @NotBlank(message = "Username is required")
+  @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
   private String username;
-  @NotBlank (message = "Email is required")
+
+  @NotBlank(message = "Email is required")
+  @Email(message = "Email should be valid")
   private String email;
-  @NotBlank (message = "Password is required")
+
+  @NotBlank(message = "Password is required")
+  @Size(min = 8, message = "Password must be at least 8 characters long")
   private String password;
-  @NotBlank (message = "Fullname is required")
-  private String fullname;
-  @NotBlank (message = "Phone number is required")
-  private String phone;
-  private Role role;
 
-  // setter/getter
-  public void setPhoneNumber(String phone) {
-    this.phone = phone;
-  }
-  public String getPhoneNumber() {
-    return this.phone;
-  }
+  @NotBlank(message = "Full name is required")
+  private String fullName;
 
-  public void setFullName(String fullname) {
-    this.fullname = fullname;
-  }
-  public String getFullName() {
-    return this.fullname;
-  }
+  @NotBlank(message = "Phone number is required")
+  private String phoneNumber;
 
-  public void setIsActive(Boolean isActive) {
-    // do nothing, placeholder for compatibility
-  }
-
-
+  private Role role = Role.CUSTOMER;
 }
