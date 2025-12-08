@@ -41,15 +41,19 @@ public class Restaurant {
     private String cuisine; // Italian, Chinese, Vietnamese, etc.
 
     @Column(nullable = false)
+    @Builder.Default
     private Double rating = 0.0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalReviews = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isOpen = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
     private String imageUrl;
@@ -57,6 +61,7 @@ public class Restaurant {
     private String openingTime; // Format: "09:00"
     private String closingTime; // Format: "22:00"
 
+    @Builder.Default
     private Double deliveryFee = 0.0;
 
     private Integer estimatedDeliveryTime; // in minutes

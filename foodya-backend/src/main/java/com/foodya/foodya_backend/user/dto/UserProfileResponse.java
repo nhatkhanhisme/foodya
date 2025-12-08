@@ -19,6 +19,7 @@ public class UserProfileResponse {
   private String email;
   private String fullName;
   private String phoneNumber;
+  @Builder.Default
   private Role role = Role.CUSTOMER;
   private Boolean isActive;
   private Boolean  isEmailVerified;

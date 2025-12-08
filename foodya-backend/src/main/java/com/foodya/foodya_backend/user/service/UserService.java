@@ -8,7 +8,7 @@ import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
 
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
 
 @Service
 public class UserService {
@@ -27,7 +27,7 @@ public class UserService {
     return mapToUserProfileResponse(user);
   }
 
-  public UserProfileResponse getUserById(Long userId) {
+  public UserProfileResponse getUserById(@NonNull Long userId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     return mapToUserProfileResponse(user);
