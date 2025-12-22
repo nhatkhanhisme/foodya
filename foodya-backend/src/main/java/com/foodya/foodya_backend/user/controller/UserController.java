@@ -9,8 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.models.annotations.OpenAPI30;
-import lombok.RequiredArgsConstructor;
+
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -79,7 +80,7 @@ public class UserController {
     )
   })
   @GetMapping("/{userId}")
-  public ResponseEntity<UserProfileResponse> getUserById(@PathVariable Long userId) {
+  public ResponseEntity<UserProfileResponse> getUserById(@PathVariable UUID userId) {
     UserProfileResponse profile = userService.getUserById(userId);
     return ResponseEntity.ok(profile);
   }

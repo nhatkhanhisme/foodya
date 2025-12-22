@@ -1,6 +1,7 @@
 package com.foodya.foodya_backend.user.dto;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.foodya.foodya_backend.user.model.Role;
 
@@ -14,11 +15,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfileResponse {
-  private Long id;
+  private UUID  id;
   private String username;
   private String email;
   private String fullName;
   private String phoneNumber;
+  @Builder.Default
   private Role role = Role.CUSTOMER;
   private Boolean isActive;
   private Boolean  isEmailVerified;

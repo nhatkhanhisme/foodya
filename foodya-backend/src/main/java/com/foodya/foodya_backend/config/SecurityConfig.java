@@ -4,6 +4,7 @@ import com.foodya.foodya_backend.middleware.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -33,11 +34,34 @@ public class SecurityConfig {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
+            // Public endpoints
             .requestMatchers("/api/v1/auth/**").permitAll()
-            .requestMatchers("/api/public/**").permitAll()
             .requestMatchers("/error").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-            .anyRequest().authenticated())
+
+            // Restaurant endpoints - Public read, restricted write
+            .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/**").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1/restaurants/**").hasAnyRole("MERCHANT", "ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/v1/restaurants/**").hasAnyRole("MERCHANT", "ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/v1/restaurants/**").hasRole("ADMIN")
+
+            // Menu Items - Public read, merchant/admin write
+            .requestMatchers(HttpMethod.GET, "/api/v1.restaurants/*/menu-items/**").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
+            .requestMatchers(HttpMethod.PATCH, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
+
+            // User endpoints - Authenticated users
+            .requestMatchers("/api/v1/users/me").authenticated()
+            .requestMatchers("/api/v1/users/**").hasAnyRole("ADMIN", "CUSTOMER", "MERCHANT", "DELIVERY")
+
+            // Admin endpoints (sẽ tạo sau)
+            .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+            // All other requests require authentication
+            .anyRequest().authenticated()
+        )
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider())

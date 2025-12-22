@@ -14,6 +14,7 @@ import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
 import com.foodya.foodya_backend.jwt.JwtService;
+import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
 
@@ -52,7 +53,7 @@ public class AuthService {
     user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
     user.setFullName(registerRequest.getFullName());
     user.setPhoneNumber(registerRequest.getPhoneNumber());
-    user.setRole(registerRequest.getRole());
+    user.setRole(Role.valueOf(registerRequest.getRole().toUpperCase()));
     user.setActive(true);
     user.setIsEmailVerified(false);
 
