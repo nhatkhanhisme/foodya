@@ -38,6 +38,7 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/auth/**").permitAll()
             .requestMatchers("/error").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+            .requestMatchers("/actuator/**").permitAll()
 
             // Restaurant endpoints - Public read, restricted write
             .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/**").permitAll()
