@@ -70,6 +70,9 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
 
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+
     // Retrofit
     implementation(libs.retrofit)
     implementation(libs.okhttp)

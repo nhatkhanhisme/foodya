@@ -18,15 +18,18 @@ class TokenManager @Inject constructor(
     companion object {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
         val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
+        val USER_ROLE_KEY = stringPreferencesKey("user_role")
     }
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
+    val role: Flow<String?> = context.dataStore.data.map { it[USER_ROLE_KEY] }
     val refreshToken: Flow<String?> = context.dataStore.data.map { it[REFRESH_TOKEN] }
 
-    suspend fun saveTokens(access: String, refresh: String) {
+    suspend fun saveTokens(access: String, refresh: String, role: String) {
         context.dataStore.edit {
             it[ACCESS_TOKEN] = access
             it[REFRESH_TOKEN] = refresh
+            it[USER_ROLE_KEY] = role
         }
     }
 

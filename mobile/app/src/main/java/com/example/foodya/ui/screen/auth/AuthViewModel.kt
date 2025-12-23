@@ -72,7 +72,7 @@ class AuthViewModel @Inject constructor(
             val result = repository.login(currentState.username, currentState.password)
 
             result.onSuccess { response ->
-                tokenManager.saveTokens(response.accessToken, response.refreshToken)
+                tokenManager.saveTokens(response.accessToken, response.refreshToken, currentState.role.toString())
                 _state.update { it.copy(isLoading = false, isLoggedIn = true) }
             }.onFailure { e ->
                 _state.update {

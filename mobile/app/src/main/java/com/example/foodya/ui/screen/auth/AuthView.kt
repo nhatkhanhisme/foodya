@@ -20,11 +20,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.foodya.data.model.UserRole
 
 @Composable
 fun AuthView(
     viewModel: AuthViewModel = hiltViewModel(),
-    onAuthSuccess: () -> Unit = {}
+    onAuthSuccess: (UserRole) -> Unit
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -39,7 +40,7 @@ fun AuthView(
     LaunchedEffect(state.isLoggedIn) {
         if (state.isLoggedIn) {
             Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
-            onAuthSuccess()
+            onAuthSuccess(state.role)
         }
     }
 
