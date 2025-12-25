@@ -1,49 +1,30 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: foodya-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - foodya-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./foodya-backend
       dockerfile: Dockerfile
     container_name: foodya-backend
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # Tự động nạp các biến từ file .env
+    env_file:
+      - .env
     environment:
-      # ===== DATABASE (LOCAL) =====
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Cấu hình kết nối Database tới Supabase từ file .env
+      SPRING_DATASOURCE_URL: ${SUPABASE_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD}
 
-      # ===== JPA =====
+      # Cấu hình JPA & Hibernate
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_SHOW_SQL: "true"
 
-      # ===== JWT =====
+      # Cấu hình JWT lấy từ biến môi trường
       APP_JWT_SECRET: ${JWT_SECRET}
       APP_JWT_EXPIRATION_TIME: ${JWT_EXPIRATION}
       APP_JWT_REFRESH_EXPIRATION_TIME: ${JWT_REFRESH_EXPIRATION}
 
+      # Vô hiệu hóa khởi tạo SQL thủ công (để Hibernate tự xử lý)
       SPRING_SQL_INIT_MODE: never
 
     ports:
@@ -51,15 +32,15 @@ services:
     networks:
       - foodya-network
     restart: unless-stopped
+
+    # Kiểm tra trạng thái ứng dụng thông qua Spring Boot Actuator
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
-volumes:
-  postgres_data:
+      start_period: 60s
 
 networks:
   foodya-network:
+    driver: bridge
