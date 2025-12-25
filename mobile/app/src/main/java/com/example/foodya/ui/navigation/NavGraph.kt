@@ -54,7 +54,17 @@ fun SetupNavGraph(
             route = Graph.CUSTOMER
         ) {
             composable(route = Screen.CustomerHome.route) {
-                HomeView(navController)
+                HomeView(
+                    onNavigateToSearchResult = { query ->
+                        navController.navigate("search_result_screen/$query")
+                    },
+                    onRestaurantClick = { id ->
+                        navController.navigate("restaurant_detail/$id")
+                    },
+                    onQuickOrderClick = { foodId ->
+                        navController.navigate("order_screen/$foodId")
+                    }
+                )
             }
             composable(route = Screen.Cart.route) {
                 CartView(navController)
