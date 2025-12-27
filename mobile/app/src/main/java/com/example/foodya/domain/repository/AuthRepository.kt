@@ -17,6 +17,4 @@ interface AuthRepository {
         phoneNumber: String,
         role: UserRole
     ): Result<RegisterResponse>
-
-    suspend fun refresh(): Result<RefreshResponse>
 }

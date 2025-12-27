@@ -13,6 +13,11 @@ class AuthInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
+        if (originalRequest.url.encodedPath.contains("/auth/refresh") ||
+            originalRequest.url.encodedPath.contains("/auth/login")) {
+            return chain.proceed(originalRequest)
+        }
+
         val accessToken = runBlocking {
             tokenManager.accessToken.firstOrNull()
         }

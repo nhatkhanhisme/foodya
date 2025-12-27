@@ -15,14 +15,7 @@ import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApi,
-    private val appContext: Application
 ) : AuthRepository {
-
-    init {
-        val appName = appContext.getString(R.string.app_name)
-        println("Repository initialized. App: $appName")
-    }
-
     override suspend fun login(username: String, password: String): Result<LoginResponse> {
         return try {
             val response = api.login(LoginRequest(username, password))
@@ -46,9 +39,5 @@ class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(Exception(e.toUserFriendlyMessage()))
         }
-    }
-
-    override suspend fun refresh(): Result<RefreshResponse> {
-        TODO("Not yet implemented")
     }
 }

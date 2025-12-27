@@ -1,7 +1,7 @@
 package com.example.foodya.ui.screen.customer.home
 
-import com.example.foodya.data.model.Food
-import com.example.foodya.data.model.Restaurant
+import com.example.foodya.domain.model.Food
+import com.example.foodya.domain.model.Restaurant
 
 data class HomeState(
     // Trạng thái tải trang

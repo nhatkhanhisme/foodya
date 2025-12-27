@@ -2,9 +2,9 @@ package com.example.foodya.ui.screen.customer.order
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodya.data.model.Order
-import com.example.foodya.data.model.OrderItemSummary
-import com.example.foodya.data.model.OrderStatus
+import com.example.foodya.domain.model.Order
+import com.example.foodya.domain.model.OrderItemSummary
+import com.example.foodya.domain.model.OrderStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

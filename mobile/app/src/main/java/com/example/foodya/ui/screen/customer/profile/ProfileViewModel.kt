@@ -3,7 +3,7 @@ package com.example.foodya.ui.screen.customer.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodya.data.local.TokenManager
-import com.example.foodya.data.model.User
+import com.example.foodya.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

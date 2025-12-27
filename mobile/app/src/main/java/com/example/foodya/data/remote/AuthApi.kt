@@ -7,7 +7,6 @@ import com.example.foodya.data.model.RefreshResponse
 import com.example.foodya.data.model.RegisterRequest
 import com.example.foodya.data.model.RegisterResponse
 import retrofit2.http.Body
-import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApi {

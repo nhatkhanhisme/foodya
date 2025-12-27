@@ -5,7 +5,9 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +25,7 @@ class TokenManager @Inject constructor(
 
     val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
     val role: Flow<String?> = context.dataStore.data.map { it[USER_ROLE_KEY] }
-    val refreshToken: Flow<String?> = context.dataStore.data.map { it[REFRESH_TOKEN] }
+    private val refreshToken: Flow<String?> = context.dataStore.data.map { it[REFRESH_TOKEN] }
 
     suspend fun saveTokens(access: String, refresh: String, role: String) {
         context.dataStore.edit {
@@ -33,7 +35,20 @@ class TokenManager @Inject constructor(
         }
     }
 
+    suspend fun updateTokens(access: String, refresh: String) {
+        context.dataStore.edit {
+            it[ACCESS_TOKEN] = access
+            it[REFRESH_TOKEN] = refresh
+        }
+    }
+
     suspend fun clear() {
         context.dataStore.edit { it.clear() }
+    }
+
+    fun getRefreshTokenBlocking(): String? {
+        return runBlocking {
+            refreshToken.firstOrNull()
+        }
     }
 }

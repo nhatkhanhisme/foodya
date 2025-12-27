@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
-import com.example.foodya.data.model.Food
+import com.example.foodya.domain.model.Food
 
 @Composable
 fun FoodDetailPopup(

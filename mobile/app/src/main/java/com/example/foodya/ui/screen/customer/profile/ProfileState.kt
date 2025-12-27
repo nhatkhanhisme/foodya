@@ -1,6 +1,6 @@
 package com.example.foodya.ui.screen.customer.profile
 
-import com.example.foodya.data.model.User
+import com.example.foodya.domain.model.User
 
 data class ProfileState(
     val isLoading: Boolean = true,

@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.foodya.data.model.UserRole
+import com.example.foodya.ui.MainViewModel
 import com.example.foodya.ui.screen.auth.AuthView
 import com.example.foodya.ui.screen.merchant.dashboard.DashboardView
 import com.example.foodya.ui.screen.customer.home.HomeView
@@ -17,11 +18,13 @@ import com.example.foodya.ui.screen.merchant.profile.MerchantProfileView
 @Composable
 fun SetupNavGraph(
     navController: NavHostController,
+    mainViewModel: MainViewModel,
+    startDestination: String
 ) {
     NavHost(
         navController = navController,
         route = Graph.ROOT,
-        startDestination = Graph.AUTH
+        startDestination = startDestination
     ) {
         // AUTH graph
         navigation(
@@ -98,6 +101,5 @@ fun SetupNavGraph(
                 MerchantProfileView(navController)
             }
         }
-
     }
 }

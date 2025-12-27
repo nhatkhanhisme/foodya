@@ -2,6 +2,7 @@ package com.example.foodya.di
 
 import com.example.foodya.data.remote.AuthApi
 import com.example.foodya.data.remote.AuthInterceptor
+import com.example.foodya.data.remote.TokenAuthenticator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,9 +18,11 @@ object NetworkModule {
 
     @Provides @Singleton
     fun provideOkHttpClient(
-        authInterceptor: AuthInterceptor
+        authInterceptor: AuthInterceptor,
+        authenticator: TokenAuthenticator
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .authenticator(authenticator)
         .build()
 
     @Provides @Singleton

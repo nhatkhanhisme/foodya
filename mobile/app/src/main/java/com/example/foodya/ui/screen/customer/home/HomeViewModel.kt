@@ -2,8 +2,8 @@ package com.example.foodya.ui.screen.customer.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.foodya.data.model.Food
-import com.example.foodya.data.model.Restaurant
+import com.example.foodya.domain.model.Food
+import com.example.foodya.domain.model.Restaurant
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

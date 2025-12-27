@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.foodya.domain.model.User
 
 @Composable
 fun CustomerProfileView(
@@ -122,7 +123,7 @@ fun CustomerProfileView(
 // --- SUB-COMPONENTS ---
 
 @Composable
-fun ProfileHeader(user: com.example.foodya.data.model.User) {
+fun ProfileHeader(user: User) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

@@ -10,22 +10,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.foodya.data.model.Restaurant
-import coil.compose.AsyncImage
 import com.example.foodya.R
 import com.example.foodya.ui.components.FoodDetailPopup
 import com.example.foodya.ui.components.FoodItemCard
+import com.example.foodya.ui.components.RestaurantCard
+import com.example.foodya.ui.components.SectionTitle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,14 +49,13 @@ fun HomeView(
                     painter = painterResource(id = R.drawable.img_logo_full),
                     contentDescription = "Foodya Logo",
                     modifier = Modifier
-                        .height(40.dp)
+                        .height(100.dp)
                         .wrapContentWidth(),
                     contentScale = ContentScale.Fit
                 )
             }
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -79,7 +75,7 @@ fun HomeView(
                         },
                         expanded = state.isSearchActive,
                         onExpandedChange = viewModel::onSearchActiveChange,
-                        placeholder = { Text("Tìm món ăn, nhà hàng...") },
+                        placeholder = { Text("Tìm nhà hàng...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         trailingIcon = {
                             if (state.searchQuery.isNotEmpty()) {
@@ -162,47 +158,6 @@ fun HomeView(
                             )
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-// --- SUB-COMPONENTS ---
-
-@Composable
-fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-        modifier = Modifier.padding(start = 16.dp, bottom = 12.dp, top = 8.dp)
-    )
-}
-
-@Composable
-fun RestaurantCard(restaurant: Restaurant, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .width(200.dp)
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column {
-            AsyncImage(
-                model = restaurant.imageUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(Modifier.padding(12.dp)) {
-                Text(text = restaurant.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
-                    Text(text = "${restaurant.rating}", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.width(8.dp))
-                    Text(text = "${restaurant.estimatedDeliveryTime} mins", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
             }
         }
