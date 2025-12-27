@@ -2,9 +2,11 @@ package com.example.foodya.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import androidx.navigation.navArgument
 import com.example.foodya.data.model.UserRole
 import com.example.foodya.ui.MainViewModel
 import com.example.foodya.ui.screen.auth.AuthView
@@ -12,6 +14,7 @@ import com.example.foodya.ui.screen.merchant.dashboard.DashboardView
 import com.example.foodya.ui.screen.customer.home.HomeView
 import com.example.foodya.ui.screen.customer.order.OrderHistoryView
 import com.example.foodya.ui.screen.customer.profile.CustomerProfileView
+import com.example.foodya.ui.screen.customer.restaurant.RestaurantDetailView
 import com.example.foodya.ui.screen.merchant.menu.MenuView
 import com.example.foodya.ui.screen.merchant.profile.MerchantProfileView
 
@@ -56,16 +59,17 @@ fun SetupNavGraph(
             composable(route = Screen.CustomerHome.route) {
                 HomeView(
                     onNavigateToSearchResult = { query ->
-                        navController.navigate("search_result_screen/$query")
+                        navController.navigate(Screen.SearchResults.createRoute(query))
                     },
-                    onRestaurantClick = { id ->
-                        navController.navigate("restaurant_detail/$id")
+                    onRestaurantClick = { restaurantId ->
+                        navController.navigate(Screen.RestaurantDetail.createRoute(restaurantId))
                     },
                     onQuickOrderClick = { foodId ->
                         navController.navigate("order_screen/$foodId")
                     }
                 )
             }
+
             composable(route = Screen.Order.route) {
                 OrderHistoryView(
                     onOrderClick = { orderId ->
@@ -73,6 +77,7 @@ fun SetupNavGraph(
                     }
                 )
             }
+
             composable(route = Screen.CustomerProfile.route) {
                 CustomerProfileView(
                     onNavigateToLogin = {
@@ -83,6 +88,36 @@ fun SetupNavGraph(
                     onNavigateToChangePassword = { navController.navigate("change_password_screen") },
                     onNavigateToTerms = { navController.navigate("terms_screen") }
                 )
+            }
+
+            composable(
+                route = Screen.RestaurantDetail.route, // Ví dụ: "restaurant_detail/{restaurantId}"
+                arguments = listOf(
+                    navArgument("restaurantId") {
+                        type = NavType.StringType // Khớp với ID là String bạn đã sửa
+                    }
+                )
+            ) { backStackEntry ->
+                // Lấy ID từ argument (Dù ViewModel đã tự lấy, nhưng View vẫn cần tham số này)
+                val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+
+                RestaurantDetailView(
+                    restaurantId = restaurantId,
+                    onBackClick = {
+                        navController.popBackStack() // Quay lại trang trước (Home hoặc Search)
+                    },
+                    onGoToCheckout = {
+                        navController.navigate(Screen.Checkout.route)
+                    }
+                )
+            }
+            // --- Màn hình Kết quả tìm kiếm (Cũng cần thêm nếu chưa có) ---
+            composable(
+                route = Screen.SearchResults.route, // Ví dụ: "search_results/{query}"
+                arguments = listOf(navArgument("query") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val query = backStackEntry.arguments?.getString("query") ?: ""
+                // SearchResultsView(query = query, ...)
             }
         }
 

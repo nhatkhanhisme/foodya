@@ -1,7 +1,7 @@
 package com.example.foodya.ui.screen.customer.order
 
 import com.example.foodya.domain.model.Order
-import com.example.foodya.domain.model.OrderStatus
+import com.example.foodya.domain.model.enums.OrderStatus
 
 data class OrderHistoryState(
     val isLoading: Boolean = true,

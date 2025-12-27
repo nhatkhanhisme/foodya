@@ -3,8 +3,8 @@ package com.example.foodya.ui.screen.customer.order
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodya.domain.model.Order
-import com.example.foodya.domain.model.OrderItemSummary
-import com.example.foodya.domain.model.OrderStatus
+import com.example.foodya.domain.model.OrderItem
+import com.example.foodya.domain.model.enums.OrderStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,8 +75,8 @@ class OrderHistoryViewModel @Inject constructor() : ViewModel() {
                         status = status,
                         orderDate = "25 Dec, 10:30 AM",
                         items = listOf(
-                            OrderItemSummary("Pizza Margherita", 1),
-                            OrderItemSummary("Coke Zero", 2)
+                            OrderItem("Pizza Margherita", 1),
+                            OrderItem("Coke Zero", 2)
                         )
                     )
                 )

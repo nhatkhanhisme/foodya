@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.Order
-import com.example.foodya.domain.model.OrderStatus
+import com.example.foodya.domain.model.enums.OrderStatus
 
 @Composable
 fun OrderHistoryView(
@@ -169,7 +169,7 @@ fun OrderItemCard(order: Order, onClick: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "${item.quantity}x ${item.foodName}",
+                        text = "${item.quantity}x ${item.name}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
