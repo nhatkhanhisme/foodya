@@ -4,7 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.ui.graphics.vector.ImageVector
 
 data class BottomNavItem(
@@ -17,7 +17,7 @@ object BottomNavItems {
     // Menu cho Khách Hàng
     val CustomerItems = listOf(
         BottomNavItem("Home", Screen.CustomerHome.route, Icons.Filled.Home),
-        BottomNavItem("Cart", Screen.Cart.route, Icons.Filled.ShoppingCart),
+        BottomNavItem("Order", Screen.Order.route, Icons.Filled.ShoppingBag),
         BottomNavItem("Account", Screen.CustomerProfile.route , Icons.Filled.Person) // Giả sử có màn này
     )
 

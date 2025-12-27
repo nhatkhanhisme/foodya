@@ -1,12 +1,11 @@
 package com.example.foodya.ui.screen.customer.home
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
@@ -16,15 +15,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.foodya.data.model.Food
 import com.example.foodya.data.model.Restaurant
 import coil.compose.AsyncImage
+import com.example.foodya.R
 import com.example.foodya.ui.components.FoodDetailPopup
 import com.example.foodya.ui.components.FoodItemCard
 
@@ -49,13 +48,13 @@ fun HomeView(
         topBar = {
             // Header: Tên App
             if (!state.isSearchActive) {
-                Text(
-                    text = "Foodya",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.img_logo_full),
+                    contentDescription = "Foodya Logo",
+                    modifier = Modifier
+                        .height(40.dp)
+                        .wrapContentWidth(),
+                    contentScale = ContentScale.Fit
                 )
             }
         }

@@ -25,7 +25,7 @@ fun MainScreen(
 
     val showBottomBar = currentRoute in listOf(
         Screen.CustomerHome.route,
-        Screen.Cart.route,
+        Screen.Order.route,
         Screen.CustomerProfile.route,
         Screen.MerchantDashboard.route,
         Screen.ManageMenu.route,
@@ -46,8 +46,7 @@ fun MainScreen(
         // Truyền innerPadding vào NavGraph để nội dung không bị BottomBar che khuất
         Box(modifier = Modifier.padding(innerPadding)) {
             SetupNavGraph(
-                navController = navController,
-                mainViewModel = viewModel
+                navController = navController
             )
         }
     }
