@@ -145,6 +145,9 @@ public class AuthService {
         .getId()
         .toString();
     String username = authentication.getName();
+    Role role = userRepository.findByUsername(username)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"))
+        .getRole();
 
     return JwtAuthResponse.builder()
         .accessToken(accessToken)
@@ -154,6 +157,7 @@ public class AuthService {
         .refreshTokenExpiresIn(refreshTokenExpiresIn)
         .userId(userId)
         .username(username)
+        .role(role)
         .build();
   }
 
