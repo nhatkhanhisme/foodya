@@ -17,6 +17,10 @@ import com.foodya.foodya_backend.jwt.JwtService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.utils.exception.business.AccountDeactivatedException;
+import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.utils.exception.security.UnauthorizedException;
 
 @Service
 public class AuthService {
@@ -37,13 +41,13 @@ public class AuthService {
   public JwtAuthResponse registerUser(RegisterRequest registerRequest) {
     // Validate unique constraints
     if (userRepository.existsByUsername(registerRequest.getUsername())) {
-      throw new RuntimeException("Username already exists");
+      throw new DuplicateResourceException("Username already exists");
     }
     if (userRepository.existsByEmail(registerRequest.getEmail())) {
-      throw new RuntimeException("Email already exists");
+      throw new DuplicateResourceException("Email already exists");
     }
     if (userRepository.existsByPhoneNumber(registerRequest.getPhoneNumber())) {
-      throw new RuntimeException("Phone number already exists");
+      throw new DuplicateResourceException("Phone number already exists");
     }
 
     // Create new user
@@ -81,7 +85,7 @@ public class AuthService {
 
     // Update last login time
     User user = userRepository.findByUsername(loginRequest.getUsername())
-        .orElseThrow(() -> new RuntimeException("User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     user.setLastLoginAt(LocalDateTime.now());
     userRepository.save(user);
 
@@ -93,7 +97,7 @@ public class AuthService {
 
     // Validate refresh token
     if (!jwtService.validateToken(refreshToken)) {
-      throw new RuntimeException("Invalid refresh token");
+      throw new UnauthorizedException("Invalid refresh token");
     }
 
     // Extract username from refresh token
@@ -101,11 +105,11 @@ public class AuthService {
 
     // Load user
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new RuntimeException("User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
     // Check if account is active
     if (!user.isActive()) {
-      throw new RuntimeException("Account is deactivated");
+      throw new AccountDeactivatedException("Account is deactivated");
     }
 
     // Create new authentication
@@ -116,12 +120,17 @@ public class AuthService {
     // Generate new access token (keep the same refresh token)
     String newAccessToken = jwtService.generateToken(authentication);
     Long expireIn = getExpireIn(newAccessToken);
+    Long refreshExpiresIn = getRefreshTokenExpireIn(refreshToken);
+    String userId = user.getId().toString();
 
     return JwtAuthResponse.builder()
         .accessToken(newAccessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")
         .expiresIn(expireIn)
+        .refreshTokenExpiresIn(refreshExpiresIn)
+        .userId(userId)
+        .username(username)
         .build();
   }
 
@@ -130,16 +139,28 @@ public class AuthService {
     String accessToken = jwtService.generateToken(authentication);
     String refreshToken = jwtService.generateRefreshToken(authentication);
     Long expiresIn = getExpireIn(accessToken);
+    Long refreshTokenExpiresIn = getRefreshTokenExpireIn(refreshToken);
+    String userId = userRepository.findByUsername(authentication.getName())
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"))
+        .getId()
+        .toString();
+    String username = authentication.getName();
 
     return JwtAuthResponse.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")
         .expiresIn(expiresIn)
+        .refreshTokenExpiresIn(refreshTokenExpiresIn)
+        .userId(userId)
+        .username(username)
         .build();
   }
 
   public Long getExpireIn(String token) {
     return jwtService.extractExpirationTime(token) - System.currentTimeMillis();
+  }
+  public Long getRefreshTokenExpireIn(String refreshToken) {
+    return jwtService.extractExpirationTime(refreshToken) - System.currentTimeMillis();
   }
 }
