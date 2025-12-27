@@ -103,4 +103,9 @@ public class JwtService {
   public Long extractExpirationTime(String token) {
     return extractClaims(token, claims -> claims.getExpiration().getTime());
   }
+
+  // Get refresh token expiration time configuration
+  public Long getRefreshExpirationTime() {
+    return refreshExpirationTime;
+  }
 }
