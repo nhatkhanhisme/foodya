@@ -12,6 +12,7 @@ import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
 import com.foodya.foodya_backend.auth.service.AuthService;
+import com.foodya.foodya_backend.utils.exception.dto.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -51,6 +52,10 @@ public class AuthController {
             description = "Invalid input - Username/Email/Phone number already exists or validation failed"
         ),
         @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - Username/Email/Phone number already exists"
+        ),
+        @ApiResponse(
             responseCode = "500",
             description = "Internal server error"
         )
@@ -76,11 +81,19 @@ public class AuthController {
         ),
         @ApiResponse(
             responseCode = "401",
-            description = "Unauthorized - Invalid username or password"
+            description = "Unauthorized - Invalid username or password",
+            content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = ErrorResponse.class)
+            )
         ),
         @ApiResponse(
             responseCode = "403",
-            description = "Forbidden - Account is deactivated"
+            description = "Forbidden - Account is deactivated",
+            content = @Content(
+              mediaType = "application/json",
+              schema = @Schema(implementation = ErrorResponse.class)
+            )
         )
     })
     @PostMapping("/login")
