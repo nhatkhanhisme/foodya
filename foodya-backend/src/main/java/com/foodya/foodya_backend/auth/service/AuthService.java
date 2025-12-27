@@ -116,12 +116,14 @@ public class AuthService {
     // Generate new access token (keep the same refresh token)
     String newAccessToken = jwtService.generateToken(authentication);
     Long expireIn = getExpireIn(newAccessToken);
+    Long refreshExpiresIn = getExpireIn(refreshToken);
 
     return JwtAuthResponse.builder()
         .accessToken(newAccessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")
         .expiresIn(expireIn)
+        .refreshExpiresIn(refreshExpiresIn)
         .build();
   }
 
@@ -130,12 +132,14 @@ public class AuthService {
     String accessToken = jwtService.generateToken(authentication);
     String refreshToken = jwtService.generateRefreshToken(authentication);
     Long expiresIn = getExpireIn(accessToken);
+    Long refreshExpiresIn = getExpireIn(refreshToken);
 
     return JwtAuthResponse.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")
         .expiresIn(expiresIn)
+        .refreshExpiresIn(refreshExpiresIn)
         .build();
   }
 

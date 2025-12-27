@@ -30,4 +30,7 @@ public class JwtAuthResponse {
 
     @Schema(description = "Token expiration time in milliseconds", example = "3600000")
     private Long expiresIn;
+
+    @Schema(description = "Refresh token expiration time in milliseconds", example = "604800000")
+    private Long refreshExpiresIn;
 }
