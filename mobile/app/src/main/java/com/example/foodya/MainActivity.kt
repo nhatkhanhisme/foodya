@@ -28,17 +28,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FoodyaTheme {
-                val navController = rememberNavController()
                 val startDestination by mainViewModel.startDestination.collectAsState()
                 val userRole by mainViewModel.currentUserRole.collectAsState()
+                val isLoading by mainViewModel.isLoading.collectAsState()
 
-                if (!mainViewModel.isLoading.collectAsState().value) {
-                    MainScreen(
-                        navController = navController,
-                        userRole = userRole,
-                        startDestination = startDestination,
-                        viewModel = mainViewModel
-                    )
+                if (!isLoading) {
+                    // Key ensures NavController recreates when role changes
+                    androidx.compose.runtime.key(userRole, startDestination) {
+                        val navController = rememberNavController()
+                        MainScreen(
+                            navController = navController,
+                            userRole = userRole,
+                            startDestination = startDestination,
+                            viewModel = mainViewModel
+                        )
+                    }
                 }
             }
         }

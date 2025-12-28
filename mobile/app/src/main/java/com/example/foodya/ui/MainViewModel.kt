@@ -42,15 +42,16 @@ class MainViewModel @Inject constructor(
                 if (hasToken && hasRole) {
                     try {
                         val roleEnum = UserRole.valueOf(roleString!!)
-                        _currentUserRole.value = roleEnum
-                        if (roleEnum == UserRole.MERCHANT) Graph.MERCHANT else Graph.CUSTOMER
+                        val destination = if (roleEnum == UserRole.MERCHANT) Graph.MERCHANT else Graph.CUSTOMER
+                        Pair(roleEnum, destination)
                     } catch (e: Exception) {
-                        Graph.AUTH
+                        Pair(null, Graph.AUTH)
                     }
                 } else {
-                    Graph.AUTH
+                    Pair(null, Graph.AUTH)
                 }
-            }.collect { destination ->
+            }.collect { (role, destination) ->
+                _currentUserRole.value = role
                 _startDestination.value = destination
                 _isLoading.value = false
             }

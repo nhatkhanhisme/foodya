@@ -89,11 +89,14 @@ fun MainScreen(
     ) { innerPadding ->
         // Truyền innerPadding vào NavGraph để nội dung không bị BottomBar che khuất
         Box(modifier = Modifier.padding(innerPadding)) {
-            SetupNavGraph(
-                navController = navController,
-                mainViewModel = viewModel,
-                startDestination = startDestination
-            )
+            // Use key to force recreation when role changes
+            androidx.compose.runtime.key(userRole) {
+                SetupNavGraph(
+                    navController = navController,
+                    mainViewModel = viewModel,
+                    startDestination = startDestination
+                )
+            }
         }
     }
 }

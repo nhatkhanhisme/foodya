@@ -44,8 +44,14 @@ fun SetupNavGraph(
                             else -> Graph.CUSTOMER
                         }
 
+                        // Clear entire back stack and navigate to the target graph
                         navController.navigate(targetGraph) {
-                            popUpTo(Graph.AUTH) { inclusive = true } // Chặn back về lại bằng nút khi login thành công
+                            popUpTo(Graph.ROOT) {
+                                inclusive = false
+                                saveState = false
+                            }
+                            launchSingleTop = true
+                            restoreState = false
                         }
                     }
                 )
