@@ -33,6 +33,6 @@ class ChangePasswordUseCase @Inject constructor(
         }
 
         // Call repository
-        return authRepository.changePassword(currentPassword, newPassword)
+        return authRepository.changePassword(currentPassword, newPassword, confirmPassword)
     }
 }

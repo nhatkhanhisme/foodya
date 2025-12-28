@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -12,11 +13,14 @@ import androidx.navigation.compose.rememberNavController
 import com.example.foodya.ui.MainScreen
 import com.example.foodya.ui.MainViewModel
 import com.example.foodya.ui.theme.FoodyaTheme
+import com.example.foodya.ui.theme.ThemeViewModel
+import com.example.foodya.ui.theme.rememberThemePreference
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
+    private val themeViewModel: ThemeViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -27,7 +31,12 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            FoodyaTheme {
+            // Observe theme preference
+            val themePreference by themeViewModel.themePreference.collectAsState()
+            val systemInDarkTheme = isSystemInDarkTheme()
+            val isDarkTheme = rememberThemePreference(themePreference, systemInDarkTheme)
+
+            FoodyaTheme(darkTheme = isDarkTheme) {
                 val startDestination by mainViewModel.startDestination.collectAsState()
                 val userRole by mainViewModel.currentUserRole.collectAsState()
                 val isLoading by mainViewModel.isLoading.collectAsState()

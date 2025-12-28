@@ -8,7 +8,6 @@ import com.example.foodya.domain.model.FoodMenuItem
 import com.example.foodya.domain.model.MerchantRestaurant
 import com.example.foodya.domain.repository.MerchantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -182,7 +181,7 @@ class MenuViewModel @Inject constructor(
             _state.update { it.copy(isProcessing = true, error = null) }
 
             val price = currentState.formPrice.toDouble()
-
+            
             val request = MenuItemRequest(
                 name = currentState.formName,
                 description = currentState.formDescription,

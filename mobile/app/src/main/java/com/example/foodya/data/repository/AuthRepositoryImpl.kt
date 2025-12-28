@@ -40,10 +40,11 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun changePassword(
         currentPassword: String,
-        newPassword: String
+        newPassword: String,
+        confirmPassword: String
     ): Result<Unit> {
         return try {
-            api.changePassword(ChangePasswordRequest(currentPassword, newPassword))
+            api.changePassword(ChangePasswordRequest(currentPassword, newPassword, confirmPassword))
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception(e.toUserFriendlyMessage()))

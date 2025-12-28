@@ -17,6 +17,7 @@ interface AuthRepository {
 
     suspend fun changePassword(
         currentPassword: String,
-        newPassword: String
+        newPassword: String,
+        confirmPassword: String
     ): Result<Unit>
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodya.data.local.TokenManager
 import com.example.foodya.domain.model.User
+import com.example.foodya.domain.repository.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MerchantProfileViewModel @Inject constructor(
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val themeRepository: ThemeRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MerchantProfileState())
@@ -22,6 +24,15 @@ class MerchantProfileViewModel @Inject constructor(
 
     init {
         loadMerchantProfile()
+        observeThemePreference()
+    }
+
+    private fun observeThemePreference() {
+        viewModelScope.launch {
+            themeRepository.isDarkMode.collect { isDark ->
+                _state.update { it.copy(isDarkMode = isDark ?: false) }
+            }
+        }
     }
 
     private fun loadMerchantProfile() {
@@ -56,8 +67,9 @@ class MerchantProfileViewModel @Inject constructor(
     }
 
     fun onToggleDarkMode(isDark: Boolean) {
-        // In production, save this to DataStore
-        _state.update { it.copy(isDarkMode = isDark) }
+        viewModelScope.launch {
+            themeRepository.setDarkMode(isDark)
+        }
     }
 
     fun onLogout(onLogoutSuccess: () -> Unit) {

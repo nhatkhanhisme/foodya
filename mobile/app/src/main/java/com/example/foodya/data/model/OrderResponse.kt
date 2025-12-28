@@ -1,7 +1,5 @@
 package com.example.foodya.data.model
 
-import com.example.foodya.domain.model.enums.OrderStatus
-
 data class OrderResponse(
     val id: String,
     val customerId: String,
