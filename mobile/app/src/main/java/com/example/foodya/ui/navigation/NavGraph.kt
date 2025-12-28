@@ -17,6 +17,7 @@ import com.example.foodya.ui.screen.customer.profile.CustomerProfileView
 import com.example.foodya.ui.screen.customer.restaurant.RestaurantDetailView
 import com.example.foodya.ui.screen.merchant.menu.MenuView
 import com.example.foodya.ui.screen.merchant.profile.MerchantProfileView
+import com.example.foodya.ui.screen.security.ChangePasswordView
 
 @Composable
 fun SetupNavGraph(
@@ -85,8 +86,18 @@ fun SetupNavGraph(
                             popUpTo(Graph.ROOT) { inclusive = true }
                         }
                     },
-                    onNavigateToChangePassword = { navController.navigate("change_password_screen") },
+                    onNavigateToChangePassword = { 
+                        navController.navigate(Screen.ChangePassword.route) 
+                    },
                     onNavigateToTerms = { navController.navigate("terms_screen") }
+                )
+            }
+
+            composable(route = Screen.ChangePassword.route) {
+                ChangePasswordView(
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
                 )
             }
 
@@ -127,14 +138,36 @@ fun SetupNavGraph(
             route = Graph.MERCHANT
         ) {
             composable(route = Screen.MerchantDashboard.route) {
-                DashboardView(navController)
+                DashboardView(
+                    onNavigateToRegisterRestaurant = {
+                        // TODO: Navigate to register restaurant screen
+                    }
+                )
             }
             composable(route = Screen.ManageMenu.route) {
-                MenuView(navController)
+                MenuView()
             }
             composable(route = Screen.MerchantProfile.route) {
-                MerchantProfileView(navController)
+                MerchantProfileView(
+                    onNavigateToLogin = {
+                        navController.navigate(Graph.AUTH) {
+                            popUpTo(Graph.ROOT) { inclusive = true }
+                        }
+                    },
+                    onNavigateToChangePassword = { 
+                        navController.navigate(Screen.ChangePassword.route) 
+                    },
+                    onNavigateToTerms = { navController.navigate("terms_screen") }
+                )
+            }
+
+            composable(route = Screen.ChangePassword.route) {
+                ChangePasswordView(
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
             }
         }
     }
-}

@@ -2,6 +2,7 @@ package com.example.foodya.di
 
 import com.example.foodya.data.remote.AuthApi
 import com.example.foodya.data.remote.AuthInterceptor
+import com.example.foodya.data.remote.MerchantApi
 import com.example.foodya.data.remote.RestaurantApi
 import com.example.foodya.data.remote.TokenAuthenticator
 import dagger.Module
@@ -41,4 +42,8 @@ object NetworkModule {
     @Provides @Singleton
     fun provideRestaurantApi(retrofit: Retrofit): RestaurantApi =
         retrofit.create(RestaurantApi::class.java)
+
+    @Provides @Singleton
+    fun provideMerchantApi(retrofit: Retrofit): MerchantApi =
+        retrofit.create(MerchantApi::class.java)
 }

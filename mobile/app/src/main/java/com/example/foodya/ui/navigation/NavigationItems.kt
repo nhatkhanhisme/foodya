@@ -28,6 +28,9 @@ sealed class Screen(val route: String){
     data object MerchantDashboard : Screen("merchant_dashboard")
     data object ManageMenu : Screen("manage_menu")
     data object MerchantProfile : Screen("merchant_profile")
+
+    // Security Screens (Shared)
+    data object ChangePassword : Screen("change_password")
 }
 
 

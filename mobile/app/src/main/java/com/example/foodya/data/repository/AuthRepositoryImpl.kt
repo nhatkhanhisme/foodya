@@ -2,6 +2,7 @@ package com.example.foodya.data.repository
 
 import android.app.Application
 import com.example.foodya.R
+import com.example.foodya.data.model.ChangePasswordRequest
 import com.example.foodya.data.model.LoginRequest
 import com.example.foodya.data.model.LoginResponse
 import com.example.foodya.data.model.RefreshResponse
@@ -36,6 +37,18 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val response = api.register(RegisterRequest(username, email, password, fullName, phoneNumber, role))
             Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(Exception(e.toUserFriendlyMessage()))
+        }
+    }
+
+    override suspend fun changePassword(
+        currentPassword: String,
+        newPassword: String
+    ): Result<Unit> {
+        return try {
+            api.changePassword(ChangePasswordRequest(currentPassword, newPassword))
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception(e.toUserFriendlyMessage()))
         }

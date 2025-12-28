@@ -17,4 +17,9 @@ interface AuthRepository {
         phoneNumber: String,
         role: UserRole
     ): Result<RegisterResponse>
+
+    suspend fun changePassword(
+        currentPassword: String,
+        newPassword: String
+    ): Result<Unit>
 }
