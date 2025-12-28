@@ -72,8 +72,20 @@ class AuthViewModel @Inject constructor(
             val result = repository.login(currentState.username, currentState.password)
 
             result.onSuccess { response ->
-                tokenManager.saveTokens(response.accessToken, response.refreshToken, "MERCHANT")
+                // Save complete auth response with user info
+                tokenManager.saveAuthResponse(
+                    accessToken = response.accessToken,
+                    refreshToken = response.refreshToken,
+                    role = response.role,
+                    userId = response.userId,
+                    username = response.username,
+                    expiresIn = response.expiresIn
+                )
+                
+                // Navigation will be handled by MainViewModel based on role
                 _state.update { it.copy(isLoading = false, isLoggedIn = true) }
+                
+                Log.d("AuthViewModel", "Login successful - Role: ${response.role}, UserId: ${response.userId}")
             }.onFailure { e ->
                 _state.update {
                     it.copy(isLoading = false, error = e.message ?: "Login failed")
@@ -103,9 +115,21 @@ class AuthViewModel @Inject constructor(
                 role = currentState.role
             )
 
-            result.onSuccess {
-                // Đăng ký xong chuyển sang login mode
-                _state.update { it.copy(isLoading = false, isLoginMode = true) }
+            result.onSuccess { response ->
+                // Save complete auth response after successful registration
+                tokenManager.saveAuthResponse(
+                    accessToken = response.accessToken,
+                    refreshToken = response.refreshToken,
+                    role = response.role,
+                    userId = response.userId,
+                    username = response.username,
+                    expiresIn = response.expiresIn
+                )
+                
+                // Automatically log in after registration
+                _state.update { it.copy(isLoading = false, isLoggedIn = true) }
+                
+                Log.d("AuthViewModel", "Registration successful - Role: ${response.role}, UserId: ${response.userId}")
             }.onFailure { e ->
                 _state.update {
                     it.copy(isLoading = false, error = e.message ?: "Register failed")

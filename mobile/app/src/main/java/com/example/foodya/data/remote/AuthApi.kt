@@ -1,27 +1,24 @@
 package com.example.foodya.data.remote
 
 import com.example.foodya.data.model.ChangePasswordRequest
+import com.example.foodya.data.model.JwtAuthResponse
 import com.example.foodya.data.model.LoginRequest
-import com.example.foodya.data.model.LoginResponse
 import com.example.foodya.data.model.RefreshRequest
-import com.example.foodya.data.model.RefreshResponse
 import com.example.foodya.data.model.RegisterRequest
-import com.example.foodya.data.model.RegisterResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
-import retrofit2.http.PUT
 
 interface AuthApi {
 
     @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest) : LoginResponse
+    suspend fun login(@Body request: LoginRequest): JwtAuthResponse
 
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest) : RegisterResponse
+    suspend fun register(@Body request: RegisterRequest): JwtAuthResponse
 
     @POST("auth/refresh")
-    suspend fun refresh(@Body request: RefreshRequest): RefreshResponse
+    suspend fun refresh(@Body request: RefreshRequest): JwtAuthResponse
 
-    @PUT("auth/change-password")
+    @POST("auth/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest)
 }

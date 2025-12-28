@@ -1,13 +1,10 @@
 package com.example.foodya.domain.repository
 
-import com.example.foodya.data.model.LoginResponse
-import com.example.foodya.data.model.RefreshResponse
-import com.example.foodya.data.model.RegisterRequest
-import com.example.foodya.data.model.RegisterResponse
+import com.example.foodya.data.model.JwtAuthResponse
 import com.example.foodya.data.model.UserRole
 
 interface AuthRepository {
-    suspend fun login(username: String, password: String): Result<LoginResponse>
+    suspend fun login(username: String, password: String): Result<JwtAuthResponse>
 
     suspend fun register(
         username: String,
@@ -16,7 +13,7 @@ interface AuthRepository {
         fullName: String,
         phoneNumber: String,
         role: UserRole
-    ): Result<RegisterResponse>
+    ): Result<JwtAuthResponse>
 
     suspend fun changePassword(
         currentPassword: String,

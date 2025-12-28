@@ -3,6 +3,7 @@ package com.example.foodya.ui.screen.merchant.menu
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.foodya.data.model.MenuItemRequest
 import com.example.foodya.domain.model.FoodMenuItem
 import com.example.foodya.domain.model.MerchantRestaurant
 import com.example.foodya.domain.repository.MerchantRepository
@@ -29,7 +30,6 @@ class MenuViewModel @Inject constructor(
     private fun loadMenuData() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            delay(500)
             
             val result = merchantRepo.getMyRestaurants()
             result.onSuccess { restaurants ->
@@ -180,29 +180,29 @@ class MenuViewModel @Inject constructor(
 
         viewModelScope.launch {
             _state.update { it.copy(isProcessing = true, error = null) }
-            delay(500)
 
             val price = currentState.formPrice.toDouble()
+
+            val request = MenuItemRequest(
+                name = currentState.formName,
+                description = currentState.formDescription,
+                price = price,
+                imageUrl = currentState.formImageUrl,
+                category = currentState.formCategory,
+                isAvailable = currentState.formIsAvailable
+            )
 
             val result = if (currentState.isCreating) {
                 merchantRepo.createMenuItem(
                     restaurantId = restaurantId,
-                    name = currentState.formName,
-                    description = currentState.formDescription,
-                    price = price,
-                    imageUrl = currentState.formImageUrl,
-                    category = currentState.formCategory
+                    request = request
                 )
             } else {
                 val itemId = currentState.editingItem?.id ?: return@launch
                 merchantRepo.updateMenuItem(
+                    restaurantId = restaurantId,
                     menuItemId = itemId,
-                    name = currentState.formName,
-                    description = currentState.formDescription,
-                    price = price,
-                    imageUrl = currentState.formImageUrl,
-                    category = currentState.formCategory,
-                    isAvailable = currentState.formIsAvailable
+                    request = request
                 )
             }
 
@@ -240,9 +240,8 @@ class MenuViewModel @Inject constructor(
 
         viewModelScope.launch {
             _state.update { it.copy(isProcessing = true, error = null) }
-            delay(500)
 
-            val result = merchantRepo.deleteMenuItem(itemId)
+            val result = merchantRepo.deleteMenuItem(restaurantId, itemId)
             result.onSuccess {
                 Log.d("MenuViewModel", "Item deleted successfully")
                 loadMenuItems(restaurantId)

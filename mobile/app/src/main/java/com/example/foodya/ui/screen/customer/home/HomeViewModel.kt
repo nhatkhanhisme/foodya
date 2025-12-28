@@ -31,21 +31,25 @@ class HomeViewModel @Inject constructor(
     private fun loadHomeData() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-            // Giả lập độ trễ mạng
-            delay(1500)
-            val result = restaurantRepo.getAllRestaurant()
-            result.onSuccess { list ->
-                Log.d("HomeViewModel", "Loaded restaurants: $list")
+            
+            // Load restaurants using the new API
+            val result = restaurantRepo.getRestaurants(
+                sortBy = "popular",
+                page = 0,
+                size = 20
+            )
+            
+            result.onSuccess { (list, hasMore) ->
+                Log.d("HomeViewModel", "Loaded ${list.size} restaurants, hasMore: $hasMore")
                 _state.update {
                     it.copy(
                         isLoading = false,
                         nearbyRestaurants = list,
-                        popularFoods = mockFoods()
+                        popularFoods = mockFoods() // Can be replaced with real popular foods API later
                     )
                 }
-            }
-            .onFailure {
-                Log.e("HomeViewModel", "Error loading restaurants: ${it.message}")
+            }.onFailure { exception ->
+                Log.e("HomeViewModel", "Error loading restaurants: ${exception.message}")
                 _state.update {
                     it.copy(
                         isLoading = false,
