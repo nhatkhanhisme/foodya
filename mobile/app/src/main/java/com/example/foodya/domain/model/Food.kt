@@ -11,5 +11,4 @@ data class Food(
     val category: String,
     val isAvailable: Boolean = true,
     val isActive: Boolean = true,
-    val rating: Double = 0.0 // Thêm rating để hiển thị cho đẹp
 )

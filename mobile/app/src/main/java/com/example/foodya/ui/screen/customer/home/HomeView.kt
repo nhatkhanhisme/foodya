@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
@@ -76,11 +77,25 @@ fun HomeView(
                         expanded = state.isSearchActive,
                         onExpandedChange = viewModel::onSearchActiveChange,
                         placeholder = { Text("Tìm nhà hàng...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        leadingIcon = {
+                            if (state.isSearchActive) {
+                                // Hiển thị nút back khi search active
+                                IconButton(onClick = {
+                                    viewModel.onSearchActiveChange(false)
+                                    viewModel.onClearSearch()
+                                }) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                                }
+                            } else {
+                                // Hiển thị icon search khi không active
+                                Icon(Icons.Default.Search, contentDescription = null)
+                            }
+                        },
                         trailingIcon = {
+                            // Hiển thị nút X khi có text trong search query
                             if (state.searchQuery.isNotEmpty()) {
                                 IconButton(onClick = viewModel::onClearSearch) {
-                                    Icon(Icons.Default.Close, contentDescription = null)
+                                    Icon(Icons.Default.Close, contentDescription = "Xóa")
                                 }
                             }
                         },

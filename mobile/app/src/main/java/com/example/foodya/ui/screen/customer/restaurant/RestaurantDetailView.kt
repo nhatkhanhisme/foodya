@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,9 +25,10 @@ import com.example.foodya.domain.model.Food
 import java.text.NumberFormat
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RestaurantDetailView(
-    restaurantId: String, // ViewModel đã lấy từ SavedStateHandle, nhưng giữ tham số này nếu cần dùng cho Header
+    restaurantId: String,
     onBackClick: () -> Unit,
     onGoToCheckout: () -> Unit,
     viewModel: RestaurantDetailViewModel = hiltViewModel()
@@ -37,6 +39,18 @@ fun RestaurantDetailView(
     val cartMap by viewModel.cartMap.collectAsState() // Cần thêm dòng này trong ViewModel như Bước 1
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Chi tiết nhà hàng $restaurantId") },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBackClick
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                    }
+                }
+            )
+        },
         bottomBar = {
             // 2. Chỉ hiện Box tổng tiền khi số lượng > 0
             if (cartSummary.totalQuantity > 0) {
@@ -49,14 +63,6 @@ fun RestaurantDetailView(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Header (Giả định bạn đã có component này)
-            // HeaderSection(onBackClick)
-            Text(
-                text = "Chi tiết nhà hàng",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp)
-            )
-
             // 3. Danh sách món ăn
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 16.dp)

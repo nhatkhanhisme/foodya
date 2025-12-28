@@ -57,7 +57,6 @@ class RestaurantDetailViewModel @Inject constructor(
                         category = item.category,
                         isAvailable = item.isAvailable,
                         isActive = item.isActive,
-                        rating = 5.0,
                     )
                 }
             }

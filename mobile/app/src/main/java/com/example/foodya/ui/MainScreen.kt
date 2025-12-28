@@ -1,5 +1,6 @@
 package com.example.foodya.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -34,7 +35,7 @@ fun MainScreen(
             BottomNavItems.CustomerItems.any { it.route == currentDestination?.route } ||
                     BottomNavItems.MerchantItems.any { it.route == currentDestination?.route }
             )
-
+    Log.d("UserRole", userRole.toString());
 
     Scaffold(
         bottomBar = {

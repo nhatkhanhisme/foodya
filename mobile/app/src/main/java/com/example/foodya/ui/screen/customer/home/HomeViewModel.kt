@@ -1,9 +1,11 @@
 package com.example.foodya.ui.screen.customer.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.foodya.domain.model.Food
 import com.example.foodya.domain.model.Restaurant
+import com.example.foodya.domain.repository.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,12 +15,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val restaurantRepo: RestaurantRepository
+) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
     val state = _state.asStateFlow()
 
-    // Danh sách giả để lọc gợi ý tìm kiếm
     private val allKeywords = listOf("Pizza", "Burger", "Sushi", "Italian", "Vietnamese", "Coffee", "Tea")
 
     init {
@@ -30,13 +33,26 @@ class HomeViewModel @Inject constructor() : ViewModel() {
             _state.update { it.copy(isLoading = true) }
             // Giả lập độ trễ mạng
             delay(1500)
-
-            _state.update {
-                it.copy(
-                    isLoading = false,
-                    nearbyRestaurants = mockRestaurants(),
-                    popularFoods = mockFoods()
-                )
+            val result = restaurantRepo.getAllRestaurant()
+            result.onSuccess { list ->
+                Log.d("HomeViewModel", "Loaded restaurants: $list")
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        nearbyRestaurants = list,
+                        popularFoods = mockFoods()
+                    )
+                }
+            }
+            .onFailure {
+                Log.e("HomeViewModel", "Error loading restaurants: ${it.message}")
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        nearbyRestaurants = emptyList(),
+                        popularFoods = mockFoods()
+                    )
+                }
             }
         }
     }
@@ -85,12 +101,11 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                 price = 12.99 + index,
                 imageUrl = "https://via.placeholder.com/150",
                 category = "Main Course",
-                rating = 4.5
             )
         }
     }
 
-    private fun mockRestaurants(): List<Restaurant> {
+    private fun loadRestaurants(): List<Restaurant> {
         return List(3) { index ->
             Restaurant(
                 id = "res-$index",
