@@ -7,6 +7,8 @@ import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
+import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -26,209 +28,238 @@ import java.util.UUID;
 @Slf4j
 public class MenuItemService {
 
-    private final MenuItemRepository menuItemRepository;
-    private final RestaurantRepository restaurantRepository;
-    private final MenuItemMapper menuItemMapper;
+  private final MenuItemRepository menuItemRepository;
+  private final RestaurantRepository restaurantRepository;
+  private final MenuItemMapper menuItemMapper;
 
-    /**
-     * Create new menu item for a restaurant
-     */
-    @Transactional
-    public MenuItemResponse createMenuItem(@NonNull UUID  restaurantId, MenuItemRequest request) {
-        log.info("Creating menu item '{}' for restaurant ID: {}", request.getName(), restaurantId);
+  /**
+   * Create new menu item for a restaurant
+   */
+  @Transactional
+  public MenuItemResponse createMenuItem(@NonNull UUID restaurantId, MenuItemRequest request) {
+    log.info("Creating menu item '{}' for restaurant ID: {}", request.getName(), restaurantId);
 
-        // Check if restaurant exists
-        Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found with id: " + restaurantId));
+    // Check if restaurant exists
+    Restaurant restaurant = restaurantRepository.findById(restaurantId)
+        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
 
-        // Check if menu item name already exists for this restaurant
-        if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), restaurantId)) {
-            throw new RuntimeException("Menu item with name '" + request.getName() + "' already exists for this restaurant");
-        }
-
-        // Create menu item
-        MenuItem menuItem = menuItemMapper.toMenuItem(request);
-        menuItem.setRestaurant(restaurant);
-        menuItem.setIsActive(true);
-        menuItem.setOrderCount(0);
-
-        MenuItem savedMenuItem = menuItemRepository.save(menuItem);
-        log.info("Menu item created successfully with ID: {}", savedMenuItem.getId());
-
-        return menuItemMapper.toMenuItemResponse(savedMenuItem);
+    // Check if menu item name already exists for this restaurant
+    if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), restaurantId)) {
+      throw new DuplicateResourceException(
+          "Menu item with name '" + request.getName() + "' already exists for this restaurant");
     }
 
-    /**
-     * Update existing menu item
-     */
-    @Transactional
-    public MenuItemResponse updateMenuItem(@NonNull UUID  menuItemId, MenuItemRequest request) {
-        log.info("Updating menu item with ID: {}", menuItemId);
+    // Create menu item
+    MenuItem menuItem = menuItemMapper.toMenuItem(request);
+    menuItem.setRestaurant(restaurant);
+    menuItem.setIsActive(true);
+    menuItem.setOrderCount(0);
 
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found with id: " + menuItemId));
+    MenuItem savedMenuItem = menuItemRepository.save(menuItem);
+    log.info("Menu item created successfully with ID: {}", savedMenuItem.getId());
 
-        // Check if name is being changed and if it conflicts with another item
-        if (!menuItem.getName().equals(request.getName())) {
-            if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), menuItem.getRestaurant().getId())) {
-                throw new RuntimeException("Menu item with name '" + request.getName() + "' already exists for this restaurant");
-            }
-        }
+    return menuItemMapper.toMenuItemResponse(savedMenuItem);
+  }
 
-        menuItemMapper.updateMenuItemFromRequest(menuItem, request);
-        MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
+  /**
+   * Update existing menu item
+   */
+  @Transactional
+  public MenuItemResponse updateMenuItem(@NonNull UUID menuItemId, MenuItemRequest request) {
+    log.info("Updating menu item with ID: {}", menuItemId);
 
-        log.info("Menu item updated successfully: {}", menuItemId);
-        return menuItemMapper.toMenuItemResponse(updatedMenuItem);
+    MenuItem menuItem = menuItemRepository.findById(menuItemId)
+        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+
+    // Check if name is being changed and if it conflicts with another item
+    if (!menuItem.getName().equals(request.getName())) {
+      if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), menuItem.getRestaurant().getId())) {
+        throw new DuplicateResourceException(
+            "Menu item with name '" + request.getName() + "' already exists for this restaurant");
+      }
     }
 
-    /**
-     * Soft delete menu item (set isActive = false)
-     */
-    // hidden in UI, but
-    @Transactional
-    public void softDeleteMenuItem(@NonNull UUID  menuItemId) {
-        log.info("Soft deleting menu item with ID: {}", menuItemId);
+    menuItemMapper.updateMenuItemFromRequest(menuItem, request);
+    MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
 
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found with id: " + menuItemId));
+    log.info("Menu item updated successfully: {}", menuItemId);
+    return menuItemMapper.toMenuItemResponse(updatedMenuItem);
+  }
 
-        menuItem.setIsActive(false);
-        menuItem.setIsAvailable(false);
-        menuItemRepository.save(menuItem);
+  /**
+   * Soft delete menu item (set isActive = false)
+   */
+  // hidden in UI, but
+  @Transactional
+  public void softDeleteMenuItem(@NonNull UUID menuItemId) {
+    log.info("Soft deleting menu item with ID: {}", menuItemId);
 
-        log.info("Menu item soft deleted successfully: {}", menuItemId);
+    MenuItem menuItem = menuItemRepository.findById(menuItemId)
+        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+
+    menuItem.setIsActive(false);
+    menuItem.setIsAvailable(false);
+    menuItemRepository.save(menuItem);
+
+    log.info("Menu item soft deleted successfully: {}", menuItemId);
+  }
+
+  /**
+   * Hard delete menu item (permanent delete)
+   */
+  // Use by Admin
+  @Transactional
+  public void hardDeleteMenuItem(@NonNull UUID menuItemId) {
+    log.info("Hard deleting menu item with ID: {}", menuItemId);
+
+    if (!menuItemRepository.existsById(menuItemId)) {
+      throw new ResourceNotFoundException("Menu item not found with id: " + menuItemId);
     }
 
-    /**
-     * Hard delete menu item (permanent delete)
-     */
-    // Use by Admin
-    @Transactional
-    public void hardDeleteMenuItem(@NonNull UUID menuItemId) {
-        log.info("Hard deleting menu item with ID: {}", menuItemId);
+    menuItemRepository.deleteById(menuItemId);
+    log.info("Menu item hard deleted successfully: {}", menuItemId);
+  }
 
-        if (!menuItemRepository.existsById(menuItemId)) {
-            throw new RuntimeException("Menu item not found with id: " + menuItemId);
-        }
+  /**
+   * Get menu item by ID
+   */
+  @Transactional(readOnly = true)
+  public MenuItemResponse getMenuItemById(@NonNull UUID menuItemId) {
+    log.info("Fetching menu item with ID: {}", menuItemId);
 
-        menuItemRepository.deleteById(menuItemId);
-        log.info("Menu item hard deleted successfully: {}", menuItemId);
-    }
+    MenuItem menuItem = menuItemRepository.findById(menuItemId)
+        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
 
-    /**
-     * Get menu item by ID
-     */
-    @Transactional(readOnly = true)
-    public MenuItemResponse getMenuItemById(@NonNull UUID menuItemId) {
-        log.info("Fetching menu item with ID: {}", menuItemId);
+    return menuItemMapper.toMenuItemResponse(menuItem);
+  }
 
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found with id: " + menuItemId));
+  /**
+   * Get all menu items for a restaurant (with pagination and sorting)
+   */
+  @Transactional(readOnly = true)
+  public Page<MenuItemResponse> getMenuItemsByRestaurant(
+      @NonNull UUID restaurantId,
+      int page,
+      int size,
+      String sortBy,
+      String sortDirection) {
 
-        return menuItemMapper.toMenuItemResponse(menuItem);
-    }
+    log.info("Fetching menu items for restaurant ID: {} (page: {}, size: {}, sort: {} {})",
+        restaurantId, page, size, sortBy, sortDirection);
 
-    /**
-     * Get all menu items for a restaurant (with pagination and sorting)
-     */
-    @Transactional(readOnly = true)
-    public Page<MenuItemResponse> getMenuItemsByRestaurant(
-            @NonNull UUID restaurantId,
-            int page,
-            int size,
-            String sortBy,
-            String sortDirection) {
+    Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+    Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
-        log.info("Fetching menu items for restaurant ID: {} (page: {}, size: {}, sort: {} {})",
-                restaurantId, page, size, sortBy, sortDirection);
+    Page<MenuItem> menuItemsPage = menuItemRepository.findByRestaurantIdAndIsActiveTrueAndIsAvailableTrue(restaurantId,
+        pageable);
 
-        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+    return menuItemsPage.map(menuItemMapper::toMenuItemResponse);
+  }
 
-        Page<MenuItem> menuItemsPage = menuItemRepository.findByRestaurantIdAndIsActiveTrueAndIsAvailableTrue(restaurantId, pageable);
+  /**
+   * Get all active menu items for a restaurant (no pagination)
+   */
+  /**
+   * Get all menu items by restaurant (including inactive) - FOR MERCHANT
+   */
+  @Transactional(readOnly = true)
+  public List<MenuItemResponse> getAllMenuItemsByRestaurant(UUID restaurantId) {
+    log.info("Fetching all menu items (including inactive) for restaurant ID: {}", restaurantId);
 
-        return menuItemsPage.map(menuItemMapper::toMenuItemResponse);
-    }
+    // Verify restaurant exists
+    Restaurant restaurant = restaurantRepository.findById(restaurantId)
+        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
 
-    /**
-     * Get all active menu items for a restaurant (no pagination)
-     */
-    @Transactional(readOnly = true)
-    public List<MenuItemResponse> getAllMenuItemsByRestaurant(@NonNull UUID restaurantId) {
-        log.info("Fetching all active menu items for restaurant ID: {}", restaurantId);
+    List<MenuItem> menuItems = menuItemRepository.findByRestaurantId(restaurantId);
+    return menuItems.stream()
+        .map(menuItemMapper::toMenuItemResponse)
+        .collect(java.util.stream.Collectors.toList());
+  }
 
-        List<MenuItem> menuItems = menuItemRepository.findByRestaurantIdAndIsActiveTrueAndIsAvailableTrue(restaurantId);
-        return menuItemMapper.toMenuItemResponseList(menuItems);
-    }
+  /**
+   * Get only active menu items by restaurant - FOR MERCHANT
+   */
+  @Transactional(readOnly = true)
+  public List<MenuItemResponse> getActiveMenuItemsByRestaurant(UUID restaurantId) {
+    log.info("Fetching active menu items for restaurant ID: {}", restaurantId);
 
-    /**
-     * Search menu items by name
-     */
-    @Transactional(readOnly = true)
-    public List<MenuItemResponse> searchMenuItems(@NonNull UUID restaurantId, String keyword) {
-        log.info("Searching menu items for restaurant ID: {} with keyword: {}", restaurantId, keyword);
+    // Verify restaurant exists
+    Restaurant restaurant = restaurantRepository.findById(restaurantId)
+        .orElseThrow(() -> new RuntimeException("Restaurant not found with id: " + restaurantId));
 
-        List<MenuItem> menuItems = menuItemRepository.searchByRestaurantAndName(restaurantId, keyword);
-        return menuItemMapper.toMenuItemResponseList(menuItems);
-    }
+    List<MenuItem> menuItems = menuItemRepository.findByRestaurantIdAndIsActiveTrue(restaurantId);
+    return menuItems.stream()
+        .map(menuItemMapper::toMenuItemResponse)
+        .collect(java.util.stream.Collectors.toList());
+  }
 
-    /**
-     * Get menu items by category
-     */
-    @Transactional(readOnly = true)
-    public List<MenuItemResponse> getMenuItemsByCategory(@NonNull UUID restaurantId, String category) {
-        log.info("Fetching menu items for restaurant ID: {} with category: {}", restaurantId, category);
+  /**
+   * Search menu items by name
+   */
+  @Transactional(readOnly = true)
+  public List<MenuItemResponse> searchMenuItems(@NonNull UUID restaurantId, String keyword) {
+    log.info("Searching menu items for restaurant ID: {} with keyword: {}", restaurantId, keyword);
 
-        List<MenuItem> menuItems = menuItemRepository.findByRestaurantIdAndCategoryAndIsActiveTrue(restaurantId, category);
-        return menuItemMapper.toMenuItemResponseList(menuItems);
-    }
+    List<MenuItem> menuItems = menuItemRepository.searchByRestaurantAndName(restaurantId, keyword);
+    return menuItemMapper.toMenuItemResponseList(menuItems);
+  }
 
-    /**
-     * Get popular menu items for a restaurant
-     */
-    @Transactional(readOnly = true)
-    public List<MenuItemResponse> getPopularMenuItems(@NonNull UUID restaurantId, int limit) {
-        log.info("Fetching popular menu items for restaurant ID: {} (limit: {})", restaurantId, limit);
+  /**
+   * Get menu items by category
+   */
+  @Transactional(readOnly = true)
+  public List<MenuItemResponse> getMenuItemsByCategory(@NonNull UUID restaurantId, String category) {
+    log.info("Fetching menu items for restaurant ID: {} with category: {}", restaurantId, category);
 
-        Pageable pageable = PageRequest.of(0, limit);
-        List<MenuItem> menuItems = menuItemRepository.findPopularItemsByRestaurant(restaurantId, pageable).getContent();
-        return menuItemMapper.toMenuItemResponseList(menuItems);
-    }
+    List<MenuItem> menuItems = menuItemRepository.findByRestaurantIdAndCategoryAndIsActiveTrue(restaurantId, category);
+    return menuItemMapper.toMenuItemResponseList(menuItems);
+  }
 
-    /**
-     * Toggle menu item availability
-     */
-    @Transactional
-    public MenuItemResponse toggleAvailability(@NonNull UUID menuItemId) {
-        log.info("Toggling availability for menu item ID: {}", menuItemId);
+  /**
+   * Get popular menu items for a restaurant
+   */
+  @Transactional(readOnly = true)
+  public List<MenuItemResponse> getPopularMenuItems(@NonNull UUID restaurantId, int limit) {
+    log.info("Fetching popular menu items for restaurant ID: {} (limit: {})", restaurantId, limit);
 
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found with id: " + menuItemId));
+    Pageable pageable = PageRequest.of(0, limit);
+    List<MenuItem> menuItems = menuItemRepository.findPopularItemsByRestaurant(restaurantId, pageable).getContent();
+    return menuItemMapper.toMenuItemResponseList(menuItems);
+  }
 
-        menuItem.setIsAvailable(!menuItem.getIsAvailable());
-        MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
+  /**
+   * Toggle menu item availability
+   */
+  @Transactional
+  public MenuItemResponse toggleAvailability(@NonNull UUID menuItemId) {
+    log.info("Toggling availability for menu item ID: {}", menuItemId);
 
-        log.info("Menu item availability toggled to: {}", updatedMenuItem.getIsAvailable());
-        return menuItemMapper.toMenuItemResponse(updatedMenuItem);
-    }
+    MenuItem menuItem = menuItemRepository.findById(menuItemId)
+        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
 
-    /**
-     * Get menu items by dietary preferences
-     */
-    @Transactional(readOnly = true)
-    public List<MenuItemResponse> getMenuItemsByDietaryPreferences(
-            UUID restaurantId,
-            Boolean vegetarian,
-            Boolean vegan,
-            Boolean glutenFree) {
+    menuItem.setIsAvailable(!menuItem.getIsAvailable());
+    MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
 
-        log.info("Fetching menu items for restaurant ID: {} with dietary preferences - veg: {}, vegan: {}, gf: {}",
-                restaurantId, vegetarian, vegan, glutenFree);
+    log.info("Menu item availability toggled to: {}", updatedMenuItem.getIsAvailable());
+    return menuItemMapper.toMenuItemResponse(updatedMenuItem);
+  }
 
-        List<MenuItem> menuItems = menuItemRepository.findByDietaryPreferences(
-                restaurantId, vegetarian, vegan, glutenFree);
+  /**
+   * Get menu items by dietary preferences
+   */
+  @Transactional(readOnly = true)
+  public List<MenuItemResponse> getMenuItemsByDietaryPreferences(
+      UUID restaurantId,
+      Boolean vegetarian,
+      Boolean vegan,
+      Boolean glutenFree) {
 
-        return menuItemMapper.toMenuItemResponseList(menuItems);
-    }
+    log.info("Fetching menu items for restaurant ID: {} with dietary preferences - veg: {}, vegan: {}, gf: {}",
+        restaurantId, vegetarian, vegan, glutenFree);
+
+    List<MenuItem> menuItems = menuItemRepository.findByDietaryPreferences(
+        restaurantId, vegetarian, vegan, glutenFree);
+
+    return menuItemMapper.toMenuItemResponseList(menuItems);
+  }
 }

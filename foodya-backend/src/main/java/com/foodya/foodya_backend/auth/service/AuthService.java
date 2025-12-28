@@ -183,7 +183,7 @@ public class AuthService {
     // Validate new password matches confirm password
     if (!request.getNewPassword().equals(request.getConfirmPassword())) {
       log.warn("Password confirmation mismatch for user:  {}", username);
-      throw new RuntimeException("New password and confirm password do not match");
+      throw new IllegalArgumentException("New password and confirm password do not match");
     }
 
     // Find user
@@ -196,7 +196,7 @@ public class AuthService {
     // Verify current password
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
       log.warn("Incorrect current password for user: {}", username);
-      throw new RuntimeException("Current password is incorrect");
+      throw new IllegalArgumentException("Current password is incorrect");
     }
 
     // Check new password is different from current

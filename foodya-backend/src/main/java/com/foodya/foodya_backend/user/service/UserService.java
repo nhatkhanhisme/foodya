@@ -12,6 +12,8 @@ import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import jakarta.transaction.Transactional;
 import lombok.NonNull;
@@ -32,12 +34,18 @@ public class UserService {
   }
 
   public void deleteUserById(@NonNull UUID userId) {
+    if (userRepository.findById(userId).isEmpty()) {
+      throw new ResourceNotFoundException("User not found with id: " + userId);
+    }
+    if (userRepository.findById(userId).isEmpty()) {
+      throw new ResourceNotFoundException("User not found with id: " + userId);
+    }
     userRepository.deleteById(userId);
   }
 
   public UserProfileResponse toggleUserActiveStatus(@NonNull UUID userId) {
     User updateUser = userRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     updateUser.setIsActive(!updateUser.getIsActive());
     userRepository.save(updateUser);
     return mapToUserProfileResponse(updateUser);
@@ -48,7 +56,7 @@ public class UserService {
     String username = authentication.getName();
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new RuntimeException("User not found" + username));
+        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
     return mapToUserProfileResponse(user);
   }
 
@@ -59,7 +67,7 @@ public class UserService {
     String username = authentication.getName();
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new RuntimeException("User not found:  " + username));
+        .orElseThrow(() -> new ResourceNotFoundException("User not found:  " + username));
 
     // Cập nhật Full Name
     if (request.getFullName() != null && !request.getFullName().isBlank()) {
@@ -70,7 +78,7 @@ public class UserService {
     if (request.getEmail() != null && !request.getEmail().isBlank()) {
       if (userRepository.existsByEmail(request.getEmail()) &&
           !user.getEmail().equals(request.getEmail())) {
-        throw new RuntimeException("Email already exists");
+        throw new DuplicateResourceException("Email already exists");
       }
       user.setEmail(request.getEmail());
       user.setIsEmailVerified(false); // Reset verification
@@ -80,7 +88,7 @@ public class UserService {
     if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
       if (userRepository.existsByPhoneNumber(request.getPhoneNumber()) &&
           !user.getPhoneNumber().equals(request.getPhoneNumber())) {
-        throw new RuntimeException("Phone number already exists");
+        throw new DuplicateResourceException("Phone number already exists");
       }
       user.setPhoneNumber(request.getPhoneNumber());
       user.setIsPhoneNumberVerified(false); // Reset verification

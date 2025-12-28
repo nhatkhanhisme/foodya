@@ -85,4 +85,5 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, UUID> {
 
   // Check if menu item exists by name and restaurant
   boolean existsByNameAndRestaurantId(String name, UUID restaurantId);
+
 }

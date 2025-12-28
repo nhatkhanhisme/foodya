@@ -6,6 +6,7 @@ import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class OwnershipService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     /**
@@ -39,7 +40,7 @@ public class OwnershipService {
     public boolean isRestaurantOwner(@NonNull UUID restaurantId) {
         User currentUser = getCurrentUser();
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
 
         return restaurant.getOwnerId().equals(currentUser.getId());
     }
@@ -50,7 +51,7 @@ public class OwnershipService {
     public boolean isMenuItemOwner(@NonNull UUID menuItemId) {
         User currentUser = getCurrentUser();
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
 
         return menuItem.getRestaurant().getOwnerId().equals(currentUser.getId());
     }
