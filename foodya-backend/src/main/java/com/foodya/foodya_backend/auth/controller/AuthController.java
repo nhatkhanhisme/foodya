@@ -1,12 +1,18 @@
 package com.foodya.foodya_backend.auth.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.foodya.foodya_backend.auth.dto.ChangePasswordRequest;
 import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
@@ -26,107 +32,70 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(
-    name = "Authentication",
-    description = "Authentication and authorization APIs for user registration, login, and token management"
-)
+@Tag(name = "Authentication", description = "Authentication and authorization APIs for user registration, login, and token management")
 public class AuthController {
 
-    private final AuthService authService;
+  private final AuthService authService;
 
-    @Operation(
-        summary = "Register new user",
-        description = "Create a new user account with username, email, password, and other required information. Returns JWT tokens upon successful registration."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "User registered successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = JwtAuthResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Invalid input - Username/Email/Phone number already exists or validation failed"
-        ),
-        @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - Username/Email/Phone number already exists"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "Internal server error"
-        )
-    })
-    @PostMapping("/register")
-    public ResponseEntity<JwtAuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
-        JwtAuthResponse response = authService.registerUser(registerRequest);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
+  @Operation(summary = "Register new user", description = "Create a new user account with username, email, password, and other required information. Returns JWT tokens upon successful registration.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = JwtAuthResponse.class))),
+      @ApiResponse(responseCode = "400", description = "Invalid input - Username/Email/Phone number already exists or validation failed"),
+      @ApiResponse(responseCode = "409", description = "Conflict - Username/Email/Phone number already exists"),
+      @ApiResponse(responseCode = "500", description = "Internal server error")
+  })
+  @PostMapping("/register")
+  public ResponseEntity<JwtAuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    JwtAuthResponse response = authService.registerUser(registerRequest);
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
 
-    @Operation(
-        summary = "User login",
-        description = "Authenticate user with username and password. Returns access token and refresh token upon successful authentication."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Login successful",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = JwtAuthResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - Invalid username or password",
-            content = @Content(
-              mediaType = "application/json",
-              schema = @Schema(implementation = ErrorResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - Account is deactivated",
-            content = @Content(
-              mediaType = "application/json",
-              schema = @Schema(implementation = ErrorResponse.class)
-            )
-        )
-    })
-    @PostMapping("/login")
-    public ResponseEntity<JwtAuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        JwtAuthResponse response = authService.login(loginRequest);
-        return ResponseEntity.ok(response);
-    }
+  @Operation(summary = "User login", description = "Authenticate user with username and password. Returns access token and refresh token upon successful authentication.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(mediaType = "application/json", schema = @Schema(implementation = JwtAuthResponse.class))),
+      @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid username or password", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "403", description = "Forbidden - Account is deactivated", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @PostMapping("/login")
+  public ResponseEntity<JwtAuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    JwtAuthResponse response = authService.login(loginRequest);
+    return ResponseEntity.ok(response);
+  }
 
-    @Operation(
-        summary = "Refresh access token",
-        description = "Generate a new access token using a valid refresh token. The refresh token remains unchanged."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Token refreshed successfully",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = JwtAuthResponse.class)
-            )
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - Invalid or expired refresh token"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "User not found"
-        )
-    })
-    @PostMapping("/refresh")
-    public ResponseEntity<JwtAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        JwtAuthResponse response = authService.refreshToken(request);
-        return ResponseEntity.ok(response);
-    }
+  @Operation(summary = "Refresh access token", description = "Generate a new access token using a valid refresh token. The refresh token remains unchanged.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Token refreshed successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = JwtAuthResponse.class))),
+      @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired refresh token"),
+      @ApiResponse(responseCode = "404", description = "User not found")
+  })
+  @PostMapping("/refresh")
+  public ResponseEntity<JwtAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+    JwtAuthResponse response = authService.refreshToken(request);
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "Change password", description = "Change password for authenticated user.  Requires current password for verification.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+      @ApiResponse(responseCode = "400", description = "Bad request - Current password incorrect or validation failed"),
+      @ApiResponse(responseCode = "401", description = "Unauthorized - User not authenticated")
+  })
+  @PreAuthorize("isAuthenticated()")
+  @PostMapping("/change-password")
+  public ResponseEntity<Map<String, String>> changePassword(
+      @Valid @RequestBody ChangePasswordRequest request) {
+
+    // Get current authenticated user
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+    // Change password
+    authService.changePassword(username, request);
+
+    // Return success message
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Password changed successfully");
+
+    return ResponseEntity.ok(response);
+  }
+
 }

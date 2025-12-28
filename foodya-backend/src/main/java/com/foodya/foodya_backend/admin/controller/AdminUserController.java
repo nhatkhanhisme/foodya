@@ -15,34 +15,33 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/admin")
+@RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin", description = "Admin management APIs")
+@Tag(name = "Admin - User Management", description = "⚠️ Admin only - NOT for mobile app")
 @SecurityRequirement(name = "BearerAuth")
-public class AdminController {
+public class AdminUserController {
 
     private final UserService userService;
 
-    @Operation(summary = "Get all users (Admin only)")
-    @GetMapping("/users")
+    @Operation(summary = "Get all users", description = "Admin only - Retrieve all users")
+    @GetMapping
     public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
         List<UserProfileResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
-    @Operation(summary = "Delete user by ID (Admin only)")
-    @DeleteMapping("/users/{userId}")
+    @Operation(summary = "Delete user", description = "Admin only - Permanently delete user")
+    @DeleteMapping("/{userId}")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
         userService.deleteUserById(userId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity. noContent().build();
     }
 
-    @Operation(summary = "Toggle user active status (Admin only)")
-    @PatchMapping("/users/{userId}/toggle-active")
-    public ResponseEntity<String> toggleUserActive(@PathVariable UUID userId) {
-        UserProfileResponse updateUser = userService.toggleUserActiveStatus(userId);
-        String msg = "User active status toggled successfully, current active status is: " + updateUser.getIsActive();
-        return ResponseEntity.ok(msg);
+    @Operation(summary = "Toggle user status", description = "Admin only - Enable/disable user account")
+    @PatchMapping("/{userId}/toggle-active")
+    public ResponseEntity<UserProfileResponse> toggleUserActive(@PathVariable UUID userId) {
+        UserProfileResponse updatedUser = userService.toggleUserActiveStatus(userId);
+        return ResponseEntity.ok(updatedUser);
     }
 }

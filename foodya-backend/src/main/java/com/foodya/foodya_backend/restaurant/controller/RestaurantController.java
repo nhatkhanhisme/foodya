@@ -1,19 +1,18 @@
-package com.foodya.foodya_backend.restaurant.controller;
+package com.foodya.foodya_backend. restaurant.controller;
 
-import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
-import com.foodya.foodya_backend.restaurant.service.RestaurantService;
+import com. foodya.foodya_backend. restaurant.dto.RestaurantResponse;
+import com.foodya. foodya_backend.restaurant.service.RestaurantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io. swagger.v3.oas. annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework. web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,29 +20,50 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/restaurants")
 @RequiredArgsConstructor
-@Tag(name = "Restaurant", description = "Restaurant management APIs")
+@Tag(name = "Restaurant", description = "Restaurant APIs for mobile app")
 public class RestaurantController {
 
     private final RestaurantService restaurantService;
 
     @Operation(
-        summary = "Get all restaurants",
-        description = "Public endpoint"
+        summary = "Get restaurants with filters",
+        description = "Search and filter restaurants by keyword, cuisine, rating with pagination and sorting"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "Successfully retrieved restaurants",
-            content = @Content(schema = @Schema(implementation = RestaurantResponse.class))
+            description = "Restaurants retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
         )
     })
     @GetMapping
-    public ResponseEntity<List<RestaurantResponse>> getAllRestaurants() {
-        return ResponseEntity.ok(restaurantService.getAllRestaurants());
+    public ResponseEntity<Page<RestaurantResponse>> getRestaurants(
+            @Parameter(description = "Search keyword (searches in name, description, cuisine)", example = "Pizza")
+            @RequestParam(required = false) String keyword,
+
+            @Parameter(description = "Filter by cuisine type", example = "Italian")
+            @RequestParam(required = false) String cuisine,
+
+            @Parameter(description = "Filter by minimum rating (1.0 - 5.0)", example = "4.0")
+            @RequestParam(required = false) Double minRating,
+
+            @Parameter(description = "Sort by:  popular (default), rating, name", example = "popular")
+            @RequestParam(required = false, defaultValue = "popular") String sortBy,
+
+            @Parameter(description = "Page number (0-based)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Page size (default:  20)", example = "20")
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<RestaurantResponse> restaurants = restaurantService.getRestaurantsWithFilters(
+                keyword, cuisine, minRating, sortBy, page, size);
+        return ResponseEntity.ok(restaurants);
     }
 
     @Operation(
-        summary = "Get restaurant by ID"
+        summary = "Get restaurant by ID",
+        description = "Retrieve detailed information about a specific restaurant"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -58,94 +78,33 @@ public class RestaurantController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<RestaurantResponse> getRestaurantById(
-            @Parameter(description = "Restaurant ID", example = "1")
+            @Parameter(description = "Restaurant ID")
             @PathVariable UUID id) {
-        return ResponseEntity.ok(restaurantService.getRestaurantById(id));
+        RestaurantResponse restaurant = restaurantService. getRestaurantById(id);
+        return ResponseEntity.ok(restaurant);
     }
 
     @Operation(
-        summary = "Search restaurants"
+        summary = "Get popular restaurants",
+        description = "Retrieve the most popular restaurants based on reviews and ratings"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "Search results returned"
-        )
-    })
-    @GetMapping("/search")
-    public ResponseEntity<List<RestaurantResponse>> searchRestaurants(
-            @Parameter(description = "Search keyword", example = "Italian")
-            @RequestParam String keyword) {
-        return ResponseEntity.ok(restaurantService.searchRestaurants(keyword));
-    }
-
-    @Operation(
-        summary = "Get restaurants by cuisine"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Restaurants filtered by cuisine"
-        )
-    })
-    @GetMapping("/cuisine/{cuisine}")
-    public ResponseEntity<List<RestaurantResponse>> getRestaurantsByCuisine(
-            @Parameter(description = "Cuisine type", example = "Italian")
-            @PathVariable String cuisine) {
-        return ResponseEntity.ok(restaurantService.getRestaurantsByCuisine(cuisine));
-    }
-
-    @Operation(
-        summary = "Get popular restaurants"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Popular restaurants returned"
+            description = "Popular restaurants retrieved successfully"
         )
     })
     @GetMapping("/popular")
-    public ResponseEntity<List<RestaurantResponse>> getPopularRestaurants() {
-        return ResponseEntity.ok(restaurantService.getPopularRestaurants());
+    public ResponseEntity<List<RestaurantResponse>> getPopularRestaurants(
+            @Parameter(description = "Number of restaurants to return", example = "10")
+            @RequestParam(defaultValue = "10") int limit) {
+        List<RestaurantResponse> restaurants = restaurantService.getPopularRestaurants(limit);
+        return ResponseEntity.ok(restaurants);
     }
 
-    @Operation(
-        summary = "Get restaurants by minimum rating"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Restaurants filtered by rating"
-        )
-    })
-    @GetMapping("/rating")
-    public ResponseEntity<List<RestaurantResponse>> getRestaurantsByRating(
-            @Parameter(description = "Minimum rating", example = "4.0")
-            @RequestParam(defaultValue = "4.0") Double minRating) {
-        return ResponseEntity.ok(restaurantService.getRestaurantsByMinRating(minRating));
-    }
-
-    @Operation(
-        summary = "Delete restaurant by ID (Admin only)",
-        description = "Delete a specific restaurant by its ID (admin only)",
-        security = @SecurityRequirement(name = "BearerAuth")
-    )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Restaurant deleted successfully"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Restaurant not found"
-        )
-    })
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRestaurantById(
-            @Parameter(description = "Restaurant ID", example = "1")
-            @PathVariable UUID id) {
-        restaurantService.deleteRestaurantById(id);
-        return ResponseEntity.ok().build();
-    }
+    // ========== XÓA TẤT CẢ CÁC METHOD SAU ĐÂY ==========
+    // ❌ searchRestaurants() - đã gộp vào getRestaurants()
+    // ❌ getRestaurantsByCuisine() - đã gộp vào getRestaurants()
+    // ❌ getRestaurantsByRating() - đã gộp vào getRestaurants()
+    // ❌ deleteRestaurantById() - đã di chuyển sang AdminRestaurantController
 }
