@@ -1,85 +1,114 @@
 package com.foodya.foodya_backend.user.model;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Table (name = "users")
-@Data
+@Table(name = "users")
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "UUID")
     private UUID id;
 
-    @NotBlank (message = "Username is mandatory")
-    @Column (unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
 
-    @NotBlank (message = "Email is mandatory")
-    @Email (message = "Email should be valid")
-    @Column (unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @NotBlank (message = "Password is mandatory")
-    @Size (min = 8, message = "Password must be at least 8 characters long")
+    @Column(nullable = false)
     private String password;
 
-    @NotBlank (message = "Full name is mandatory")
+    @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Enumerated(EnumType.STRING)
-    @Column (nullable = false)
-    private Role role = Role.CUSTOMER;
-
-    @NotBlank (message = "Phone number is mandatory")
-    @Column (unique = true)
+    @Column(name = "phone_number", unique = true)
     private String phoneNumber;
 
-    @Column (nullable = false)
-    private boolean  isPhoneNumberVerified = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Role role = Role.CUSTOMER;
 
-    // Account Status
-    @Column (nullable = false)
-    private boolean isActive = true;
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 
-    @Column (nullable = false)
+    // ========== STATUS FIELDS ==========
+
+    @Column(name = "is_active")
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(name = "is_email_verified")
+    @Builder.Default
     private Boolean isEmailVerified = false;
 
-    // Timestamps
+    @Column(name = "is_phone_number_verified")
+    @Builder.Default
+    private Boolean isPhoneNumberVerified = false;
+
+    @Column(name = "account_locked")
+    @Builder.Default
+    private Boolean accountLocked = false;
+
+    // ========== TIMESTAMPS ==========
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
     @CreationTimestamp
-    @Column (updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column (updatable = true)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    private LocalDateTime lastLoginAt;
+    // ========== UserDetails Implementation ==========
 
-    @Column (nullable = false)
-    private boolean accountLocked = false;
+    @Override
+    @Transient
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
 
-    // Profile Image URL
-    private String profileImageUrl;
+    @Override
+    @Transient
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    @Transient
+    public boolean isAccountNonLocked() {
+        return !accountLocked;
+    }
+
+    @Override
+    @Transient
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    @Transient
+    public boolean isEnabled() {
+        return isActive;
+    }
 }

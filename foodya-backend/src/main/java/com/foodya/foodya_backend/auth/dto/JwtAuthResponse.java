@@ -1,5 +1,7 @@
 package com.foodya.foodya_backend.auth.dto;
 
+import com.foodya.foodya_backend.user.model.Role;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,5 +63,5 @@ public class JwtAuthResponse {
         description = "User role",
         example = "CUSTOMER"
     )
-    private String role;
+    private Role role;
 }

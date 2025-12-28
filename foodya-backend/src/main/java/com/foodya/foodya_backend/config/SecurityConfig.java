@@ -34,35 +34,46 @@ public class SecurityConfig {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-            // Public endpoints
+            // ========== PUBLIC ENDPOINTS ==========
+
             .requestMatchers("/api/v1/auth/**").permitAll()
             .requestMatchers("/error").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/actuator/**").permitAll()
 
-            // Restaurant endpoints - Public read, restricted write
+            // ========== MOBILE APP ENDPOINTS ==========
+
             .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/**").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/v1/restaurants/**").hasAnyRole("MERCHANT", "ADMIN")
-            .requestMatchers(HttpMethod.PUT, "/api/v1/restaurants/**").hasAnyRole("MERCHANT", "ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/v1/restaurants/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/*/menu-items/**").permitAll()
 
-            // Menu Items - Public read, merchant/admin write
-            .requestMatchers(HttpMethod.GET, "/api/v1.restaurants/*/menu-items/**").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
-            .requestMatchers(HttpMethod.PUT, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
-            .requestMatchers(HttpMethod.PATCH, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/v1.restaurants/*/menu-items/**").hasAnyRole("MERCHANT", "ADMIN")
+            // ========== USER ENDPOINTS ==========
 
-            // User endpoints - Authenticated users
             .requestMatchers("/api/v1/users/me").authenticated()
-            .requestMatchers("/api/v1/users/**").hasAnyRole("ADMIN", "CUSTOMER", "MERCHANT", "DELIVERY")
+            .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
 
-            // Admin endpoints (sẽ tạo sau)
+            // ========== MERCHANT REGISTRATION ENDPOINTS (NEW) ==========
+
+            // Customer can submit registration
+            .requestMatchers(HttpMethod.POST, "/api/v1/merchant-registration").hasRole("CUSTOMER")
+
+            // Authenticated users can view their registrations
+            .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/me").authenticated()
+            .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/*").authenticated()
+
+            // Can cancel their own registration
+            .requestMatchers(HttpMethod.DELETE, "/api/v1/merchant-registration/*").authenticated()
+
+            // ========== MERCHANT ENDPOINTS ==========
+
+            .requestMatchers("/api/v1/merchant/**").hasAnyRole("MERCHANT", "ADMIN")
+
+            // ========== ADMIN ENDPOINTS ==========
+
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-            // All other requests require authentication
-            .anyRequest().authenticated()
-        )
+            // ========== DEFAULT ==========
+
+            .anyRequest().authenticated())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider())
