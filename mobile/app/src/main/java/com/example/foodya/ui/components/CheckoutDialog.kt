@@ -57,7 +57,7 @@ fun CheckoutDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Confirm Order",
+                        text = "Xác nhận đơn hàng",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -65,7 +65,7 @@ fun CheckoutDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = "Đóng",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -114,7 +114,7 @@ fun CheckoutDialog(
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = "Restaurant",
+                                    text = "Nhà hàng",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                 )
@@ -131,7 +131,7 @@ fun CheckoutDialog(
                     // Order Items
                     item {
                         Text(
-                            text = "Order Items (${cartItems.size})",
+                            text = "Món đã chọn (${cartItems.size})",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -145,7 +145,7 @@ fun CheckoutDialog(
                     item {
                         Column {
                             Text(
-                                text = "Delivery Address",
+                                text = "Địa chỉ giao hàng *",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -154,10 +154,17 @@ fun CheckoutDialog(
                                 value = deliveryAddress,
                                 onValueChange = onAddressChange,
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Enter delivery address") },
+                                placeholder = { Text("Nhập địa chỉ giao hàng") },
                                 singleLine = false,
                                 minLines = 2,
-                                maxLines = 3
+                                maxLines = 3,
+                                supportingText = { 
+                                    Text(
+                                        text = "Tối đa 500 ký tự • ${deliveryAddress.length}/500",
+                                        style = MaterialTheme.typography.bodySmall
+                                    ) 
+                                },
+                                isError = deliveryAddress.length > 500
                             )
                         }
                     }
@@ -166,7 +173,7 @@ fun CheckoutDialog(
                     item {
                         Column {
                             Text(
-                                text = "Order Notes (Optional)",
+                                text = "Ghi chú (Không bắt buộc)",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -175,10 +182,17 @@ fun CheckoutDialog(
                                 value = orderNotes,
                                 onValueChange = onNotesChange,
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("e.g., No onions, extra spicy...") },
+                                placeholder = { Text("VD: Không hành, thêm ớt...") },
                                 singleLine = false,
                                 minLines = 2,
-                                maxLines = 3
+                                maxLines = 3,
+                                supportingText = { 
+                                    Text(
+                                        text = "Tối đa 1000 ký tự • ${orderNotes.length}/1000",
+                                        style = MaterialTheme.typography.bodySmall
+                                    ) 
+                                },
+                                isError = orderNotes.length > 1000
                             )
                         }
                     }
@@ -191,15 +205,15 @@ fun CheckoutDialog(
                             )
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                PriceRow("Subtotal", subtotal)
-                                PriceRow("Delivery Fee", deliveryFee)
+                                PriceRow("Tạm tính", subtotal)
+                                PriceRow("Phí giao hàng", deliveryFee)
                                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "Total",
+                                        text = "Tổng cộng",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -227,7 +241,7 @@ fun CheckoutDialog(
                         modifier = Modifier.weight(1f),
                         enabled = !isLoading
                     ) {
-                        Text("Cancel")
+                        Text("Hủy")
                     }
                     Button(
                         onClick = onConfirm,
@@ -241,7 +255,7 @@ fun CheckoutDialog(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Confirm Order")
+                            Text("Xác nhận")
                         }
                     }
                 }
@@ -269,7 +283,7 @@ private fun OrderItemRow(item: CartItem) {
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "Qty: ${item.quantity}",
+                text = "SL: ${item.quantity}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )

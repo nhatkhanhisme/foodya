@@ -18,6 +18,7 @@ import com.example.foodya.domain.repository.ThemeRepository
 import com.example.foodya.ui.screen.customer.home.HomeState
 import com.example.foodya.ui.screen.customer.order.OrderHistoryState
 import com.example.foodya.ui.screen.customer.profile.ProfileState
+import com.example.foodya.util.toUserFriendlyMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,9 @@ class CustomerViewModel @Inject constructor(
     // ========== PROFILE STATE ==========
     private val _profileState = MutableStateFlow(ProfileState())
     val profileState = _profileState.asStateFlow()
+
+    private val _userId = MutableStateFlow<String?>(null)
+    val userId = _userId.asStateFlow()
 
     private val allKeywords = listOf("Pizza", "Burger", "Sushi", "Italian", "Vietnamese", "Coffee", "Tea")
 
@@ -232,19 +236,27 @@ class CustomerViewModel @Inject constructor(
     
     fun placeOrder() {
         val currentState = _homeState.value
+        val currentUserId = _userId.value
         
-        if (currentState.cartItems.isEmpty()) {
-            _homeState.update { it.copy(orderError = "Cart is empty") }
+        // Check if user ID is available
+        if (currentUserId.isNullOrBlank()) {
+            _homeState.update { 
+                it.copy(orderError = "Không thể xác định người dùng. Vui lòng đăng nhập lại.") 
+            }
             return
         }
         
-        if (currentState.deliveryAddress.isBlank()) {
-            _homeState.update { it.copy(orderError = "Please enter delivery address") }
-            return
-        }
+        // Validate order data
+        val validationError = validateOrderData(
+            cartItems = currentState.cartItems,
+            deliveryAddress = currentState.deliveryAddress,
+            orderNotes = currentState.orderNotes,
+            deliveryFee = currentState.deliveryFee,
+            selectedRestaurantId = currentState.selectedRestaurantId
+        )
         
-        if (currentState.selectedRestaurantId == null) {
-            _homeState.update { it.copy(orderError = "No restaurant selected") }
+        if (validationError != null) {
+            _homeState.update { it.copy(orderError = validationError) }
             return
         }
         
@@ -252,7 +264,8 @@ class CustomerViewModel @Inject constructor(
             _homeState.update { it.copy(isPlacingOrder = true, orderError = null) }
             
             val orderRequest = OrderRequest(
-                restaurantId = currentState.selectedRestaurantId,
+                customerId = currentUserId,
+                restaurantId = currentState.selectedRestaurantId!!,
                 items = currentState.cartItems.map { item ->
                     OrderItemRequest(
                         menuItemId = item.menuItem.id,
@@ -260,9 +273,9 @@ class CustomerViewModel @Inject constructor(
                         notes = null
                     )
                 },
-                deliveryAddress = currentState.deliveryAddress,
+                deliveryAddress = currentState.deliveryAddress.trim(),
                 deliveryFee = currentState.deliveryFee,
-                orderNotes = currentState.orderNotes.ifBlank { null }
+                orderNotes = currentState.orderNotes.trim().ifBlank { null }
             )
             
             val result = orderRepo.createOrder(orderRequest)
@@ -285,16 +298,66 @@ class CustomerViewModel @Inject constructor(
                 delay(2000)
                 _homeState.update { it.copy(showCheckoutDialog = false, orderSuccess = false) }
                 
+                // Refresh orders list
+                loadOrders()
+                
             }.onFailure { error ->
-                Log.e("CustomerViewModel", "Failed to place order: ${error.message}")
+                Log.e("CustomerViewModel", "Failed to place order: ${error.message}", error)
                 _homeState.update {
                     it.copy(
                         isPlacingOrder = false,
-                        orderError = error.message ?: "Failed to place order. Please try again."
+                        orderError = error.toUserFriendlyMessage()
                     )
                 }
             }
         }
+    }
+    
+    private fun validateOrderData(
+        cartItems: List<CartItem>,
+        deliveryAddress: String,
+        orderNotes: String,
+        deliveryFee: Double,
+        selectedRestaurantId: String?
+    ): String? {
+        // Validate cart items
+        if (cartItems.isEmpty()) {
+            return "Giỏ hàng trống. Vui lòng thêm món ăn."
+        }
+        
+        // Validate restaurant selection
+        if (selectedRestaurantId.isNullOrBlank()) {
+            return "Chưa chọn nhà hàng."
+        }
+        
+        // Validate delivery address (@NotBlank, @Size(max=500))
+        val trimmedAddress = deliveryAddress.trim()
+        if (trimmedAddress.isBlank()) {
+            return "Địa chỉ giao hàng không được để trống."
+        }
+        if (trimmedAddress.length > 500) {
+            return "Địa chỉ giao hàng không được vượt quá 500 ký tự."
+        }
+        
+        // Validate order notes (@Size(max=1000))
+        val trimmedNotes = orderNotes.trim()
+        if (trimmedNotes.length > 1000) {
+            return "Ghi chú đơn hàng không được vượt quá 1000 ký tự."
+        }
+        
+        // Validate delivery fee (@DecimalMin(value="0.0"))
+        if (deliveryFee < 0) {
+            return "Phí giao hàng không được âm."
+        }
+        
+        // Validate each cart item quantity (@Min(value=1))
+        cartItems.forEach { item ->
+            if (item.quantity < 1) {
+                return "Số lượng món '${item.menuItem.name}' phải ít nhất là 1."
+            }
+        }
+        
+        return null
     }
 
     private fun mockFoods(): List<Food> {
@@ -430,7 +493,8 @@ class CustomerViewModel @Inject constructor(
             val result = userRepo.getCurrentUserProfile()
             
             result.onSuccess { user ->
-                Log.d("CustomerViewModel", "Loaded user profile: ${user.username}")
+                Log.d("CustomerViewModel", "Loaded user profile: ${user.username}, id: ${user.id}")
+                _userId.update { user.id }
                 _profileState.update {
                     it.copy(
                         isLoading = false,

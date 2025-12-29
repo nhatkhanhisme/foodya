@@ -11,6 +11,8 @@ import com.example.foodya.domain.model.CartSummary
 import com.example.foodya.domain.model.Food
 import com.example.foodya.domain.repository.OrderRepository
 import com.example.foodya.domain.repository.RestaurantRepository
+import com.example.foodya.domain.repository.UserRepository
+import com.example.foodya.util.toUserFriendlyMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +35,7 @@ import javax.inject.Inject
 class RestaurantDetailViewModel @Inject constructor(
     private val repository: RestaurantRepository,
     private val orderRepository: OrderRepository,
+    private val userRepository: UserRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -46,6 +49,10 @@ class RestaurantDetailViewModel @Inject constructor(
 
     // Internal cart state (not exposed directly)
     private val _cartMap = MutableStateFlow<Map<String, CartItem>>(emptyMap())
+
+    // User ID state
+    private val _userId = MutableStateFlow<String?>(null)
+    val userId = _userId.asStateFlow()
 
     // Checkout state
     private val _showCheckoutDialog = MutableStateFlow(false)
@@ -68,6 +75,22 @@ class RestaurantDetailViewModel @Inject constructor(
 
     init {
         loadRestaurantDetails()
+        loadUserProfile()
+    }
+
+    /**
+     * Load user profile to get userId
+     */
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            val result = userRepository.getCurrentUserProfile()
+            result.onSuccess { user ->
+                _userId.value = user.id
+                Log.d(TAG, "User profile loaded: ${user.username}, id: ${user.id}")
+            }.onFailure { error ->
+                Log.e(TAG, "Failed to load user profile: ${error.message}")
+            }
+        }
     }
 
     /**
@@ -254,17 +277,29 @@ class RestaurantDetailViewModel @Inject constructor(
     fun placeOrder() {
         val currentUiState = _uiState.value
         if (currentUiState !is RestaurantUiState.Success) {
-            _orderError.value = "Restaurant information not loaded"
+            _orderError.value = "Thông tin nhà hàng chưa được tải"
+            return
+        }
+
+        val currentUserId = _userId.value
+        if (currentUserId.isNullOrBlank()) {
+            _orderError.value = "Không thể xác định người dùng. Vui lòng đăng nhập lại."
             return
         }
 
         if (_cartMap.value.isEmpty()) {
-            _orderError.value = "Cart is empty"
+            _orderError.value = "Giỏ hàng trống. Vui lòng thêm món ăn."
             return
         }
 
-        if (_deliveryAddress.value.isBlank()) {
-            _orderError.value = "Please enter delivery address"
+        val trimmedAddress = _deliveryAddress.value.trim()
+        if (trimmedAddress.isBlank()) {
+            _orderError.value = "Địa chỉ giao hàng không được để trống."
+            return
+        }
+        
+        if (trimmedAddress.length > 500) {
+            _orderError.value = "Địa chễ giao hàng không được vượt quá 500 ký tự."
             return
         }
 
@@ -273,6 +308,7 @@ class RestaurantDetailViewModel @Inject constructor(
             _orderError.value = null
 
             val orderRequest = OrderRequest(
+                customerId = currentUserId,
                 restaurantId = currentUiState.restaurant.id,
                 items = _cartMap.value.values.map { cartItem ->
                     OrderItemRequest(
@@ -281,9 +317,9 @@ class RestaurantDetailViewModel @Inject constructor(
                         notes = null
                     )
                 },
-                deliveryAddress = _deliveryAddress.value,
+                deliveryAddress = trimmedAddress,
                 deliveryFee = currentUiState.restaurant.deliveryFee,
-                orderNotes = _orderNotes.value.ifBlank { null }
+                orderNotes = _orderNotes.value.trim().ifBlank { null }
             )
 
             val result = orderRepository.createOrder(orderRequest)
@@ -306,9 +342,9 @@ class RestaurantDetailViewModel @Inject constructor(
                 _orderSuccess.value = false
 
             }.onFailure { error ->
-                Log.e(TAG, "Failed to place order: ${error.message}")
+                Log.e(TAG, "Failed to place order: ${error.message}", error)
                 _isPlacingOrder.value = false
-                _orderError.value = error.message ?: "Failed to place order. Please try again."
+                _orderError.value = error.toUserFriendlyMessage()
             }
         }
     }

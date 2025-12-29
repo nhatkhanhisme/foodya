@@ -81,11 +81,7 @@ fun SetupNavGraph(
             }
 
             composable(route = Screen.Order.route) {
-                OrderHistoryView(
-                    onOrderClick = { orderId ->
-                        navController.navigate("order_detail/$orderId")
-                    }
-                )
+                OrderHistoryView()
             }
 
             composable(route = Screen.CustomerProfile.route) {

@@ -1,7 +1,7 @@
 package com.example.foodya.data.model
 
 data class OrderRequest(
-    val customerId: String? = null,  // Backend will use authenticated user
+    val customerId: String,  // Backend will use authenticated user
     val restaurantId: String,
     val items: List<OrderItemRequest>,
     val deliveryAddress: String,

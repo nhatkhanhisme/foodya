@@ -16,20 +16,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.foodya.domain.model.Order
 import com.example.foodya.domain.model.enums.OrderStatus
+import com.example.foodya.ui.components.OrderDetailDialog
 import com.example.foodya.ui.components.OrderItemCard
 import com.example.foodya.ui.screen.customer.CustomerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderHistoryView(
-    viewModel: CustomerViewModel = hiltViewModel(),
-    onOrderClick: (String) -> Unit
+    viewModel: CustomerViewModel = hiltViewModel()
 ) {
     val state by viewModel.orderHistoryState.collectAsState()
     var showCancelDialog by remember { mutableStateOf(false) }
     var selectedOrderId by remember { mutableStateOf<String?>(null) }
     var cancelReason by remember { mutableStateOf("") }
+    var showOrderDetail by remember { mutableStateOf(false) }
+    var selectedOrder by remember { mutableStateOf<Order?>(null) }
 
     // Show cancel error snackbar
     LaunchedEffect(state.cancelError) {
@@ -159,7 +162,10 @@ fun OrderHistoryView(
                             items(state.orders, key = { it.id }) { order ->
                                 OrderItemCard(
                                     order = order,
-                                    onClick = { onOrderClick(order.id) },
+                                    onClick = { 
+                                        selectedOrder = order
+                                        showOrderDetail = true
+                                    },
                                     onCancel = if (order.canCancel) {
                                         {
                                             selectedOrderId = order.id
@@ -221,6 +227,17 @@ fun OrderHistoryView(
                 }) {
                     Text("Đóng")
                 }
+            }
+        )
+    }
+    
+    // Order Detail Dialog
+    if (showOrderDetail && selectedOrder != null) {
+        OrderDetailDialog(
+            order = selectedOrder!!,
+            onDismiss = {
+                showOrderDetail = false
+                selectedOrder = null
             }
         )
     }
