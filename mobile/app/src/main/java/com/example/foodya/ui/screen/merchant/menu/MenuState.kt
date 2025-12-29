@@ -1,5 +1,6 @@
 package com.example.foodya.ui.screen.merchant.menu
 
+import android.net.Uri
 import com.example.foodya.domain.model.FoodMenuItem
 import com.example.foodya.domain.model.MerchantRestaurant
 
@@ -22,6 +23,10 @@ data class MenuState(
     val formImageUrl: String = "",
     val formCategory: String = "",
     val formIsAvailable: Boolean = true,
+    
+    // Image upload state
+    val selectedImageUri: Uri? = null,
+    val isUploadingImage: Boolean = false,
     
     // Delete confirmation
     val showDeleteConfirmation: Boolean = false,

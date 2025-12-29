@@ -91,4 +91,9 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+
+    // Supabase Storage
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.storage)
+    implementation(libs.ktor.client.android)
 }

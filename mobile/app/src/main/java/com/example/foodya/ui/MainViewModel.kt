@@ -31,7 +31,7 @@ class MainViewModel @Inject constructor(
 
     private fun checkAuthState() {
         viewModelScope.launch {
-            // Sử dụng hàm combine để lắng nghe cả 2 luồng dữ liệu
+
             combine(
                 tokenManager.accessToken,
                 tokenManager.role

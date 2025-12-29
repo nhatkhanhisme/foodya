@@ -1,5 +1,6 @@
 package com.example.foodya.ui.screen.merchant.menu
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.example.foodya.data.model.MenuItemRequest
 import com.example.foodya.domain.model.FoodMenuItem
 import com.example.foodya.domain.model.MerchantRestaurant
 import com.example.foodya.domain.repository.MerchantRepository
+import com.example.foodya.domain.repository.StorageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +18,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MenuViewModel @Inject constructor(
-    private val merchantRepo: MerchantRepository
+    private val merchantRepo: MerchantRepository,
+    private val storageRepo: StorageRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MenuState())
@@ -134,7 +137,9 @@ class MenuViewModel @Inject constructor(
                 formPrice = "",
                 formImageUrl = "",
                 formCategory = "",
-                formIsAvailable = true
+                formIsAvailable = true,
+                selectedImageUri = null,
+                isUploadingImage = false
             )
         }
     }
@@ -163,6 +168,14 @@ class MenuViewModel @Inject constructor(
         _state.update { it.copy(formIsAvailable = value) }
     }
 
+    fun onImageSelected(uri: Uri) {
+        _state.update { it.copy(selectedImageUri = uri) }
+    }
+
+    fun onImageCleared() {
+        _state.update { it.copy(selectedImageUri = null, formImageUrl = "") }
+    }
+
     fun onSaveItem() {
         val currentState = _state.value
         val restaurantId = currentState.selectedRestaurant?.id ?: return
@@ -180,13 +193,41 @@ class MenuViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isProcessing = true, error = null) }
 
+            // Step 1: Upload image if a new one is selected
+            var imageUrl = currentState.formImageUrl
+            if (currentState.selectedImageUri != null) {
+                _state.update { it.copy(isUploadingImage = true) }
+                
+                storageRepo.uploadImage(
+                    imageUri = currentState.selectedImageUri,
+                    bucketName = "images"
+                ).collect { result ->
+                    result.onSuccess { uploadedUrl ->
+                        Log.d("MenuViewModel", "Image uploaded: $uploadedUrl")
+                        imageUrl = uploadedUrl
+                        _state.update { it.copy(isUploadingImage = false) }
+                    }.onFailure { error ->
+                        Log.e("MenuViewModel", "Image upload failed: ${error.message}")
+                        _state.update {
+                            it.copy(
+                                isProcessing = false,
+                                isUploadingImage = false,
+                                error = "Tải ảnh thất bại: ${error.message}"
+                            )
+                        }
+                        return@collect
+                    }
+                }
+            }
+
+            // Step 2: Submit form to backend with image URL
             val price = currentState.formPrice.toDouble()
             
             val request = MenuItemRequest(
                 name = currentState.formName,
                 description = currentState.formDescription,
                 price = price,
-                imageUrl = currentState.formImageUrl,
+                imageUrl = imageUrl,
                 category = currentState.formCategory,
                 isAvailable = currentState.formIsAvailable
             )
@@ -218,7 +259,9 @@ class MenuViewModel @Inject constructor(
                         formPrice = "",
                         formImageUrl = "",
                         formCategory = "",
-                        formIsAvailable = true
+                        formIsAvailable = true,
+                        selectedImageUri = null,
+                        isUploadingImage = false
                     )
                 }
             }.onFailure { error ->

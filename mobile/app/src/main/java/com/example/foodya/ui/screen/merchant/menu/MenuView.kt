@@ -3,22 +3,19 @@ package com.example.foodya.ui.screen.merchant.menu
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.example.foodya.domain.model.FoodMenuItem
-import java.text.NumberFormat
-import java.util.*
+import com.example.foodya.domain.model.MerchantRestaurant
+import com.example.foodya.ui.screen.merchant.menu.components.MenuItemCard
+import com.example.foodya.ui.screen.merchant.menu.components.MenuItemDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,12 +35,16 @@ fun MenuView(
             category = state.formCategory,
             isAvailable = state.formIsAvailable,
             isProcessing = state.isProcessing,
+            selectedImageUri = state.selectedImageUri,
+            isUploadingImage = state.isUploadingImage,
             onNameChange = viewModel::onFormNameChange,
             onDescriptionChange = viewModel::onFormDescriptionChange,
             onPriceChange = viewModel::onFormPriceChange,
             onImageUrlChange = viewModel::onFormImageUrlChange,
             onCategoryChange = viewModel::onFormCategoryChange,
             onIsAvailableChange = viewModel::onFormIsAvailableChange,
+            onImageSelected = viewModel::onImageSelected,
+            onImageCleared = viewModel::onImageCleared,
             onSave = viewModel::onSaveItem,
             onDismiss = viewModel::onDismissDialog
         )
@@ -185,7 +186,7 @@ private fun EmptyRestaurantState() {
 @Composable
 private fun MenuContent(
     state: MenuState,
-    onRestaurantSelected: (com.example.foodya.domain.model.MerchantRestaurant) -> Unit,
+    onRestaurantSelected: (MerchantRestaurant) -> Unit,
     onEditItem: (FoodMenuItem) -> Unit,
     onDeleteItem: (FoodMenuItem) -> Unit
 ) {
@@ -307,247 +308,4 @@ private fun MenuContent(
             }
         }
     }
-}
-
-@Composable
-private fun MenuItemCard(
-    item: FoodMenuItem,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Image
-            AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            // Content
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (!item.isAvailable) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
-                        ) {
-                            Text(
-                                text = "Hết hàng",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    maxLines = 2
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = "Danh mục: ${item.category}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = formatCurrency(item.price),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        IconButton(
-                            onClick = onEdit,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Chỉnh sửa",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Xóa",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MenuItemDialog(
-    isCreating: Boolean,
-    name: String,
-    description: String,
-    price: String,
-    imageUrl: String,
-    category: String,
-    isAvailable: Boolean,
-    isProcessing: Boolean,
-    onNameChange: (String) -> Unit,
-    onDescriptionChange: (String) -> Unit,
-    onPriceChange: (String) -> Unit,
-    onImageUrlChange: (String) -> Unit,
-    onCategoryChange: (String) -> Unit,
-    onIsAvailableChange: (Boolean) -> Unit,
-    onSave: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (isCreating) "Thêm món mới" else "Chỉnh sửa món") },
-        text = {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = onNameChange,
-                        label = { Text("Tên món *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-                
-                item {
-                    OutlinedTextField(
-                        value = description,
-                        onValueChange = onDescriptionChange,
-                        label = { Text("Mô tả") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2,
-                        maxLines = 3
-                    )
-                }
-                
-                item {
-                    OutlinedTextField(
-                        value = price,
-                        onValueChange = onPriceChange,
-                        label = { Text("Giá (VNĐ) *") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-                
-                item {
-                    OutlinedTextField(
-                        value = category,
-                        onValueChange = onCategoryChange,
-                        label = { Text("Danh mục") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-                
-                item {
-                    OutlinedTextField(
-                        value = imageUrl,
-                        onValueChange = onImageUrlChange,
-                        label = { Text("URL hình ảnh") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
-                
-                if (!isCreating) {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Còn hàng")
-                            Switch(
-                                checked = isAvailable,
-                                onCheckedChange = onIsAvailableChange
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onSave,
-                enabled = !isProcessing
-            ) {
-                if (isProcessing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Lưu")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isProcessing
-            ) {
-                Text("Hủy")
-            }
-        }
-    )
-}
-
-private fun formatCurrency(amount: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-    return formatter.format(amount)
 }
