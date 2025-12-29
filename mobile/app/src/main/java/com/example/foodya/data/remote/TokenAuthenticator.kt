@@ -24,6 +24,15 @@ class TokenAuthenticator @Inject constructor(
             return null
         }
 
+        // Không xử lý refresh token cho các request auth (login/register)
+        val requestPath = response.request.url.encodedPath
+        if (requestPath.contains("/auth/login") || 
+            requestPath.contains("/auth/register") ||
+            requestPath.contains("/auth/refresh")) {
+            Log.d("TokenRefresh", "Bỏ qua refresh cho endpoint auth: $requestPath")
+            return null
+        }
+
         Log.d("TokenRefresh", "Phát hiện lỗi ${response.code}. Đang thực hiện Refresh Token...")
         
         if (responseCount(response) >= 2) {
