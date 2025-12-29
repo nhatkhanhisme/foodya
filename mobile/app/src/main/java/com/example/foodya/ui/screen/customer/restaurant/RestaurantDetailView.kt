@@ -408,7 +408,7 @@ private fun RestaurantInfoCard(
             }
 
             // Description
-            if (restaurant.description.isNotBlank()) {
+            if (restaurant.description?.isNotBlank() == true) {
                 Text(
                     text = restaurant.description,
                     style = MaterialTheme.typography.bodySmall,

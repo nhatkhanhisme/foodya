@@ -13,5 +13,22 @@ data class DashboardState(
     val isUpdatingOrderStatus: Boolean = false,
     val error: String? = null,
     val cancelReason: String = "",
-    val showCancelReasonDialog: Boolean = false
+    val showCancelReasonDialog: Boolean = false,
+    
+    // Restaurant Edit Dialog State
+    val showEditRestaurantDialog: Boolean = false,
+    val isUpdatingRestaurant: Boolean = false,
+    val editRestaurantError: String? = null,
+    val editName: String = "",
+    val editAddress: String = "",
+    val editPhoneNumber: String = "",
+    val editEmail: String = "",
+    val editDescription: String = "",
+    val editCuisine: String = "",
+    val editOpeningTime: String = "",
+    val editClosingTime: String = "",
+    val editOpeningHours: String = "",
+    val editMinimumOrder: String = "",
+    val editMaxDeliveryDistance: String = "",
+    val isTogglingStatus: Boolean = false
 )

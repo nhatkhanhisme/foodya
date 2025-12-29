@@ -24,18 +24,7 @@ class RestaurantRepositoryImpl @Inject constructor(
             val response = api.getRestaurants(keyword, cuisine, minRating, sortBy, page, size)
             Log.d("RestaurantRepositoryImpl", "API Response: ${response.content.size} restaurants, page ${response.number}")
             
-            val restaurants = response.content.map { dto ->
-                Restaurant(
-                    id = dto.id,
-                    name = dto.name,
-                    address = dto.address,
-                    description = dto.description,
-                    rating = dto.rating,
-                    deliveryFee = dto.deliveryFee,
-                    estimatedDeliveryTime = dto.estimatedDeliveryTime,
-                    imageUrl = dto.imageUrl
-                )
-            }
+            val restaurants = response.content.map { it.toDomain() }
             
             val hasMore = !response.last
             Result.success(Pair(restaurants, hasMore))
@@ -48,17 +37,7 @@ class RestaurantRepositoryImpl @Inject constructor(
     override suspend fun getRestaurantById(restaurantId: String): Result<Restaurant> {
         return try {
             val dto = api.getRestaurantById(restaurantId)
-            val restaurant = Restaurant(
-                id = dto.id,
-                name = dto.name,
-                address = dto.address,
-                description = dto.description,
-                rating = dto.rating,
-                deliveryFee = dto.deliveryFee,
-                estimatedDeliveryTime = dto.estimatedDeliveryTime,
-                imageUrl = dto.imageUrl
-            )
-            Result.success(restaurant)
+            Result.success(dto.toDomain())
         } catch (e: Exception) {
             Log.e("RestaurantRepositoryImpl", "Error fetching restaurant by ID", e)
             Result.failure(Exception(e.toUserFriendlyMessage()))
@@ -68,18 +47,7 @@ class RestaurantRepositoryImpl @Inject constructor(
     override suspend fun getPopularRestaurants(limit: Int): Result<List<Restaurant>> {
         return try {
             val response = api.getPopularRestaurants(limit)
-            val restaurants = response.map { dto ->
-                Restaurant(
-                    id = dto.id,
-                    name = dto.name,
-                    address = dto.address,
-                    description = dto.description,
-                    rating = dto.rating,
-                    deliveryFee = dto.deliveryFee,
-                    estimatedDeliveryTime = dto.estimatedDeliveryTime,
-                    imageUrl = dto.imageUrl
-                )
-            }
+            val restaurants = response.map { it.toDomain() }
             Result.success(restaurants)
         } catch (e: Exception) {
             Log.e("RestaurantRepositoryImpl", "Error fetching popular restaurants", e)
@@ -90,20 +58,7 @@ class RestaurantRepositoryImpl @Inject constructor(
     override suspend fun getMenuByRestaurantId(restaurantId: String): Result<List<Food>> {
         return try {
             val response = api.getMenuByRestaurantId(restaurantId)
-            val menuItems = response.map { dto ->
-                Food(
-                    id = dto.id,
-                    restaurantId = dto.restaurantId,
-                    restaurantName = dto.restaurantName,
-                    name = dto.name,
-                    description = dto.description,
-                    price = dto.price,
-                    imageUrl = dto.imageUrl,
-                    category = dto.category,
-                    isAvailable = dto.isAvailable,
-                    isActive = dto.isActive
-                )
-            }
+            val menuItems = response.map { it.toDomain() }
             Result.success(menuItems)
         } catch (e: Exception) {
             Log.e("RestaurantRepositoryImpl", "Error fetching menu items", e)

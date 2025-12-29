@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.foodya.domain.model.OrderWithDetails
 import com.example.foodya.domain.model.enums.OrderStatus
+import com.example.foodya.ui.components.RestaurantEditDialog
 import com.example.foodya.ui.screen.merchant.MerchantViewModel
 import com.example.foodya.util.toCurrency
 import java.text.NumberFormat
@@ -33,6 +34,39 @@ fun DashboardView(
     onNavigateToRegisterRestaurant: () -> Unit
 ) {
     val state by viewModel.dashboardState.collectAsState()
+
+    // Restaurant edit dialog
+    if (state.showEditRestaurantDialog && state.selectedRestaurant != null) {
+        RestaurantEditDialog(
+            restaurantName = state.selectedRestaurant!!.name,
+            name = state.editName,
+            address = state.editAddress,
+            phoneNumber = state.editPhoneNumber,
+            email = state.editEmail,
+            description = state.editDescription,
+            cuisine = state.editCuisine,
+            openingTime = state.editOpeningTime,
+            closingTime = state.editClosingTime,
+            openingHours = state.editOpeningHours,
+            minimumOrder = state.editMinimumOrder,
+            maxDeliveryDistance = state.editMaxDeliveryDistance,
+            isUpdating = state.isUpdatingRestaurant,
+            error = state.editRestaurantError,
+            onNameChange = viewModel::onEditNameChange,
+            onAddressChange = viewModel::onEditAddressChange,
+            onPhoneNumberChange = viewModel::onEditPhoneNumberChange,
+            onEmailChange = viewModel::onEditEmailChange,
+            onDescriptionChange = viewModel::onEditDescriptionChange,
+            onCuisineChange = viewModel::onEditCuisineChange,
+            onOpeningTimeChange = viewModel::onEditOpeningTimeChange,
+            onClosingTimeChange = viewModel::onEditClosingTimeChange,
+            onOpeningHoursChange = viewModel::onEditOpeningHoursChange,
+            onMinimumOrderChange = viewModel::onEditMinimumOrderChange,
+            onMaxDeliveryDistanceChange = viewModel::onEditMaxDeliveryDistanceChange,
+            onSave = viewModel::saveRestaurantChanges,
+            onDismiss = viewModel::hideEditRestaurantDialog
+        )
+    }
 
     // Order status dialog
     if (state.selectedOrder != null) {
@@ -110,7 +144,9 @@ fun DashboardView(
                     DashboardContent(
                         state = state,
                         onRestaurantSelected = viewModel::onRestaurantSelected,
-                        onOrderClick = viewModel::onOrderClick
+                        onOrderClick = viewModel::onOrderClick,
+                        onEditRestaurant = viewModel::showEditRestaurantDialog,
+                        onToggleStatus = viewModel::toggleRestaurantStatus
                     )
                 }
             }
@@ -178,7 +214,9 @@ private fun EmptyRestaurantState(onNavigateToRegister: () -> Unit) {
 private fun DashboardContent(
     state: DashboardState,
     onRestaurantSelected: (com.example.foodya.domain.model.MerchantRestaurant) -> Unit,
-    onOrderClick: (OrderWithDetails) -> Unit
+    onOrderClick: (OrderWithDetails) -> Unit,
+    onEditRestaurant: () -> Unit,
+    onToggleStatus: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -235,6 +273,64 @@ private fun DashboardContent(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Restaurant action buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onEditRestaurant,
+                            modifier = Modifier.weight(1f),
+                            enabled = !state.isTogglingStatus
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Chỉnh sửa")
+                        }
+                        
+                        Button(
+                            onClick = onToggleStatus,
+                            modifier = Modifier.weight(1f),
+                            enabled = !state.isTogglingStatus,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (state.selectedRestaurant?.isOpen == true) 
+                                    MaterialTheme.colorScheme.error 
+                                else 
+                                    MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            if (state.isTogglingStatus) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = if (state.selectedRestaurant?.isOpen == true) 
+                                        Icons.Default.Close 
+                                    else 
+                                        Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                if (state.selectedRestaurant?.isOpen == true) 
+                                    "Đóng cửa" 
+                                else 
+                                    "Mở cửa"
+                            )
+                        }
                     }
                 }
             }

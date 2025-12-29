@@ -174,18 +174,7 @@ class MerchantRepositoryImpl @Inject constructor(
 
 // ==================== EXTENSION FUNCTIONS ====================
 
-private fun MerchantRestaurantResponse.toDomain() = MerchantRestaurant(
-    id = id,
-    name = name,
-    address = address,
-    description = description,
-    rating = rating,
-    deliveryFee = deliveryFee,
-    estimatedDeliveryTime = estimatedDeliveryTime,
-    imageUrl = imageUrl,
-    ownerId = ownerId,
-    isActive = isActive
-)
+// MerchantRestaurantResponse now has toDomain() method in the data class itself
 
 private fun OrderResponse.toDomain() = OrderWithDetails(
     id = id,
@@ -203,14 +192,4 @@ private fun OrderResponse.toDomain() = OrderWithDetails(
     cancelReason = cancelReason
 )
 
-private fun FoodMenuItemResponse.toDomain() = FoodMenuItem(
-    id = id,
-    restaurantId = restaurantId,
-    name = name,
-    description = description,
-    price = price,
-    imageUrl = imageUrl,
-    category = category,
-    isAvailable = isAvailable,
-    isActive = isActive
-)
+// FoodMenuItemResponse now has toDomain() method in the data class itself

@@ -59,6 +59,185 @@ class MerchantViewModel @Inject constructor(
         loadMenuItems(restaurant.id)
         loadOrders(restaurant.id)
     }
+    
+    // ========== RESTAURANT EDIT FUNCTIONS ==========
+    
+    fun showEditRestaurantDialog() {
+        val restaurant = _dashboardState.value.selectedRestaurant ?: return
+        _dashboardState.update {
+            it.copy(
+                showEditRestaurantDialog = true,
+                editRestaurantError = null,
+                editName = restaurant.name,
+                editAddress = restaurant.address,
+                editPhoneNumber = restaurant.phoneNumber,
+                editEmail = restaurant.email ?: "",
+                editDescription = restaurant.description ?: "",
+                editCuisine = restaurant.cuisine,
+                editOpeningTime = restaurant.openingTime ?: "",
+                editClosingTime = restaurant.closingTime ?: "",
+                editOpeningHours = restaurant.openingHours ?: "",
+                editMinimumOrder = restaurant.minimumOrder?.toString() ?: "",
+                editMaxDeliveryDistance = restaurant.maxDeliveryDistance?.toString() ?: ""
+            )
+        }
+    }
+    
+    fun hideEditRestaurantDialog() {
+        _dashboardState.update { 
+            it.copy(
+                showEditRestaurantDialog = false,
+                editRestaurantError = null
+            ) 
+        }
+    }
+    
+    fun onEditNameChange(value: String) {
+        _dashboardState.update { it.copy(editName = value) }
+    }
+    
+    fun onEditAddressChange(value: String) {
+        _dashboardState.update { it.copy(editAddress = value) }
+    }
+    
+    fun onEditPhoneNumberChange(value: String) {
+        _dashboardState.update { it.copy(editPhoneNumber = value) }
+    }
+    
+    fun onEditEmailChange(value: String) {
+        _dashboardState.update { it.copy(editEmail = value) }
+    }
+    
+    fun onEditDescriptionChange(value: String) {
+        _dashboardState.update { it.copy(editDescription = value) }
+    }
+    
+    fun onEditCuisineChange(value: String) {
+        _dashboardState.update { it.copy(editCuisine = value) }
+    }
+    
+    fun onEditOpeningTimeChange(value: String) {
+        _dashboardState.update { it.copy(editOpeningTime = value) }
+    }
+    
+    fun onEditClosingTimeChange(value: String) {
+        _dashboardState.update { it.copy(editClosingTime = value) }
+    }
+    
+    fun onEditOpeningHoursChange(value: String) {
+        _dashboardState.update { it.copy(editOpeningHours = value) }
+    }
+    
+    fun onEditMinimumOrderChange(value: String) {
+        _dashboardState.update { it.copy(editMinimumOrder = value) }
+    }
+    
+    fun onEditMaxDeliveryDistanceChange(value: String) {
+        _dashboardState.update { it.copy(editMaxDeliveryDistance = value) }
+    }
+    
+    fun saveRestaurantChanges() {
+        val currentState = _dashboardState.value
+        val restaurant = currentState.selectedRestaurant ?: return
+        
+        // Validation
+        if (currentState.editName.isBlank()) {
+            _dashboardState.update { it.copy(editRestaurantError = "Restaurant name is required") }
+            return
+        }
+        if (currentState.editAddress.isBlank()) {
+            _dashboardState.update { it.copy(editRestaurantError = "Address is required") }
+            return
+        }
+        if (currentState.editPhoneNumber.isBlank()) {
+            _dashboardState.update { it.copy(editRestaurantError = "Phone number is required") }
+            return
+        }
+        if (currentState.editCuisine.isBlank()) {
+            _dashboardState.update { it.copy(editRestaurantError = "Cuisine type is required") }
+            return
+        }
+        
+        viewModelScope.launch {
+            _dashboardState.update { it.copy(isUpdatingRestaurant = true, editRestaurantError = null) }
+            
+            val request = com.example.foodya.data.model.RestaurantRequest(
+                name = currentState.editName.trim(),
+                address = currentState.editAddress.trim(),
+                phoneNumber = currentState.editPhoneNumber.trim(),
+                email = currentState.editEmail.trim().ifBlank { null },
+                description = currentState.editDescription.trim().ifBlank { null },
+                cuisine = currentState.editCuisine.trim(),
+                openingTime = currentState.editOpeningTime.trim().ifBlank { null },
+                closingTime = currentState.editClosingTime.trim().ifBlank { null },
+                openingHours = currentState.editOpeningHours.trim().ifBlank { null },
+                minimumOrder = currentState.editMinimumOrder.trim().toDoubleOrNull(),
+                maxDeliveryDistance = currentState.editMaxDeliveryDistance.trim().toDoubleOrNull(),
+                isOpen = restaurant.isOpen
+            )
+            
+            val result = merchantRepo.updateRestaurant(restaurant.id, request)
+            
+            result.onSuccess { updatedRestaurant ->
+                Log.d("MerchantViewModel", "Restaurant updated successfully: ${updatedRestaurant.name}")
+                
+                // Update the restaurants list and selected restaurant
+                _dashboardState.update { state ->
+                    state.copy(
+                        isUpdatingRestaurant = false,
+                        showEditRestaurantDialog = false,
+                        selectedRestaurant = updatedRestaurant,
+                        myRestaurants = state.myRestaurants.map { 
+                            if (it.id == updatedRestaurant.id) updatedRestaurant else it 
+                        },
+                        editRestaurantError = null
+                    )
+                }
+                
+                // Update menu state as well
+                _menuState.update { it.copy(selectedRestaurant = updatedRestaurant) }
+                
+            }.onFailure { error ->
+                Log.e("MerchantViewModel", "Failed to update restaurant: ${error.message}")
+                _dashboardState.update {
+                    it.copy(
+                        isUpdatingRestaurant = false,
+                        editRestaurantError = error.message ?: "Failed to update restaurant"
+                    )
+                }
+            }
+        }
+    }
+    
+    fun toggleRestaurantStatus() {
+        val restaurant = _dashboardState.value.selectedRestaurant ?: return
+        
+        viewModelScope.launch {
+            _dashboardState.update { it.copy(isTogglingStatus = true) }
+            
+            val result = merchantRepo.toggleRestaurantStatus(restaurant.id)
+            
+            result.onSuccess { updatedRestaurant ->
+                Log.d("MerchantViewModel", "Restaurant status toggled: ${updatedRestaurant.isOpen}")
+                
+                _dashboardState.update { state ->
+                    state.copy(
+                        isTogglingStatus = false,
+                        selectedRestaurant = updatedRestaurant,
+                        myRestaurants = state.myRestaurants.map { 
+                            if (it.id == updatedRestaurant.id) updatedRestaurant else it 
+                        }
+                    )
+                }
+                
+                _menuState.update { it.copy(selectedRestaurant = updatedRestaurant) }
+                
+            }.onFailure { error ->
+                Log.e("MerchantViewModel", "Failed to toggle restaurant status: ${error.message}")
+                _dashboardState.update { it.copy(isTogglingStatus = false) }
+            }
+        }
+    }
 
     // ========== DASHBOARD SCREEN FUNCTIONS ==========
 
