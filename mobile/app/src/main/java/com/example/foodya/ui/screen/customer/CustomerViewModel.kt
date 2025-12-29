@@ -29,6 +29,7 @@ import javax.inject.Inject
 class CustomerViewModel @Inject constructor(
     private val restaurantRepo: RestaurantRepository,
     private val orderRepo: OrderRepository,
+    private val userRepo: com.example.foodya.domain.repository.UserRepository,
     private val tokenManager: TokenManager,
     private val themeRepository: ThemeRepository
 ) : ViewModel() {
@@ -379,27 +380,24 @@ class CustomerViewModel @Inject constructor(
         viewModelScope.launch {
             _profileState.update { it.copy(isLoading = true) }
 
-            delay(1000)
-
-            val mockUser = User(
-                id = "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                username = "nguyenvana_foodya",
-                email = "nguyenvana@email.com",
-                fullName = "Nguyễn Văn A",
-                phoneNumber = "+84 909 123 456",
-                role = "CUSTOMER",
-                isActive = true,
-                isEmailVerified = true,
-                lastLoginAt = "2025-12-25T07:49:56.843Z",
-                createdAt = "2025-01-01T07:49:56.843Z",
-                updatedAt = "2025-12-25T07:49:56.843Z"
-            )
-
-            _profileState.update {
-                it.copy(
-                    isLoading = false,
-                    user = mockUser
-                )
+            val result = userRepo.getCurrentUserProfile()
+            
+            result.onSuccess { user ->
+                Log.d("CustomerViewModel", "Loaded user profile: ${user.username}")
+                _profileState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = user
+                    )
+                }
+            }.onFailure { error ->
+                Log.e("CustomerViewModel", "Failed to load user profile: ${error.message}")
+                _profileState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = null
+                    )
+                }
             }
         }
     }

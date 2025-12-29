@@ -33,69 +33,81 @@ fun MenuItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onEdit() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp)
+                .height(160.dp)
         ) {
             // Background image with fade effect
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(180.dp)
-                    .align(Alignment.CenterStart)
+                    .fillMaxSize()
             ) {
                 AsyncImage(
                     model = item.imageUrl,
                     contentDescription = item.name,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)),
+                        .fillMaxHeight()
+                        .width(200.dp)
+                        .align(Alignment.CenterStart)
+                        .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)),
                     contentScale = ContentScale.Crop
                 )
 
-                // Gradient overlay for fade effect from right to left
+                // Subtle gradient overlay for smooth fade from left to right
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
+                        .width(280.dp)
+                        .align(Alignment.CenterStart)
                         .background(
                             brush = Brush.linearGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                                    Color.Transparent,
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                                     MaterialTheme.colorScheme.surface
                                 ),
                                 start = Offset(0f, 0f),
-                                end = Offset(600f, 0f)
+                                end = Offset(700f, 0f)
                             )
                         )
                 )
             }
 
-            // Content overlay
+            // Content section
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left content
+                // Spacer for image
+                Spacer(modifier = Modifier.width(140.dp))
+
+                // Main content
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
-                        .padding(start = 180.dp),
+                        .fillMaxHeight(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Top section
-                    Column {
+                    // Top section - Name and status
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 text = item.name,
@@ -103,77 +115,80 @@ fun MenuItemCard(
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                                modifier = Modifier.weight(1f)
                             )
-
-                            if (!item.isAvailable) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.errorContainer
-                                ) {
-                                    Text(
-                                        text = "Hết hàng",
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
+                            
+                            // Delete button (more subtle)
+                            IconButton(
+                                onClick = onDelete,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .offset(x = 8.dp, y = (-8).dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Xóa",
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = item.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // Bottom section
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
+                        // Category badge
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
                         ) {
                             Text(
                                 text = item.category,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontWeight = FontWeight.Medium
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
 
+                        // Description
                         Text(
-                            text = item.price.toCurrency(),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = item.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight
                         )
                     }
-                }
-            }
 
-            // Delete button in top-right corner
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Xóa",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
+                    // Bottom section - Price and availability
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = item.price.toCurrency(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        if (!item.isAvailable) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.error,
+                                shadowElevation = 2.dp
+                            ) {
+                                Text(
+                                    text = "Hết hàng",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onError,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

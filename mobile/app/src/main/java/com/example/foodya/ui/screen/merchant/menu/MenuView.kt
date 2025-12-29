@@ -91,8 +91,7 @@ fun MenuView(
             TopAppBar(
                 title = { Text("Quản lý thực đơn", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         },

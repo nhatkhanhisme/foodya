@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.foodya.domain.model.OrderWithDetails
 import com.example.foodya.domain.model.enums.OrderStatus
@@ -47,12 +48,45 @@ fun DashboardView(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Dashboard Merchant", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+            CenterAlignedTopAppBar(
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "FOODYA",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.5.dp.value.sp
+                        )
+                        Text(
+                            text = "Quản lý nhà hàng",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                actions = {
+                    IconButton(onClick = { /* TODO: Notifications */ }) {
+                        BadgedBox(
+                            badge = {
+                                if (state.pendingOrdersCount > 0) {
+                                    Badge {
+                                        Text("${state.pendingOrdersCount}")
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Thông báo",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
             )
         }
     ) { paddingValues ->

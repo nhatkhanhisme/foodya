@@ -6,12 +6,14 @@ import com.example.foodya.data.repository.OrderRepositoryImpl
 import com.example.foodya.data.repository.RestaurantRepositoryImpl
 import com.example.foodya.data.repository.StorageRepositoryImpl
 import com.example.foodya.data.repository.ThemeRepositoryImpl
+import com.example.foodya.data.repository.UserRepositoryImpl
 import com.example.foodya.domain.repository.AuthRepository
 import com.example.foodya.domain.repository.MerchantRepository
 import com.example.foodya.domain.repository.OrderRepository
 import com.example.foodya.domain.repository.RestaurantRepository
 import com.example.foodya.domain.repository.StorageRepository
 import com.example.foodya.domain.repository.ThemeRepository
+import com.example.foodya.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -56,4 +58,10 @@ abstract class RepositoryModule {
     abstract fun bindOrderRepository(
         impl: OrderRepositoryImpl
     ): OrderRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(
+        impl: UserRepositoryImpl
+    ): UserRepository
 }

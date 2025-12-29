@@ -29,6 +29,7 @@ import javax.inject.Inject
 class MerchantViewModel @Inject constructor(
     private val merchantRepo: MerchantRepository,
     private val storageRepo: StorageRepository,
+    private val userRepo: com.example.foodya.domain.repository.UserRepository,
     private val tokenManager: TokenManager,
     private val themeRepository: ThemeRepository
 ) : ViewModel() {
@@ -479,27 +480,24 @@ class MerchantViewModel @Inject constructor(
         viewModelScope.launch {
             _profileState.update { it.copy(isLoading = true) }
 
-            delay(1000)
-
-            val mockUser = User(
-                id = "merchant-001",
-                username = "merchant_foodya",
-                email = "merchant@foodya.com",
-                fullName = "Quản lý nhà hàng",
-                phoneNumber = "+84 901 234 567",
-                role = "MERCHANT",
-                isActive = true,
-                isEmailVerified = true,
-                lastLoginAt = "2025-12-28T07:49:56.843Z",
-                createdAt = "2025-01-01T07:49:56.843Z",
-                updatedAt = "2025-12-28T07:49:56.843Z"
-            )
-
-            _profileState.update {
-                it.copy(
-                    isLoading = false,
-                    user = mockUser
-                )
+            val result = userRepo.getCurrentUserProfile()
+            
+            result.onSuccess { user ->
+                Log.d("MerchantViewModel", "Loaded user profile: ${user.username}")
+                _profileState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = user
+                    )
+                }
+            }.onFailure { error ->
+                Log.e("MerchantViewModel", "Failed to load user profile: ${error.message}")
+                _profileState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = null
+                    )
+                }
             }
         }
     }
