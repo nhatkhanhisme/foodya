@@ -64,11 +64,21 @@ class AuthViewModel @Inject constructor(
 
     // --- LOGIN ---
     private fun login() {
+        val currentState = _state.value
+        
+        // Validation
+        if (currentState.username.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập tên đăng nhập") }
+            return
+        }
+        if (currentState.password.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập mật khẩu") }
+            return
+        }
+        
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            // Lấy value hiện tại để gọi API
-            val currentState = _state.value
             val result = repository.login(currentState.username, currentState.password)
 
             result.onSuccess { response ->
@@ -85,10 +95,11 @@ class AuthViewModel @Inject constructor(
                 // Navigation will be handled by MainViewModel based on role
                 _state.update { it.copy(isLoading = false, isLoggedIn = true) }
                 
-                Log.d("AuthViewModel", "Login successful - Role: ${response.role}, UserId: ${response.userId}")
+                Log.d("AuthViewModel", "Đăng nhập thành công - Role: ${response.role}, UserId: ${response.userId}")
             }.onFailure { e ->
+                Log.e("AuthViewModel", "Đăng nhập thất bại", e)
                 _state.update {
-                    it.copy(isLoading = false, error = e.message ?: "Login failed")
+                    it.copy(isLoading = false, error = e.message ?: "Đăng nhập thất bại. Vui lòng thử lại.")
                 }
             }
         }
@@ -98,8 +109,33 @@ class AuthViewModel @Inject constructor(
     private fun register() {
         val currentState = _state.value
 
-        if (currentState.username.isBlank() || currentState.password.isBlank() || currentState.email.isBlank()) {
-            _state.update { it.copy(error = "Please fill in all fields") }
+        // Validation với messages tiếng Việt
+        if (currentState.username.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập tên đăng nhập") }
+            return
+        }
+        if (currentState.password.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập mật khẩu") }
+            return
+        }
+        if (currentState.password.length < 8) {
+            _state.update { it.copy(error = "Mật khẩu phải có ít nhất 8 ký tự") }
+            return
+        }
+        if (currentState.email.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập email") }
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(currentState.email).matches()) {
+            _state.update { it.copy(error = "Email không hợp lệ") }
+            return
+        }
+        if (currentState.fullName.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập họ và tên") }
+            return
+        }
+        if (currentState.phoneNumber.isBlank()) {
+            _state.update { it.copy(error = "Vui lòng nhập số điện thoại") }
             return
         }
 
@@ -129,10 +165,11 @@ class AuthViewModel @Inject constructor(
                 // Automatically log in after registration
                 _state.update { it.copy(isLoading = false, isLoggedIn = true) }
                 
-                Log.d("AuthViewModel", "Registration successful - Role: ${response.role}, UserId: ${response.userId}")
+                Log.d("AuthViewModel", "Đăng ký thành công - Role: ${response.role}, UserId: ${response.userId}")
             }.onFailure { e ->
+                Log.e("AuthViewModel", "Đăng ký thất bại", e)
                 _state.update {
-                    it.copy(isLoading = false, error = e.message ?: "Register failed")
+                    it.copy(isLoading = false, error = e.message ?: "Đăng ký thất bại. Vui lòng thử lại.")
                 }
             }
         }

@@ -13,8 +13,10 @@ class AuthInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
+        // Không thêm token cho các endpoint auth
         if (originalRequest.url.encodedPath.contains("/auth/refresh") ||
-            originalRequest.url.encodedPath.contains("/auth/login")) {
+            originalRequest.url.encodedPath.contains("/auth/login") ||
+            originalRequest.url.encodedPath.contains("/auth/register")) {
             return chain.proceed(originalRequest)
         }
 

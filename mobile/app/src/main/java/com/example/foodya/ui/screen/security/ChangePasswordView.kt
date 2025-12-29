@@ -118,10 +118,7 @@ fun ChangePasswordView(
                 onValueChange = viewModel::onNewPasswordChange,
                 label = { Text("Mật khẩu mới *") },
                 modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (state.isPasswordVisible) 
-                    VisualTransformation.None 
-                else 
-                    PasswordVisualTransformation(),
+                visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 supportingText = {
                     Text("Tối thiểu 6 ký tự")
@@ -136,10 +133,7 @@ fun ChangePasswordView(
                 onValueChange = viewModel::onConfirmPasswordChange,
                 label = { Text("Xác nhận mật khẩu mới *") },
                 modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (state.isPasswordVisible) 
-                    VisualTransformation.None 
-                else 
-                    PasswordVisualTransformation(),
+                visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 enabled = !state.isLoading,

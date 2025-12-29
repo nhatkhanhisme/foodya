@@ -103,8 +103,9 @@ fun HomeView(
                     painter = painterResource(id = R.drawable.img_logo_full),
                     contentDescription = "Foodya Logo",
                     modifier = Modifier
-                        .height(100.dp)
-                        .wrapContentWidth(),
+                        .height(70.dp)
+                        .wrapContentWidth()
+                        .padding(vertical = 8.dp),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -159,7 +160,7 @@ fun HomeView(
                 onExpandedChange = viewModel::onSearchActiveChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 colors = colors1,
                 content = {
                     // Nội dung bên trong khi thanh search mở ra (Gợi ý)

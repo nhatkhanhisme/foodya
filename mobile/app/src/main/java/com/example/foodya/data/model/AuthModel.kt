@@ -35,7 +35,7 @@ typealias RefreshResponse = JwtAuthResponse
 enum class UserRole {
     CUSTOMER,
     MERCHANT,
-    SHIPPER,
+    DELIVERY,
     ADMIN
 }
 

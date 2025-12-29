@@ -87,6 +87,39 @@ fun DashboardView(
             onDismiss = viewModel::hideEditRestaurantDialog
         )
     }
+    
+    // Create restaurant dialog
+    if (state.showCreateRestaurantDialog) {
+        RestaurantEditDialog(
+            restaurantName = "Tạo nhà hàng mới",
+            name = state.createName,
+            address = state.createAddress,
+            phoneNumber = state.createPhoneNumber,
+            email = state.createEmail,
+            description = state.createDescription,
+            cuisine = state.createCuisine,
+            openingTime = state.createOpeningTime,
+            closingTime = state.createClosingTime,
+            openingHours = state.createOpeningHours,
+            minimumOrder = state.createMinimumOrder,
+            maxDeliveryDistance = state.createMaxDeliveryDistance,
+            isUpdating = state.isCreatingRestaurant,
+            error = state.createRestaurantError,
+            onNameChange = viewModel::onCreateNameChange,
+            onAddressChange = viewModel::onCreateAddressChange,
+            onPhoneNumberChange = viewModel::onCreatePhoneNumberChange,
+            onEmailChange = viewModel::onCreateEmailChange,
+            onDescriptionChange = viewModel::onCreateDescriptionChange,
+            onCuisineChange = viewModel::onCreateCuisineChange,
+            onOpeningTimeChange = viewModel::onCreateOpeningTimeChange,
+            onClosingTimeChange = viewModel::onCreateClosingTimeChange,
+            onOpeningHoursChange = viewModel::onCreateOpeningHoursChange,
+            onMinimumOrderChange = viewModel::onCreateMinimumOrderChange,
+            onMaxDeliveryDistanceChange = viewModel::onCreateMaxDeliveryDistanceChange,
+            onSave = viewModel::createNewRestaurant,
+            onDismiss = viewModel::hideCreateRestaurantDialog
+        )
+    }
 
     // Order status dialog
     if (state.selectedOrder != null) {
@@ -128,6 +161,17 @@ fun DashboardView(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 actions = {
+                    // Add restaurant button (for merchants with existing restaurants)
+                    if (state.myRestaurants.isNotEmpty()) {
+                        IconButton(onClick = viewModel::showCreateRestaurantDialog) {
+                            Icon(
+                                imageVector = Icons.Default.AddBusiness,
+                                contentDescription = "Thêm nhà hàng",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
                     IconButton(onClick = { /* TODO: Notifications */ }) {
                         BadgedBox(
                             badge = {
@@ -161,7 +205,7 @@ fun DashboardView(
                     )
                 }
                 state.myRestaurants.isEmpty() -> {
-                    EmptyRestaurantState(onNavigateToRegister = onNavigateToRegisterRestaurant)
+                    EmptyRestaurantState(onCreateRestaurant = viewModel::showCreateRestaurantDialog)
                 }
                 else -> {
                     DashboardContent(
@@ -194,7 +238,7 @@ fun DashboardView(
 }
 
 @Composable
-private fun EmptyRestaurantState(onNavigateToRegister: () -> Unit) {
+private fun EmptyRestaurantState(onCreateRestaurant: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -222,7 +266,7 @@ private fun EmptyRestaurantState(onNavigateToRegister: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = onNavigateToRegister,
+            onClick = onCreateRestaurant,
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
