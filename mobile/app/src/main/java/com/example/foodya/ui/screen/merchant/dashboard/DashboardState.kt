@@ -30,5 +30,21 @@ data class DashboardState(
     val editOpeningHours: String = "",
     val editMinimumOrder: String = "",
     val editMaxDeliveryDistance: String = "",
-    val isTogglingStatus: Boolean = false
+    val isTogglingStatus: Boolean = false,
+    
+    // Create Restaurant Dialog State
+    val showCreateRestaurantDialog: Boolean = false,
+    val isCreatingRestaurant: Boolean = false,
+    val createRestaurantError: String? = null,
+    val createName: String = "",
+    val createAddress: String = "",
+    val createPhoneNumber: String = "",
+    val createEmail: String = "",
+    val createDescription: String = "",
+    val createCuisine: String = "",
+    val createOpeningTime: String = "",
+    val createClosingTime: String = "",
+    val createOpeningHours: String = "",
+    val createMinimumOrder: String = "",
+    val createMaxDeliveryDistance: String = ""
 )

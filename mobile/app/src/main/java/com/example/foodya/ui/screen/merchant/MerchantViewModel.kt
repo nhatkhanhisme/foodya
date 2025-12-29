@@ -365,6 +365,170 @@ class MerchantViewModel @Inject constructor(
             }
         }
     }
+    
+    // ========== CREATE RESTAURANT FUNCTIONS ==========
+    
+    fun showCreateRestaurantDialog() {
+        _dashboardState.update {
+            it.copy(
+                showCreateRestaurantDialog = true,
+                createRestaurantError = null,
+                createName = "",
+                createAddress = "",
+                createPhoneNumber = "",
+                createEmail = "",
+                createDescription = "",
+                createCuisine = "",
+                createOpeningTime = "",
+                createClosingTime = "",
+                createOpeningHours = "",
+                createMinimumOrder = "",
+                createMaxDeliveryDistance = ""
+            )
+        }
+    }
+    
+    fun hideCreateRestaurantDialog() {
+        _dashboardState.update { 
+            it.copy(
+                showCreateRestaurantDialog = false,
+                createRestaurantError = null
+            ) 
+        }
+    }
+    
+    fun onCreateNameChange(value: String) {
+        _dashboardState.update { it.copy(createName = value) }
+    }
+    
+    fun onCreateAddressChange(value: String) {
+        _dashboardState.update { it.copy(createAddress = value) }
+    }
+    
+    fun onCreatePhoneNumberChange(value: String) {
+        _dashboardState.update { it.copy(createPhoneNumber = value) }
+    }
+    
+    fun onCreateEmailChange(value: String) {
+        _dashboardState.update { it.copy(createEmail = value) }
+    }
+    
+    fun onCreateDescriptionChange(value: String) {
+        _dashboardState.update { it.copy(createDescription = value) }
+    }
+    
+    fun onCreateCuisineChange(value: String) {
+        _dashboardState.update { it.copy(createCuisine = value) }
+    }
+    
+    fun onCreateOpeningTimeChange(value: String) {
+        _dashboardState.update { it.copy(createOpeningTime = value) }
+    }
+    
+    fun onCreateClosingTimeChange(value: String) {
+        _dashboardState.update { it.copy(createClosingTime = value) }
+    }
+    
+    fun onCreateOpeningHoursChange(value: String) {
+        _dashboardState.update { it.copy(createOpeningHours = value) }
+    }
+    
+    fun onCreateMinimumOrderChange(value: String) {
+        _dashboardState.update { it.copy(createMinimumOrder = value) }
+    }
+    
+    fun onCreateMaxDeliveryDistanceChange(value: String) {
+        _dashboardState.update { it.copy(createMaxDeliveryDistance = value) }
+    }
+    
+    fun createNewRestaurant() {
+        val currentState = _dashboardState.value
+        
+        // Validation
+        val validationError = validateRestaurantData(
+            name = currentState.createName,
+            address = currentState.createAddress,
+            phoneNumber = currentState.createPhoneNumber,
+            email = currentState.createEmail,
+            description = currentState.createDescription,
+            cuisine = currentState.createCuisine,
+            openingTime = currentState.createOpeningTime,
+            closingTime = currentState.createClosingTime,
+            openingHours = currentState.createOpeningHours,
+            minimumOrder = currentState.createMinimumOrder,
+            maxDeliveryDistance = currentState.createMaxDeliveryDistance
+        )
+        
+        if (validationError != null) {
+            _dashboardState.update { it.copy(createRestaurantError = validationError) }
+            return
+        }
+        
+        viewModelScope.launch {
+            _dashboardState.update { it.copy(isCreatingRestaurant = true, createRestaurantError = null) }
+            
+            val request = com.example.foodya.data.model.RestaurantRequest(
+                name = currentState.createName.trim(),
+                address = currentState.createAddress.trim(),
+                phoneNumber = currentState.createPhoneNumber.trim(),
+                email = currentState.createEmail.trim().ifBlank { null },
+                description = currentState.createDescription.trim().ifBlank { null },
+                cuisine = currentState.createCuisine.trim(),
+                openingTime = currentState.createOpeningTime.trim().ifBlank { null },
+                closingTime = currentState.createClosingTime.trim().ifBlank { null },
+                openingHours = currentState.createOpeningHours.trim().ifBlank { null },
+                minimumOrder = currentState.createMinimumOrder.trim().toDoubleOrNull(),
+                maxDeliveryDistance = currentState.createMaxDeliveryDistance.trim().toDoubleOrNull(),
+                isOpen = true
+            )
+            
+            val result = merchantRepo.createRestaurant(request)
+            
+            result.onSuccess { newRestaurant ->
+                Log.d("MerchantViewModel", "Nhà hàng được tạo thành công: ${newRestaurant.name}")
+                
+                // Send success event
+                _uiEvent.send(UiEvent.ShowSnackbar("Tạo nhà hàng \"${newRestaurant.name}\" thành công!", false))
+                
+                // Update restaurants list and select the new one
+                val updatedRestaurants = _dashboardState.value.myRestaurants + newRestaurant
+                _dashboardState.update { state ->
+                    state.copy(
+                        isCreatingRestaurant = false,
+                        showCreateRestaurantDialog = false,
+                        myRestaurants = updatedRestaurants,
+                        selectedRestaurant = newRestaurant,
+                        createRestaurantError = null
+                    )
+                }
+                
+                // Update menu state
+                _menuState.update { 
+                    it.copy(
+                        myRestaurants = updatedRestaurants,
+                        selectedRestaurant = newRestaurant
+                    ) 
+                }
+                
+                // Load data for the new restaurant
+                loadMenuItems(newRestaurant.id)
+                loadOrders(newRestaurant.id)
+                
+            }.onFailure { error ->
+                Log.e("MerchantViewModel", "Tạo nhà hàng thất bại: ${error.message}", error)
+                val friendlyError = error.toUserFriendlyMessage()
+                _dashboardState.update {
+                    it.copy(
+                        isCreatingRestaurant = false,
+                        createRestaurantError = friendlyError
+                    )
+                }
+                viewModelScope.launch {
+                    _uiEvent.send(UiEvent.ShowSnackbar("Tạo nhà hàng thất bại: $friendlyError", true))
+                }
+            }
+        }
+    }
 
     // ========== DASHBOARD SCREEN FUNCTIONS ==========
 

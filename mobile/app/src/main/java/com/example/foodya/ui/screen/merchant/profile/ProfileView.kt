@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.User
 import com.example.foodya.ui.screen.merchant.MerchantViewModel
+import com.example.foodya.ui.components.RestaurantEditDialog
 
 @Composable
 fun MerchantProfileView(
@@ -35,6 +36,40 @@ fun MerchantProfileView(
     onNavigateToTerms: () -> Unit
 ) {
     val state by viewModel.profileState.collectAsState()
+    val dashboardState by viewModel.dashboardState.collectAsState()
+
+    // Create restaurant dialog
+    if (dashboardState.showCreateRestaurantDialog) {
+        RestaurantEditDialog(
+            restaurantName = "Tạo nhà hàng mới",
+            name = dashboardState.createName,
+            address = dashboardState.createAddress,
+            phoneNumber = dashboardState.createPhoneNumber,
+            email = dashboardState.createEmail,
+            description = dashboardState.createDescription,
+            cuisine = dashboardState.createCuisine,
+            openingTime = dashboardState.createOpeningTime,
+            closingTime = dashboardState.createClosingTime,
+            openingHours = dashboardState.createOpeningHours,
+            minimumOrder = dashboardState.createMinimumOrder,
+            maxDeliveryDistance = dashboardState.createMaxDeliveryDistance,
+            isUpdating = dashboardState.isCreatingRestaurant,
+            error = dashboardState.createRestaurantError,
+            onNameChange = viewModel::onCreateNameChange,
+            onAddressChange = viewModel::onCreateAddressChange,
+            onPhoneNumberChange = viewModel::onCreatePhoneNumberChange,
+            onEmailChange = viewModel::onCreateEmailChange,
+            onDescriptionChange = viewModel::onCreateDescriptionChange,
+            onCuisineChange = viewModel::onCreateCuisineChange,
+            onOpeningTimeChange = viewModel::onCreateOpeningTimeChange,
+            onClosingTimeChange = viewModel::onCreateClosingTimeChange,
+            onOpeningHoursChange = viewModel::onCreateOpeningHoursChange,
+            onMinimumOrderChange = viewModel::onCreateMinimumOrderChange,
+            onMaxDeliveryDistanceChange = viewModel::onCreateMaxDeliveryDistanceChange,
+            onSave = viewModel::createNewRestaurant,
+            onDismiss = viewModel::hideCreateRestaurantDialog
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -52,6 +87,22 @@ fun MerchantProfileView(
             ) {
                 // Header
                 MerchantProfileHeader(user = state.user!!)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Settings Section
+                Text(
+                    text = "Quản lý",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
+                // Add restaurant
+                ProfileMenuItem(
+                    icon = Icons.Outlined.AddBusiness,
+                    title = "Thêm nhà hàng mới",
+                    onClick = viewModel::showCreateRestaurantDialog
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
