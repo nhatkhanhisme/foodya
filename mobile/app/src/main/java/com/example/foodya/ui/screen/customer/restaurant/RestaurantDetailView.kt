@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.Food
+import com.example.foodya.ui.components.BottomCartSummaryBox
+import com.example.foodya.ui.components.FoodItemRow
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -78,130 +80,6 @@ fun RestaurantDetailView(
                         onRemove = { viewModel.removeItem(foodItem) }
                     )
                 }
-            }
-        }
-    }
-}
-
-// Component hiển thị từng dòng món ăn
-@Composable
-fun FoodItemRow(
-    item: Food,
-    quantity: Int,
-    onAdd: () -> Unit,
-    onRemove: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Ảnh món ăn
-            AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Thông tin món + Nút bấm
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1
-                )
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    maxLines = 2,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = formatCurrency(item.price),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    // Logic nút bấm: 0 thì hiện (+), >0 hiện (- số lượng +)
-                    if (quantity == 0) {
-                        IconButton(
-                            onClick = onAdd,
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                .size(32.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
-                        }
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.RemoveCircleOutline, contentDescription = "Giảm", tint = Color.Gray)
-                            }
-                            Text(
-                                text = quantity.toString(),
-                                modifier = Modifier.padding(horizontal = 8.dp),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.AddCircle, contentDescription = "Tăng", tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun BottomCartSummaryBox(
-    itemCount: Int,
-    totalPrice: Double,
-    onCheckoutClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        elevation = CardDefaults.cardElevation(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(text = "Đã chọn: $itemCount món", style = MaterialTheme.typography.bodyMedium)
-                Text(
-                    text = "Tổng: ${formatCurrency(totalPrice)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-            Button(onClick = onCheckoutClick) {
-                Text("Đặt món")
             }
         }
     }
