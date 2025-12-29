@@ -1,6 +1,8 @@
 package com.example.foodya.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -10,11 +12,12 @@ import androidx.navigation.navArgument
 import com.example.foodya.data.model.UserRole
 import com.example.foodya.ui.MainViewModel
 import com.example.foodya.ui.screen.auth.AuthView
-import com.example.foodya.ui.screen.merchant.dashboard.DashboardView
 import com.example.foodya.ui.screen.customer.home.HomeView
 import com.example.foodya.ui.screen.customer.order.OrderHistoryView
 import com.example.foodya.ui.screen.customer.profile.CustomerProfileView
 import com.example.foodya.ui.screen.customer.restaurant.RestaurantDetailView
+import com.example.foodya.ui.screen.merchant.MerchantViewModel
+import com.example.foodya.ui.screen.merchant.dashboard.DashboardView
 import com.example.foodya.ui.screen.merchant.menu.MenuView
 import com.example.foodya.ui.screen.merchant.profile.MerchantProfileView
 import com.example.foodya.ui.screen.security.ChangePasswordView
@@ -143,18 +146,40 @@ fun SetupNavGraph(
             startDestination = Screen.MerchantDashboard.route,
             route = Graph.MERCHANT
         ) {
-            composable(route = Screen.MerchantDashboard.route) {
+            composable(route = Screen.MerchantDashboard.route) { backStackEntry ->
+                // Get the parent NavBackStackEntry to scope the ViewModel to the MERCHANT graph
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Graph.MERCHANT)
+                }
+                val merchantViewModel: MerchantViewModel = hiltViewModel(parentEntry)
+                
                 DashboardView(
+                    viewModel = merchantViewModel,
                     onNavigateToRegisterRestaurant = {
                         // TODO: Navigate to register restaurant screen
                     }
                 )
             }
-            composable(route = Screen.ManageMenu.route) {
-                MenuView()
+            composable(route = Screen.ManageMenu.route) { backStackEntry ->
+                // Get the same parent NavBackStackEntry to share the ViewModel
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Graph.MERCHANT)
+                }
+                val merchantViewModel: MerchantViewModel = hiltViewModel(parentEntry)
+                
+                MenuView(
+                    viewModel = merchantViewModel
+                )
             }
-            composable(route = Screen.MerchantProfile.route) {
+            composable(route = Screen.MerchantProfile.route) { backStackEntry ->
+                // Get the same parent NavBackStackEntry to share the ViewModel
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Graph.MERCHANT)
+                }
+                val merchantViewModel: MerchantViewModel = hiltViewModel(parentEntry)
+                
                 MerchantProfileView(
+                    viewModel = merchantViewModel,
                     onNavigateToLogin = {
                         navController.navigate(Graph.AUTH) {
                             popUpTo(Graph.ROOT) { inclusive = true }

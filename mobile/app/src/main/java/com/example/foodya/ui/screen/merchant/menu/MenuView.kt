@@ -21,7 +21,7 @@ import com.example.foodya.ui.screen.merchant.menu.components.MenuItemDialog
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuView(
-    viewModel: MerchantViewModel = hiltViewModel()
+    viewModel: MerchantViewModel
 ) {
     val state by viewModel.menuState.collectAsState()
 
@@ -127,7 +127,7 @@ fun MenuView(
                 else -> {
                     MenuContent(
                         state = state,
-                        onRestaurantSelected = viewModel::onRestaurantSelected,
+
                         onEditItem = viewModel::onEditItem,
                         onDeleteItem = viewModel::onDeleteItem
                     )
@@ -183,11 +183,9 @@ private fun EmptyRestaurantState() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MenuContent(
     state: MenuState,
-    onRestaurantSelected: (MerchantRestaurant) -> Unit,
     onEditItem: (FoodMenuItem) -> Unit,
     onDeleteItem: (FoodMenuItem) -> Unit
 ) {
@@ -196,55 +194,36 @@ private fun MenuContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Restaurant selector
+        // Restaurant header (read-only)
         item {
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.medium
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Nhà hàng",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Restaurant,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    if (state.myRestaurants.size > 1) {
-                        var expanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = !expanded }
-                        ) {
-                            OutlinedTextField(
-                                value = state.selectedRestaurant?.name ?: "",
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                state.myRestaurants.forEach { restaurant ->
-                                    DropdownMenuItem(
-                                        text = { Text(restaurant.name) },
-                                        onClick = {
-                                            onRestaurantSelected(restaurant)
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    } else {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
                         Text(
-                            text = state.selectedRestaurant?.name ?: "",
+                            text = "Nhà hàng",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = state.selectedRestaurant?.name ?: "Chưa chọn",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
@@ -300,7 +279,7 @@ private fun MenuContent(
                 }
             }
         } else {
-            items(state.menuItems) { item ->
+            items(state.menuItems.filter { it.isActive }) { item ->
                 MenuItemCard(
                     item = item,
                     onEdit = { onEditItem(item) },

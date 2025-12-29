@@ -26,7 +26,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardView(
-    viewModel: MerchantViewModel = hiltViewModel(),
+    viewModel: MerchantViewModel,
     onNavigateToRegisterRestaurant: () -> Unit
 ) {
     val state by viewModel.dashboardState.collectAsState()

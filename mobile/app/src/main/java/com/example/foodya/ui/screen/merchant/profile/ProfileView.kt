@@ -26,7 +26,7 @@ import com.example.foodya.ui.screen.merchant.MerchantViewModel
 
 @Composable
 fun MerchantProfileView(
-    viewModel: MerchantViewModel = hiltViewModel(),
+    viewModel: MerchantViewModel,
     onNavigateToLogin: () -> Unit,
     onNavigateToChangePassword: () -> Unit,
     onNavigateToTerms: () -> Unit

@@ -47,14 +47,14 @@ class MerchantViewModel @Inject constructor(
 
     init {
         loadDashboard()
-        loadMenuData()
+        // loadMenuData is not needed here as loadDashboard already initializes menu state
         loadMerchantProfile()
         observeThemePreference()
     }
 
     fun onRestaurantSelected(restaurant: MerchantRestaurant) {
         _dashboardState.update { it.copy(selectedRestaurant = restaurant, orders = emptyList()) }
-        _menuState.update { it.copy(selectedRestaurant = restaurant, menuItems = emptyList()) }
+        _menuState.update { it.copy(isLoading = true, selectedRestaurant = restaurant, menuItems = emptyList()) }
         loadMenuItems(restaurant.id)
         loadOrders(restaurant.id)
     }
@@ -77,9 +77,24 @@ class MerchantViewModel @Inject constructor(
                             selectedRestaurant = firstRestaurant,
                         )
                     }
+                    // Sync menu state with the same selected restaurant
+                    _menuState.update {
+                        it.copy(
+                            isLoading = false,
+                            myRestaurants = restaurants,
+                            selectedRestaurant = firstRestaurant
+                        )
+                    }
                     loadOrders(firstRestaurant.id)
+                    loadMenuItems(firstRestaurant.id)
                 } else {
                     _dashboardState.update {
+                        it.copy(
+                            isLoading = false,
+                            myRestaurants = emptyList()
+                        )
+                    }
+                    _menuState.update {
                         it.copy(
                             isLoading = false,
                             myRestaurants = emptyList()
@@ -89,6 +104,12 @@ class MerchantViewModel @Inject constructor(
             }.onFailure { error ->
                 Log.e("MerchantViewModel", "Error loading restaurants: ${error.message}")
                 _dashboardState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = error.message
+                    )
+                }
+                _menuState.update {
                     it.copy(
                         isLoading = false,
                         error = error.message
@@ -199,36 +220,12 @@ class MerchantViewModel @Inject constructor(
         viewModelScope.launch {
             _menuState.update { it.copy(isLoading = true, error = null) }
             
-            val result = merchantRepo.getMyRestaurants()
-            result.onSuccess { restaurants ->
-                Log.d("MerchantViewModel", "Loaded ${restaurants.size} restaurants for menu")
-                if (restaurants.isNotEmpty()) {
-                    val firstRestaurant = restaurants.first()
-                    _menuState.update {
-                        it.copy(
-                            isLoading = false,
-                            myRestaurants = restaurants,
-                            selectedRestaurant = firstRestaurant
-                        )
-                    }
-                    loadMenuItems(firstRestaurant.id)
-                } else {
-                    _menuState.update {
-                        it.copy(
-                            isLoading = false,
-                            myRestaurants = emptyList()
-                        )
-                    }
-                }
-            }.onFailure { error ->
-                Log.e("MerchantViewModel", "Error loading restaurants: ${error.message}")
-                _menuState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = error.message
-                    )
-                }
+            // Wait for dashboard to load restaurants first, then load menu items
+            val selectedRestaurant = _menuState.value.selectedRestaurant
+            if (selectedRestaurant != null) {
+                loadMenuItems(selectedRestaurant.id)
             }
+            _menuState.update { it.copy(isLoading = false) }
         }
     }
 
@@ -237,10 +234,10 @@ class MerchantViewModel @Inject constructor(
             val result = merchantRepo.getMenuItems(restaurantId)
             result.onSuccess { items ->
                 Log.d("MerchantViewModel", "Loaded ${items.size} menu items")
-                _menuState.update { it.copy(menuItems = items) }
+                _menuState.update { it.copy(isLoading = false, menuItems = items) }
             }.onFailure { error ->
                 Log.e("MerchantViewModel", "Error loading menu items: ${error.message}")
-                _menuState.update { it.copy(error = error.message) }
+                _menuState.update { it.copy(isLoading = false, error = error.message) }
             }
         }
     }
