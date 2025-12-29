@@ -5,12 +5,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,6 +33,8 @@ import com.example.foodya.util.toCurrency
  * Features:
  * - Shows detailed breakdown: "Item A x2, Item B x1..."
  * - Displays total quantity and price
+ * - Close button to clear entire cart
+ * - Confirmation dialog before clearing
  * - Responsive layout
  * - Integrates with RestaurantUiState
  */
@@ -32,8 +43,40 @@ fun BottomCartSummaryBox(
     cartItems: Map<String, CartItem>,
     itemCount: Int,
     totalPrice: Double,
-    onCheckoutClick: () -> Unit
+    onCheckoutClick: () -> Unit,
+    onClearCart: () -> Unit = {}
 ) {
+    var showClearDialog by remember { mutableStateOf(false) }
+
+    // Confirmation dialog
+    if (showClearDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text("Xóa giỏ hàng?") },
+            text = { Text("Bạn có chắc muốn xóa tất cả $itemCount món đã chọn?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onClearCart()
+                        showClearDialog = false
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Xóa")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = { showClearDialog = false }
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -50,6 +93,17 @@ fun BottomCartSummaryBox(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Close button
+            IconButton(
+                onClick = { showClearDialog = true },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Xóa giỏ hàng",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
             // Left side: Cart details
             Column(
                 modifier = Modifier.weight(1f),
@@ -98,13 +152,15 @@ fun BottomCartSummaryBox(
 fun BottomCartSummaryBox(
     itemCount: Int,
     totalPrice: Double,
-    onCheckoutClick: () -> Unit
+    onCheckoutClick: () -> Unit,
+    onClearCart: () -> Unit = {}
 ) {
     BottomCartSummaryBox(
         cartItems = emptyMap(),
         itemCount = itemCount,
         totalPrice = totalPrice,
-        onCheckoutClick = onCheckoutClick
+        onCheckoutClick = onCheckoutClick,
+        onClearCart = onClearCart
     )
 }
 

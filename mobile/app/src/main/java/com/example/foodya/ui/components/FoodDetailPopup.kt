@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.Food
+import com.example.foodya.util.toCurrency
 
 @Composable
 fun FoodDetailPopup(
@@ -54,7 +55,7 @@ fun FoodDetailPopup(
                             modifier = Modifier.weight(1f)
                         )
                         Text(
-                            text = "$${food.price}",
+                            text = food.price.toCurrency(),
                             style = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.primary)
                         )
                     }

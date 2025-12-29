@@ -165,6 +165,15 @@ class RestaurantDetailViewModel @Inject constructor(
     }
 
     /**
+     * Clear all items from cart
+     */
+    fun clearCart() {
+        _cartMap.value = emptyMap()
+        updateCartInSuccessState()
+        Log.d(TAG, "Cart cleared")
+    }
+
+    /**
      * Calculate cart summary (total quantity and price)
      */
     private fun calculateCartSummary(): CartSummary {

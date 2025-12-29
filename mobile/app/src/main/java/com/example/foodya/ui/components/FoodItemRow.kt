@@ -38,14 +38,16 @@ fun FoodItemRow(
     item: Food,
     quantity: Int,
     onAdd: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier

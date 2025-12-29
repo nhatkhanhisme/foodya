@@ -20,7 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.foodya.domain.model.Food
 import com.example.foodya.ui.components.BottomCartSummaryBox
+import com.example.foodya.ui.components.FoodDetailPopup
 import com.example.foodya.ui.components.FoodItemRow
 import com.example.foodya.util.toCurrency
 
@@ -42,6 +44,15 @@ fun RestaurantDetailView(
     viewModel: RestaurantDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedFood by remember { mutableStateOf<Food?>(null) }
+
+    // Show FoodDetailPopup when a food item is selected
+    selectedFood?.let { food ->
+        FoodDetailPopup(
+            food = food,
+            onDismiss = { selectedFood = null }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -78,7 +89,8 @@ fun RestaurantDetailView(
                         cartItems = successState.cartMap,
                         itemCount = successState.cartSummary.totalQuantity,
                         totalPrice = successState.cartSummary.totalPrice,
-                        onCheckoutClick = onGoToCheckout
+                        onCheckoutClick = onGoToCheckout,
+                        onClearCart = viewModel::clearCart
                     )
                 }
             }
@@ -102,6 +114,7 @@ fun RestaurantDetailView(
                     state = state,
                     onAddItem = viewModel::addItem,
                     onRemoveItem = viewModel::removeItem,
+                    onFoodItemClick = { food -> selectedFood = food },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -199,6 +212,7 @@ private fun SuccessContent(
     state: RestaurantUiState.Success,
     onAddItem: (com.example.foodya.domain.model.Food) -> Unit,
     onRemoveItem: (com.example.foodya.domain.model.Food) -> Unit,
+    onFoodItemClick: (com.example.foodya.domain.model.Food) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -230,7 +244,8 @@ private fun SuccessContent(
                     item = foodItem,
                     quantity = quantity,
                     onAdd = { onAddItem(foodItem) },
-                    onRemove = { onRemoveItem(foodItem) }
+                    onRemove = { onRemoveItem(foodItem) },
+                    onClick = { onFoodItemClick(foodItem) }
                 )
             }
         }
