@@ -22,15 +22,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.User
+import com.example.foodya.ui.screen.merchant.MerchantViewModel
 
 @Composable
 fun MerchantProfileView(
-    viewModel: MerchantProfileViewModel = hiltViewModel(),
+    viewModel: MerchantViewModel = hiltViewModel(),
     onNavigateToLogin: () -> Unit,
     onNavigateToChangePassword: () -> Unit,
     onNavigateToTerms: () -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.profileState.collectAsState()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -65,7 +66,7 @@ fun MerchantProfileView(
                     trailingContent = {
                         Switch(
                             checked = state.isDarkMode,
-                            onCheckedChange = viewModel::onToggleDarkMode,
+                            onCheckedChange = viewModel::onMerchantToggleDarkMode,
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -92,7 +93,7 @@ fun MerchantProfileView(
 
                 // Logout Button
                 Button(
-                    onClick = { viewModel.onLogout(onLogoutSuccess = onNavigateToLogin) },
+                    onClick = { viewModel.onMerchantLogout(onLogoutSuccess = onNavigateToLogin) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)

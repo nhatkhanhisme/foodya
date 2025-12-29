@@ -22,13 +22,14 @@ import coil.compose.AsyncImage
 import com.example.foodya.domain.model.Order
 import com.example.foodya.domain.model.enums.OrderStatus
 import com.example.foodya.ui.components.OrderItemCard
+import com.example.foodya.ui.screen.customer.CustomerViewModel
 
 @Composable
 fun OrderHistoryView(
-    viewModel: OrderHistoryViewModel = hiltViewModel(),
+    viewModel: CustomerViewModel = hiltViewModel(),
     onOrderClick: (String) -> Unit // Callback xem chi tiết đơn hàng
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.orderHistoryState.collectAsState()
 
     // Danh sách các Status cần hiển thị trên Tab
     // Loại bỏ CANCELLED nếu bạn muốn giấu nó vào chỗ khác, hoặc giữ nguyên

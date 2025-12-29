@@ -14,15 +14,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.foodya.domain.model.FoodMenuItem
 import com.example.foodya.domain.model.MerchantRestaurant
+import com.example.foodya.ui.screen.merchant.MerchantViewModel
 import com.example.foodya.ui.screen.merchant.menu.components.MenuItemCard
 import com.example.foodya.ui.screen.merchant.menu.components.MenuItemDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuView(
-    viewModel: MenuViewModel = hiltViewModel()
+    viewModel: MerchantViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.menuState.collectAsState()
 
     // Edit/Create dialog
     if (state.showEditDialog) {
@@ -46,14 +47,14 @@ fun MenuView(
             onImageSelected = viewModel::onImageSelected,
             onImageCleared = viewModel::onImageCleared,
             onSave = viewModel::onSaveItem,
-            onDismiss = viewModel::onDismissDialog
+            onDismiss = viewModel::onDismissMenuDialog
         )
     }
 
     // Delete confirmation dialog
     if (state.showDeleteConfirmation) {
         AlertDialog(
-            onDismissRequest = viewModel::onDismissDialog,
+            onDismissRequest = viewModel::onDismissMenuDialog,
             title = { Text("Xác nhận xóa") },
             text = { Text("Bạn có chắc chắn muốn xóa món \"${state.itemToDelete?.name}\"?") },
             confirmButton = {
@@ -76,7 +77,7 @@ fun MenuView(
             },
             dismissButton = {
                 TextButton(
-                    onClick = viewModel::onDismissDialog,
+                    onClick = viewModel::onDismissMenuDialog,
                     enabled = !state.isProcessing
                 ) {
                     Text("Hủy")
@@ -140,7 +141,7 @@ fun MenuView(
                         .align(Alignment.BottomCenter)
                         .padding(16.dp),
                     action = {
-                        TextButton(onClick = viewModel::onRetry) {
+                        TextButton(onClick = viewModel::onMenuRetry) {
                             Text("Thử lại")
                         }
                     }

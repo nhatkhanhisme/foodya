@@ -30,16 +30,17 @@ import com.example.foodya.ui.components.FoodDetailPopup
 import com.example.foodya.ui.components.FoodItemCard
 import com.example.foodya.ui.components.RestaurantCard
 import com.example.foodya.ui.components.SectionTitle
+import com.example.foodya.ui.screen.customer.CustomerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeView(
-    viewModel: HomeViewModel = hiltViewModel(),
+    viewModel: CustomerViewModel = hiltViewModel(),
     onNavigateToSearchResult: (String) -> Unit,
     onRestaurantClick: (String) -> Unit,
     onQuickOrderClick: (String) -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.homeState.collectAsState()
 
     // Show checkout dialog
     if (state.showCheckoutDialog) {

@@ -9,6 +9,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.storage
+import io.ktor.http.ContentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.util.UUID
@@ -31,8 +32,7 @@ class StorageRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "StorageRepository"
-        
-        // TODO: Replace with your actual Supabase credentials
+
         private const val SUPABASE_URL = "https://rxifptroexopdnqtxjnk.supabase.co"
         private const val SUPABASE_ANON_KEY = "sb_publishable_D14ygBkxN6-ddpGc-GPljQ_kZjWFOls"
     }
@@ -66,7 +66,9 @@ class StorageRepositoryImpl @Inject constructor(
             val extension = getFileExtension(imageUri) ?: "jpg"
             val fileName = "food_${timestamp}_${uuid}.$extension"
 
-            Log.d(TAG, "Generated filename: $fileName")
+            val mimeTypeStr = context.contentResolver.getType(imageUri) ?: "image/jpeg"
+
+            Log.d(TAG, "Generated filename: $fileName with MIME type: $mimeTypeStr")
 
             // Step 3: Upload to Supabase Storage
             val bucket = supabase.storage.from(bucketName)
@@ -75,14 +77,15 @@ class StorageRepositoryImpl @Inject constructor(
                 path = fileName,
                 data = imageBytes
             ) {
-                upsert = false // hoặc true nếu bạn muốn ghi đè file trùng tên
+                upsert = false
+                contentType = ContentType.parse(mimeTypeStr)
             }
 
             Log.d(TAG, "Upload successful")
 
             // Step 4: Get public URL
             val publicUrl = bucket.publicUrl(fileName)
-            
+
             Log.d(TAG, "Public URL: $publicUrl")
 
             emit(Result.success(publicUrl))

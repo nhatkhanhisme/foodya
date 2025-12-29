@@ -50,9 +50,9 @@ interface MerchantApi {
     /**
      * Update order status
      */
-    @PUT("merchant/orders/{orderId}/status")
+    @PATCH("merchant/orders/{id}/status")
     suspend fun updateOrderStatus(
-        @Path("orderId") orderId: String,
+        @Path("id") orderId: String,
         @Body request: UpdateOrderStatusRequest
     ): OrderResponse
 

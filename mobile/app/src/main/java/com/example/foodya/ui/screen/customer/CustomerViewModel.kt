@@ -1,15 +1,22 @@
-package com.example.foodya.ui.screen.customer.home
+package com.example.foodya.ui.screen.customer
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.foodya.data.local.TokenManager
 import com.example.foodya.data.model.OrderItemRequest
 import com.example.foodya.data.model.OrderRequest
 import com.example.foodya.domain.model.CartItem
 import com.example.foodya.domain.model.Food
-import com.example.foodya.domain.model.Restaurant
+import com.example.foodya.domain.model.Order
+import com.example.foodya.domain.model.User
+import com.example.foodya.domain.model.enums.OrderStatus
 import com.example.foodya.domain.repository.OrderRepository
 import com.example.foodya.domain.repository.RestaurantRepository
+import com.example.foodya.domain.repository.ThemeRepository
+import com.example.foodya.ui.screen.customer.home.HomeState
+import com.example.foodya.ui.screen.customer.order.OrderHistoryState
+import com.example.foodya.ui.screen.customer.profile.ProfileState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,25 +26,41 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
+class CustomerViewModel @Inject constructor(
     private val restaurantRepo: RestaurantRepository,
-    private val orderRepo: OrderRepository
+    private val orderRepo: OrderRepository,
+    private val tokenManager: TokenManager,
+    private val themeRepository: ThemeRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(HomeState())
-    val state = _state.asStateFlow()
+    // ========== HOME STATE ==========
+    private val _homeState = MutableStateFlow(HomeState())
+    val homeState = _homeState.asStateFlow()
+
+    // ========== ORDER HISTORY STATE ==========
+    private val _orderHistoryState = MutableStateFlow(OrderHistoryState())
+    val orderHistoryState = _orderHistoryState.asStateFlow()
+
+    // ========== PROFILE STATE ==========
+    private val _profileState = MutableStateFlow(ProfileState())
+    val profileState = _profileState.asStateFlow()
 
     private val allKeywords = listOf("Pizza", "Burger", "Sushi", "Italian", "Vietnamese", "Coffee", "Tea")
+    private var allOrders = listOf<Order>()
 
     init {
         loadHomeData()
+        loadOrders()
+        loadUserProfile()
+        observeThemePreference()
     }
+
+    // ========== HOME SCREEN FUNCTIONS ==========
 
     private fun loadHomeData() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _homeState.update { it.copy(isLoading = true) }
             
-            // Load restaurants using the new API
             val result = restaurantRepo.getRestaurants(
                 sortBy = "popular",
                 page = 0,
@@ -45,17 +68,17 @@ class HomeViewModel @Inject constructor(
             )
             
             result.onSuccess { (list, hasMore) ->
-                Log.d("HomeViewModel", "Loaded ${list.size} restaurants, hasMore: $hasMore")
-                _state.update {
+                Log.d("CustomerViewModel", "Loaded ${list.size} restaurants, hasMore: $hasMore")
+                _homeState.update {
                     it.copy(
                         isLoading = false,
                         nearbyRestaurants = list,
-                        popularFoods = mockFoods() // Can be replaced with real popular foods API later
+                        popularFoods = mockFoods()
                     )
                 }
             }.onFailure { exception ->
-                Log.e("HomeViewModel", "Error loading restaurants: ${exception.message}")
-                _state.update {
+                Log.e("CustomerViewModel", "Error loading restaurants: ${exception.message}")
+                _homeState.update {
                     it.copy(
                         isLoading = false,
                         nearbyRestaurants = emptyList(),
@@ -66,13 +89,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // --- Search Logic ---
-
     fun onQueryChange(query: String) {
-        _state.update {
+        _homeState.update {
             it.copy(
                 searchQuery = query,
-                // Lọc gợi ý đơn giản
                 searchSuggestions = if (query.isBlank()) emptyList() else allKeywords.filter { keyword ->
                     keyword.contains(query, ignoreCase = true)
                 }
@@ -81,32 +101,27 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSearchActiveChange(active: Boolean) {
-        _state.update { it.copy(isSearchActive = active) }
+        _homeState.update { it.copy(isSearchActive = active) }
     }
 
     fun onClearSearch() {
-        _state.update { it.copy(searchQuery = "", searchSuggestions = emptyList()) }
+        _homeState.update { it.copy(searchQuery = "", searchSuggestions = emptyList()) }
     }
 
-    // --- Popup Food Detail
     fun onFoodSelected(food: Food) {
-        _state.update { it.copy(selectedFood = food) }
+        _homeState.update { it.copy(selectedFood = food) }
     }
 
     fun onDismissFoodDetail() {
-        _state.update { it.copy(selectedFood = null) }
+        _homeState.update { it.copy(selectedFood = null) }
     }
 
-    // --- Cart Management ---
-    
     fun addToCart(food: Food, restaurantId: String, restaurantName: String) {
-        val currentCart = _state.value.cartItems
+        val currentCart = _homeState.value.cartItems
         val existingItem = currentCart.find { it.menuItem.id == food.id }
         
-        // Check if adding from different restaurant
-        if (currentCart.isNotEmpty() && _state.value.selectedRestaurantId != restaurantId) {
-            // Clear cart and add new item
-            _state.update {
+        if (currentCart.isNotEmpty() && _homeState.value.selectedRestaurantId != restaurantId) {
+            _homeState.update {
                 it.copy(
                     cartItems = listOf(
                         CartItem(
@@ -119,8 +134,7 @@ class HomeViewModel @Inject constructor(
                 )
             }
         } else if (existingItem != null) {
-            // Update quantity
-            _state.update {
+            _homeState.update {
                 it.copy(
                     cartItems = currentCart.map { item ->
                         if (item.menuItem.id == food.id) {
@@ -132,8 +146,7 @@ class HomeViewModel @Inject constructor(
                 )
             }
         } else {
-            // Add new item
-            _state.update {
+            _homeState.update {
                 it.copy(
                     cartItems = currentCart + CartItem(
                         menuItem = food,
@@ -147,7 +160,7 @@ class HomeViewModel @Inject constructor(
     }
     
     fun removeFromCart(menuItemId: String) {
-        _state.update {
+        _homeState.update {
             val newCart = it.cartItems.filter { item -> item.menuItem.id != menuItemId }
             it.copy(
                 cartItems = newCart,
@@ -162,7 +175,7 @@ class HomeViewModel @Inject constructor(
             removeFromCart(menuItemId)
             return
         }
-        _state.update {
+        _homeState.update {
             it.copy(
                 cartItems = it.cartItems.map { item ->
                     if (item.menuItem.id == menuItemId) {
@@ -176,7 +189,7 @@ class HomeViewModel @Inject constructor(
     }
     
     fun clearCart() {
-        _state.update {
+        _homeState.update {
             it.copy(
                 cartItems = emptyList(),
                 selectedRestaurantId = null,
@@ -185,14 +198,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // --- Checkout ---
-    
     fun showCheckout() {
-        if (_state.value.cartItems.isEmpty()) {
-            Log.w("HomeViewModel", "Cannot show checkout with empty cart")
+        if (_homeState.value.cartItems.isEmpty()) {
+            Log.w("CustomerViewModel", "Cannot show checkout with empty cart")
             return
         }
-        _state.update { 
+        _homeState.update { 
             it.copy(
                 showCheckoutDialog = true,
                 orderError = null,
@@ -202,7 +213,7 @@ class HomeViewModel @Inject constructor(
     }
     
     fun hideCheckout() {
-        _state.update { 
+        _homeState.update { 
             it.copy(
                 showCheckoutDialog = false,
                 orderError = null
@@ -211,33 +222,33 @@ class HomeViewModel @Inject constructor(
     }
     
     fun onDeliveryAddressChange(address: String) {
-        _state.update { it.copy(deliveryAddress = address) }
+        _homeState.update { it.copy(deliveryAddress = address) }
     }
     
     fun onOrderNotesChange(notes: String) {
-        _state.update { it.copy(orderNotes = notes) }
+        _homeState.update { it.copy(orderNotes = notes) }
     }
     
     fun placeOrder() {
-        val currentState = _state.value
+        val currentState = _homeState.value
         
         if (currentState.cartItems.isEmpty()) {
-            _state.update { it.copy(orderError = "Cart is empty") }
+            _homeState.update { it.copy(orderError = "Cart is empty") }
             return
         }
         
         if (currentState.deliveryAddress.isBlank()) {
-            _state.update { it.copy(orderError = "Please enter delivery address") }
+            _homeState.update { it.copy(orderError = "Please enter delivery address") }
             return
         }
         
         if (currentState.selectedRestaurantId == null) {
-            _state.update { it.copy(orderError = "No restaurant selected") }
+            _homeState.update { it.copy(orderError = "No restaurant selected") }
             return
         }
         
         viewModelScope.launch {
-            _state.update { it.copy(isPlacingOrder = true, orderError = null) }
+            _homeState.update { it.copy(isPlacingOrder = true, orderError = null) }
             
             val orderRequest = OrderRequest(
                 restaurantId = currentState.selectedRestaurantId,
@@ -256,8 +267,8 @@ class HomeViewModel @Inject constructor(
             val result = orderRepo.createOrder(orderRequest)
             
             result.onSuccess { response ->
-                Log.d("HomeViewModel", "Order placed successfully: ${response.id}")
-                _state.update {
+                Log.d("CustomerViewModel", "Order placed successfully: ${response.id}")
+                _homeState.update {
                     it.copy(
                         isPlacingOrder = false,
                         orderSuccess = true,
@@ -270,13 +281,12 @@ class HomeViewModel @Inject constructor(
                     )
                 }
                 
-                // Auto-close dialog after success
                 delay(2000)
-                _state.update { it.copy(showCheckoutDialog = false, orderSuccess = false) }
+                _homeState.update { it.copy(showCheckoutDialog = false, orderSuccess = false) }
                 
             }.onFailure { error ->
-                Log.e("HomeViewModel", "Failed to place order: ${error.message}")
-                _state.update {
+                Log.e("CustomerViewModel", "Failed to place order: ${error.message}")
+                _homeState.update {
                     it.copy(
                         isPlacingOrder = false,
                         orderError = error.message ?: "Failed to place order. Please try again."
@@ -285,8 +295,6 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
-
-    // --- Mock Data Generators (Dựa trên JSON của bạn) ---
 
     private fun mockFoods(): List<Food> {
         return List(5) { index ->
@@ -303,18 +311,111 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun loadRestaurants(): List<Restaurant> {
-        return List(3) { index ->
-            Restaurant(
-                id = "res-$index",
-                name = if (index == 0) "The Italian Corner" else "Foodya Restaurant $index",
-                address = "123 Street, City",
-                description = "Best food in town",
-                rating = 4.5 + (index * 0.1),
-                deliveryFee = 2.0,
-                estimatedDeliveryTime = 30,
-                imageUrl = "https://via.placeholder.com/150"
+    // ========== ORDER HISTORY FUNCTIONS ==========
+
+    private fun loadOrders() {
+        viewModelScope.launch {
+            _orderHistoryState.update { it.copy(isLoading = true) }
+
+            delay(1000)
+
+            allOrders = mockOrderData()
+
+            filterOrders(_orderHistoryState.value.selectedStatus)
+        }
+    }
+
+    fun onStatusSelected(status: OrderStatus) {
+        _orderHistoryState.update { it.copy(selectedStatus = status) }
+        filterOrders(status)
+    }
+
+    private fun filterOrders(status: OrderStatus) {
+        val filtered = allOrders.filter { it.status == status }
+        _orderHistoryState.update {
+            it.copy(
+                isLoading = false,
+                orders = filtered
             )
+        }
+    }
+
+    private fun mockOrderData(): List<Order> {
+        val list = mutableListOf<Order>()
+
+        OrderStatus.values().forEachIndexed { index, status ->
+            repeat(2) { i ->
+                list.add(
+                    Order(
+                        id = "ORD-${status.name}-$i",
+                        restaurantName = if(i % 2 == 0) "The Italian Corner" else "Pho Viet Nam",
+                        restaurantImageUrl = "https://via.placeholder.com/150",
+                        totalPrice = 15.5 + i * 2,
+                        totalItems = 2 + i,
+                        status = status,
+                        orderDate = "25 Dec, 10:30 AM",
+                        items = listOf(
+                            com.example.foodya.domain.model.OrderItem("Pizza Margherita", 1),
+                            com.example.foodya.domain.model.OrderItem("Coke Zero", 2)
+                        )
+                    )
+                )
+            }
+        }
+        return list
+    }
+
+    // ========== PROFILE FUNCTIONS ==========
+
+    private fun observeThemePreference() {
+        viewModelScope.launch {
+            themeRepository.isDarkMode.collect { isDark ->
+                _profileState.update { it.copy(isDarkMode = isDark ?: false) }
+            }
+        }
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            _profileState.update { it.copy(isLoading = true) }
+
+            delay(1000)
+
+            val mockUser = User(
+                id = "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                username = "nguyenvana_foodya",
+                email = "nguyenvana@email.com",
+                fullName = "Nguyễn Văn A",
+                phoneNumber = "+84 909 123 456",
+                role = "CUSTOMER",
+                isActive = true,
+                isEmailVerified = true,
+                lastLoginAt = "2025-12-25T07:49:56.843Z",
+                createdAt = "2025-01-01T07:49:56.843Z",
+                updatedAt = "2025-12-25T07:49:56.843Z"
+            )
+
+            _profileState.update {
+                it.copy(
+                    isLoading = false,
+                    user = mockUser
+                )
+            }
+        }
+    }
+
+    fun onToggleDarkMode(isDark: Boolean) {
+        viewModelScope.launch {
+            themeRepository.setDarkMode(isDark)
+        }
+    }
+
+    fun onLogout(onLogoutSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _profileState.update { it.copy(isLoading = true) }
+            tokenManager.clear()
+            delay(500)
+            onLogoutSuccess()
         }
     }
 }

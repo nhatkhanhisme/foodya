@@ -25,15 +25,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.User
+import com.example.foodya.ui.screen.customer.CustomerViewModel
 
 @Composable
 fun CustomerProfileView(
-    viewModel: ProfileViewModel = hiltViewModel(),
+    viewModel: CustomerViewModel = hiltViewModel(),
     onNavigateToLogin: () -> Unit, // Callback khi logout thành công
     onNavigateToChangePassword: () -> Unit,
     onNavigateToTerms: () -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.profileState.collectAsState()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background

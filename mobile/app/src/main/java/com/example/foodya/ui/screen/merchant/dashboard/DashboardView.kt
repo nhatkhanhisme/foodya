@@ -19,16 +19,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.foodya.domain.model.OrderWithDetails
 import com.example.foodya.domain.model.enums.OrderStatus
+import com.example.foodya.ui.screen.merchant.MerchantViewModel
 import java.text.NumberFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardView(
-    viewModel: DashboardViewModel = hiltViewModel(),
+    viewModel: MerchantViewModel = hiltViewModel(),
     onNavigateToRegisterRestaurant: () -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.dashboardState.collectAsState()
 
     // Order status dialog
     if (state.selectedOrder != null) {
@@ -85,7 +86,7 @@ fun DashboardView(
                         .align(Alignment.BottomCenter)
                         .padding(16.dp),
                     action = {
-                        TextButton(onClick = viewModel::onRetry) {
+                        TextButton(onClick = viewModel::onDashboardRetry) {
                             Text("Thử lại")
                         }
                     }
