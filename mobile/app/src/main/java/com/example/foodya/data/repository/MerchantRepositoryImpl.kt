@@ -183,7 +183,15 @@ private fun OrderResponse.toDomain() = OrderWithDetails(
     customerPhone = "0912456789",
     restaurantId = restaurantId,
     restaurantName = restaurantName,
-    items = items.map { OrderItem(it.menuItemName, it.quantity) },
+    items = items.map { OrderItem(
+        id = it.id,
+        menuItemId = it.menuItemId,
+        menuItemName = it.menuItemName,
+        quantity = it.quantity,
+        priceAtPurchase = it.priceAtPurchase,
+        subtotal = it.subtotal,
+        specialInstructions = it.specialInstructions
+    ) },
     totalPrice = totalPrice,
     totalItems = totalItems,
     status = OrderStatus.valueOf(status),

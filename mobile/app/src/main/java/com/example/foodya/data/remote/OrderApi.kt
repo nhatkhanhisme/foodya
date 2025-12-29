@@ -11,16 +11,16 @@ import retrofit2.http.Query
 
 interface OrderApi {
     
-    @POST("orders")
+    @POST("customers/orders")
     suspend fun createOrder(@Body request: OrderRequest): OrderResponse
     
-    @GET("orders/me")
+    @GET("customers/orders/me")
     suspend fun getMyOrders(): List<OrderResponse>
     
-    @GET("orders/me/active")
+    @GET("customers/orders/me/active")
     suspend fun getMyActiveOrders(): List<OrderResponse>
     
-    @PATCH("orders/{id}/cancel")
+    @PATCH("customers/orders/{id}/cancel")
     suspend fun cancelOrder(
         @Path("id") orderId: String,
         @Query("reason") reason: String?

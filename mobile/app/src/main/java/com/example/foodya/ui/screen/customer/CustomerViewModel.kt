@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.foodya.data.local.TokenManager
 import com.example.foodya.data.model.OrderItemRequest
 import com.example.foodya.data.model.OrderRequest
+import com.example.foodya.data.model.toDomain
 import com.example.foodya.domain.model.CartItem
 import com.example.foodya.domain.model.Food
 import com.example.foodya.domain.model.Order
@@ -47,7 +48,6 @@ class CustomerViewModel @Inject constructor(
     val profileState = _profileState.asStateFlow()
 
     private val allKeywords = listOf("Pizza", "Burger", "Sushi", "Italian", "Vietnamese", "Coffee", "Tea")
-    private var allOrders = listOf<Order>()
 
     init {
         loadHomeData()
@@ -316,13 +316,34 @@ class CustomerViewModel @Inject constructor(
 
     private fun loadOrders() {
         viewModelScope.launch {
-            _orderHistoryState.update { it.copy(isLoading = true) }
+            _orderHistoryState.update { it.copy(isLoading = true, error = null) }
 
-            delay(1000)
-
-            allOrders = mockOrderData()
-
-            filterOrders(_orderHistoryState.value.selectedStatus)
+            val result = orderRepo.getMyOrders()
+            
+            result.onSuccess { orderResponses ->
+                val orders = orderResponses.map { it.toDomain() }
+                Log.d("CustomerViewModel", "Loaded ${orders.size} orders")
+                
+                _orderHistoryState.update { 
+                    it.copy(
+                        allOrders = orders,
+                        isLoading = false,
+                        error = null
+                    ) 
+                }
+                
+                filterOrders(_orderHistoryState.value.selectedStatus)
+            }.onFailure { error ->
+                Log.e("CustomerViewModel", "Failed to load orders: ${error.message}")
+                _orderHistoryState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = error.message ?: "Không thể tải danh sách đơn hàng",
+                        orders = emptyList(),
+                        allOrders = emptyList()
+                    )
+                }
+            }
         }
     }
 
@@ -332,38 +353,64 @@ class CustomerViewModel @Inject constructor(
     }
 
     private fun filterOrders(status: OrderStatus) {
-        val filtered = allOrders.filter { it.status == status }
+        val filtered = _orderHistoryState.value.allOrders.filter { it.status == status }
         _orderHistoryState.update {
-            it.copy(
-                isLoading = false,
-                orders = filtered
-            )
+            it.copy(orders = filtered)
         }
     }
-
-    private fun mockOrderData(): List<Order> {
-        val list = mutableListOf<Order>()
-
-        OrderStatus.values().forEachIndexed { index, status ->
-            repeat(2) { i ->
-                list.add(
-                    Order(
-                        id = "ORD-${status.name}-$i",
-                        restaurantName = if(i % 2 == 0) "The Italian Corner" else "Pho Viet Nam",
-                        restaurantImageUrl = "https://via.placeholder.com/150",
-                        totalPrice = 15.5 + i * 2,
-                        totalItems = 2 + i,
-                        status = status,
-                        orderDate = "25 Dec, 10:30 AM",
-                        items = listOf(
-                            com.example.foodya.domain.model.OrderItem("Pizza Margherita", 1),
-                            com.example.foodya.domain.model.OrderItem("Coke Zero", 2)
-                        )
+    
+    fun cancelOrder(orderId: String, reason: String?) {
+        viewModelScope.launch {
+            _orderHistoryState.update { 
+                it.copy(
+                    isCancelling = true, 
+                    cancelError = null,
+                    cancellingOrderId = orderId
+                ) 
+            }
+            
+            val result = orderRepo.cancelOrder(orderId, reason)
+            
+            result.onSuccess { orderResponse ->
+                Log.d("CustomerViewModel", "Order cancelled successfully: $orderId")
+                
+                // Update the order in the list
+                val updatedOrder = orderResponse.toDomain()
+                val allOrders = _orderHistoryState.value.allOrders.map { order ->
+                    if (order.id == orderId) updatedOrder else order
+                }
+                
+                _orderHistoryState.update {
+                    it.copy(
+                        isCancelling = false,
+                        cancelError = null,
+                        cancellingOrderId = null,
+                        allOrders = allOrders
                     )
-                )
+                }
+                
+                // Refresh the filtered list
+                filterOrders(_orderHistoryState.value.selectedStatus)
+                
+            }.onFailure { error ->
+                Log.e("CustomerViewModel", "Failed to cancel order: ${error.message}")
+                _orderHistoryState.update {
+                    it.copy(
+                        isCancelling = false,
+                        cancelError = error.message ?: "Không thể hủy đơn hàng",
+                        cancellingOrderId = null
+                    )
+                }
             }
         }
-        return list
+    }
+    
+    fun clearCancelError() {
+        _orderHistoryState.update { it.copy(cancelError = null) }
+    }
+    
+    fun refreshOrders() {
+        loadOrders()
     }
 
     // ========== PROFILE FUNCTIONS ==========

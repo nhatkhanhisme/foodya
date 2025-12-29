@@ -495,7 +495,7 @@ private fun OrderCard(
                     tint = MaterialTheme.colorScheme.secondary
                 )
                 Text(
-                    text = order.items.joinToString(", ") { "${it.name} x${it.quantity}" },
+                    text = order.items.joinToString(", ") { "${it.menuItemName} x${it.quantity}" },
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
