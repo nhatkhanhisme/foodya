@@ -17,13 +17,17 @@ import com.example.foodya.domain.repository.ThemeRepository
 import com.example.foodya.ui.screen.merchant.dashboard.DashboardState
 import com.example.foodya.ui.screen.merchant.menu.MenuState
 import com.example.foodya.ui.screen.merchant.profile.MerchantProfileState
+import com.example.foodya.ui.common.UiEvent
 import com.example.foodya.util.toUserFriendlyMessage
+import com.example.foodya.util.toCurrency
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import javax.inject.Inject
 
 @HiltViewModel
@@ -46,6 +50,10 @@ class MerchantViewModel @Inject constructor(
     // ========== PROFILE STATE ==========
     private val _profileState = MutableStateFlow(MerchantProfileState())
     val profileState = _profileState.asStateFlow()
+
+    // ========== UI EVENTS ==========
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
 
     init {
         loadDashboard()
@@ -479,26 +487,44 @@ class MerchantViewModel @Inject constructor(
             _dashboardState.update { it.copy(isUpdatingOrderStatus = true, error = null) }
             delay(500)
             
-            val result = merchantRepo.updateOrderStatus(orderId, status, cancelReason)
-            result.onSuccess { updatedOrder ->
-                Log.d("MerchantViewModel", "Order status updated: ${updatedOrder.status}")
-                _dashboardState.value.selectedRestaurant?.let { restaurant ->
-                    loadOrders(restaurant.id)
+            try {
+                val result = merchantRepo.updateOrderStatus(orderId, status, cancelReason)
+                result.onSuccess { updatedOrder ->
+                    Log.d("MerchantViewModel", "Cập nhật trạng thái đơn hàng: ${updatedOrder.status}")
+                    
+                    // Show success message
+                    _uiEvent.send(UiEvent.ShowSnackbar("Cập nhật đơn hàng thành công", isError = false))
+                    
+                    _dashboardState.value.selectedRestaurant?.let { restaurant ->
+                        loadOrders(restaurant.id)
+                    }
+                    _dashboardState.update {
+                        it.copy(
+                            isUpdatingOrderStatus = false,
+                            selectedOrder = null,
+                            cancelReason = "",
+                            showCancelReasonDialog = false
+                        )
+                    }
+                }.onFailure { error ->
+                    Log.e("MerchantViewModel", "Lỗi cập nhật trạng thái đơn hàng: ${error.message}")
+                    val friendlyMessage = error.toUserFriendlyMessage()
+                    _uiEvent.send(UiEvent.ShowSnackbar(friendlyMessage, isError = true))
+                    _dashboardState.update {
+                        it.copy(
+                            isUpdatingOrderStatus = false,
+                            error = friendlyMessage
+                        )
+                    }
                 }
+            } catch (e: Exception) {
+                Log.e("MerchantViewModel", "Exception cập nhật trạng thái: ${e.message}")
+                val friendlyMessage = e.toUserFriendlyMessage()
+                _uiEvent.send(UiEvent.ShowSnackbar(friendlyMessage, isError = true))
                 _dashboardState.update {
                     it.copy(
                         isUpdatingOrderStatus = false,
-                        selectedOrder = null,
-                        cancelReason = "",
-                        showCancelReasonDialog = false
-                    )
-                }
-            }.onFailure { error ->
-                Log.e("MerchantViewModel", "Error updating order status: ${error.message}")
-                _dashboardState.update {
-                    it.copy(
-                        isUpdatingOrderStatus = false,
-                        error = error.message
+                        error = friendlyMessage
                     )
                 }
             }
@@ -565,7 +591,7 @@ class MerchantViewModel @Inject constructor(
                 editingItem = item,
                 formName = item.name,
                 formDescription = item.description,
-                formPrice = item.price.toString(),
+                formPrice = item.price.toCurrency(),
                 formImageUrl = item.imageUrl,
                 formCategory = item.category,
                 formIsAvailable = item.isAvailable

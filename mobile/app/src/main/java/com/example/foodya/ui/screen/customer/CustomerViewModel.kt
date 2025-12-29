@@ -18,13 +18,17 @@ import com.example.foodya.domain.repository.ThemeRepository
 import com.example.foodya.ui.screen.customer.home.HomeState
 import com.example.foodya.ui.screen.customer.order.OrderHistoryState
 import com.example.foodya.ui.screen.customer.profile.ProfileState
+import com.example.foodya.ui.common.UiEvent
 import com.example.foodya.util.toUserFriendlyMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import javax.inject.Inject
 
 @HiltViewModel
@@ -48,10 +52,16 @@ class CustomerViewModel @Inject constructor(
     private val _profileState = MutableStateFlow(ProfileState())
     val profileState = _profileState.asStateFlow()
 
+    // ========== UI EVENTS ==========
+    private val _uiEvent = Channel<UiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
+
     private val _userId = MutableStateFlow<String?>(null)
     val userId = _userId.asStateFlow()
 
     private val allKeywords = listOf("Pizza", "Burger", "Sushi", "Italian", "Vietnamese", "Coffee", "Tea")
+    
+    private var searchJob: Job? = null // Job để hủy tìm kiếm trước đó
 
     init {
         loadHomeData()
@@ -66,28 +76,45 @@ class CustomerViewModel @Inject constructor(
         viewModelScope.launch {
             _homeState.update { it.copy(isLoading = true) }
             
-            val result = restaurantRepo.getRestaurants(
+            // Load restaurants
+            val restaurantsResult = restaurantRepo.getRestaurants(
                 sortBy = "popular",
                 page = 0,
                 size = 20
             )
             
-            result.onSuccess { (list, hasMore) ->
-                Log.d("CustomerViewModel", "Loaded ${list.size} restaurants, hasMore: $hasMore")
-                _homeState.update {
-                    it.copy(
-                        isLoading = false,
-                        nearbyRestaurants = list,
-                        popularFoods = mockFoods()
-                    )
+            // Load popular foods from specific restaurant
+            val popularFoodsResult = restaurantRepo.getMenuByRestaurantId("bf111667-2670-7266-2666-108198861383")
+            
+            restaurantsResult.onSuccess { (list, hasMore) ->
+                Log.d("CustomerViewModel", "Đã tải ${list.size} nhà hàng, có thêm: $hasMore")
+                
+                popularFoodsResult.onSuccess { menuItems ->
+                    Log.d("CustomerViewModel", "Đã tải ${menuItems.size} món ăn nổi bật")
+                    _homeState.update {
+                        it.copy(
+                            isLoading = false,
+                            nearbyRestaurants = list,
+                            popularFoods = menuItems
+                        )
+                    }
+                }.onFailure { exception ->
+                    Log.e("CustomerViewModel", "Lỗi khi tải món ăn nổi bật: ${exception.message}")
+                    _homeState.update {
+                        it.copy(
+                            isLoading = false,
+                            nearbyRestaurants = list,
+                            popularFoods = emptyList()
+                        )
+                    }
                 }
             }.onFailure { exception ->
-                Log.e("CustomerViewModel", "Error loading restaurants: ${exception.message}")
+                Log.e("CustomerViewModel", "Lỗi khi tải danh sách nhà hàng: ${exception.message}")
                 _homeState.update {
                     it.copy(
                         isLoading = false,
                         nearbyRestaurants = emptyList(),
-                        popularFoods = mockFoods()
+                        popularFoods = emptyList()
                     )
                 }
             }
@@ -102,6 +129,47 @@ class CustomerViewModel @Inject constructor(
                     keyword.contains(query, ignoreCase = true)
                 }
             )
+        }
+        
+        // Hủy job tìm kiếm trước đó
+        searchJob?.cancel()
+        
+        // Nếu query không rỗng, tạo job mới với debounce 1 giây
+        if (query.isNotBlank()) {
+            searchJob = viewModelScope.launch {
+                delay(1000L) // Debounce 1 giây
+                performSearch(query)
+            }
+        } else {
+            // Nếu query rỗng, xóa kết quả tìm kiếm
+            _homeState.update { it.copy(searchResults = emptyList(), isSearching = false) }
+        }
+    }
+    
+    private suspend fun performSearch(keyword: String) {
+        _homeState.update { it.copy(isSearching = true) }
+        
+        restaurantRepo.getRestaurants(
+            keyword = keyword,
+            sortBy = "popular",
+            page = 0,
+            size = 20
+        ).onSuccess { (restaurants, _) ->
+            Log.d("CustomerViewModel", "Kết quả tìm kiếm: ${restaurants.size} nhà hàng với từ khóa '$keyword'")
+            _homeState.update {
+                it.copy(
+                    searchResults = restaurants,
+                    isSearching = false
+                )
+            }
+        }.onFailure { exception ->
+            Log.e("CustomerViewModel", "Lỗi tìm kiếm: ${exception.message}")
+            _homeState.update {
+                it.copy(
+                    searchResults = emptyList(),
+                    isSearching = false
+                )
+            }
         }
     }
 
@@ -205,7 +273,7 @@ class CustomerViewModel @Inject constructor(
 
     fun showCheckout() {
         if (_homeState.value.cartItems.isEmpty()) {
-            Log.w("CustomerViewModel", "Cannot show checkout with empty cart")
+            Log.w("CustomerViewModel", "Không thể hiển thanh toán với giỏ hàng trống")
             return
         }
         _homeState.update { 
@@ -215,6 +283,29 @@ class CustomerViewModel @Inject constructor(
                 orderSuccess = false
             ) 
         }
+    }
+    
+    fun quickOrder(food: Food, restaurantId: String, restaurantName: String) {
+        // Set up a single-item cart and directly show checkout dialog
+        _homeState.update {
+            it.copy(
+                cartItems = listOf(
+                    CartItem(
+                        menuItem = food,
+                        quantity = 1,
+                    )
+                ),
+                selectedRestaurantId = restaurantId,
+                selectedRestaurantName = restaurantName,
+                showCheckoutDialog = true,
+                orderError = null,
+                orderSuccess = false,
+                // Deactivate search to prevent focus issues
+                isSearchActive = false,
+                searchQuery = ""
+            )
+        }
+        Log.d("CustomerViewModel", "Đã khởi tạo đặt món nhanh cho ${food.name}")
     }
     
     fun hideCheckout() {
@@ -240,6 +331,9 @@ class CustomerViewModel @Inject constructor(
         
         // Check if user ID is available
         if (currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                _uiEvent.send(UiEvent.ShowSnackbar("Không thể xác định người dùng. Vui lòng đăng nhập lại.", isError = true))
+            }
             _homeState.update { 
                 it.copy(orderError = "Không thể xác định người dùng. Vui lòng đăng nhập lại.") 
             }
@@ -256,6 +350,9 @@ class CustomerViewModel @Inject constructor(
         )
         
         if (validationError != null) {
+            viewModelScope.launch {
+                _uiEvent.send(UiEvent.ShowSnackbar(validationError, isError = true))
+            }
             _homeState.update { it.copy(orderError = validationError) }
             return
         }
@@ -281,7 +378,11 @@ class CustomerViewModel @Inject constructor(
             val result = orderRepo.createOrder(orderRequest)
             
             result.onSuccess { response ->
-                Log.d("CustomerViewModel", "Order placed successfully: ${response.id}")
+                Log.d("CustomerViewModel", "Đặt hàng thành công: ${response.id}")
+                
+                // Show success message
+                _uiEvent.send(UiEvent.ShowSnackbar("Đặt hàng thành công! Mã đơn: ${response.id.take(8)}", isError = false))
+                
                 _homeState.update {
                     it.copy(
                         isPlacingOrder = false,
@@ -295,18 +396,20 @@ class CustomerViewModel @Inject constructor(
                     )
                 }
                 
-                delay(2000)
+                delay(1500)
                 _homeState.update { it.copy(showCheckoutDialog = false, orderSuccess = false) }
                 
                 // Refresh orders list
                 loadOrders()
                 
             }.onFailure { error ->
-                Log.e("CustomerViewModel", "Failed to place order: ${error.message}", error)
+                Log.e("CustomerViewModel", "Thất bại khi đặt hàng: ${error.message}", error)
+                val friendlyMessage = error.toUserFriendlyMessage()
+                _uiEvent.send(UiEvent.ShowSnackbar(friendlyMessage, isError = true))
                 _homeState.update {
                     it.copy(
                         isPlacingOrder = false,
-                        orderError = error.toUserFriendlyMessage()
+                        orderError = friendlyMessage
                     )
                 }
             }
@@ -360,20 +463,7 @@ class CustomerViewModel @Inject constructor(
         return null
     }
 
-    private fun mockFoods(): List<Food> {
-        return List(5) { index ->
-            Food(
-                id = "food-$index",
-                restaurantId = "res-1",
-                restaurantName = "The Italian Corner",
-                name = if (index % 2 == 0) "Margherita Pizza $index" else "Pasta Carbonara $index",
-                description = "Classic Italian dish with premium ingredients",
-                price = 12.99 + index,
-                imageUrl = "https://via.placeholder.com/150",
-                category = "Main Course",
-            )
-        }
-    }
+
 
     // ========== ORDER HISTORY FUNCTIONS ==========
 
@@ -385,7 +475,7 @@ class CustomerViewModel @Inject constructor(
             
             result.onSuccess { orderResponses ->
                 val orders = orderResponses.map { it.toDomain() }
-                Log.d("CustomerViewModel", "Loaded ${orders.size} orders")
+                Log.d("CustomerViewModel", "Đã tải ${orders.size} đơn hàng")
                 
                 _orderHistoryState.update { 
                     it.copy(
@@ -397,7 +487,7 @@ class CustomerViewModel @Inject constructor(
                 
                 filterOrders(_orderHistoryState.value.selectedStatus)
             }.onFailure { error ->
-                Log.e("CustomerViewModel", "Failed to load orders: ${error.message}")
+                Log.e("CustomerViewModel", "Thất bại khi tải danh sách đơn hàng: ${error.message}")
                 _orderHistoryState.update {
                     it.copy(
                         isLoading = false,
@@ -435,7 +525,10 @@ class CustomerViewModel @Inject constructor(
             val result = orderRepo.cancelOrder(orderId, reason)
             
             result.onSuccess { orderResponse ->
-                Log.d("CustomerViewModel", "Order cancelled successfully: $orderId")
+                Log.d("CustomerViewModel", "Đã hủy đơn hàng thành công: $orderId")
+                
+                // Show success message
+                _uiEvent.send(UiEvent.ShowSnackbar("Hủy đơn hàng thành công", isError = false))
                 
                 // Update the order in the list
                 val updatedOrder = orderResponse.toDomain()
@@ -456,11 +549,13 @@ class CustomerViewModel @Inject constructor(
                 filterOrders(_orderHistoryState.value.selectedStatus)
                 
             }.onFailure { error ->
-                Log.e("CustomerViewModel", "Failed to cancel order: ${error.message}")
+                Log.e("CustomerViewModel", "Thất bại khi hủy đơn hàng: ${error.message}")
+                val friendlyMessage = error.toUserFriendlyMessage()
+                _uiEvent.send(UiEvent.ShowSnackbar(friendlyMessage, isError = true))
                 _orderHistoryState.update {
                     it.copy(
                         isCancelling = false,
-                        cancelError = error.message ?: "Không thể hủy đơn hàng",
+                        cancelError = friendlyMessage,
                         cancellingOrderId = null
                     )
                 }
@@ -493,7 +588,7 @@ class CustomerViewModel @Inject constructor(
             val result = userRepo.getCurrentUserProfile()
             
             result.onSuccess { user ->
-                Log.d("CustomerViewModel", "Loaded user profile: ${user.username}, id: ${user.id}")
+                Log.d("CustomerViewModel", "Đã tải thông tin người dùng: ${user.username}, id: ${user.id}")
                 _userId.update { user.id }
                 _profileState.update {
                     it.copy(
@@ -502,7 +597,7 @@ class CustomerViewModel @Inject constructor(
                     )
                 }
             }.onFailure { error ->
-                Log.e("CustomerViewModel", "Failed to load user profile: ${error.message}")
+                Log.e("CustomerViewModel", "Thất bại khi tải thông tin người dùng: ${error.message}")
                 _profileState.update {
                     it.copy(
                         isLoading = false,

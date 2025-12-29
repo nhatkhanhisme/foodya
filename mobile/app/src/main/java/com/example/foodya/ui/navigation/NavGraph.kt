@@ -16,6 +16,7 @@ import com.example.foodya.ui.screen.customer.home.HomeView
 import com.example.foodya.ui.screen.customer.order.OrderHistoryView
 import com.example.foodya.ui.screen.customer.profile.CustomerProfileView
 import com.example.foodya.ui.screen.customer.restaurant.RestaurantDetailView
+import com.example.foodya.ui.screen.customer.search.SearchResultView
 import com.example.foodya.ui.screen.merchant.MerchantViewModel
 import com.example.foodya.ui.screen.merchant.dashboard.DashboardView
 import com.example.foodya.ui.screen.merchant.menu.MenuView
@@ -127,13 +128,21 @@ fun SetupNavGraph(
                     }
                 )
             }
-            // --- Màn hình Kết quả tìm kiếm (Cũng cần thêm nếu chưa có) ---
+            // --- Màn hình Kết quả tìm kiếm ---
             composable(
-                route = Screen.SearchResults.route, // Ví dụ: "search_results/{query}"
+                route = Screen.SearchResults.route, // "search_results/{query}"
                 arguments = listOf(navArgument("query") { type = NavType.StringType })
             ) { backStackEntry ->
                 val query = backStackEntry.arguments?.getString("query") ?: ""
-                // SearchResultsView(query = query, ...)
+                SearchResultView(
+                    query = query,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onRestaurantClick = { restaurantId ->
+                        navController.navigate(Screen.RestaurantDetail.createRoute(restaurantId))
+                    }
+                )
             }
         }
 

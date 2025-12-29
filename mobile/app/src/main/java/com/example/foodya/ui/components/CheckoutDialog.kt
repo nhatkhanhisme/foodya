@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.foodya.domain.model.CartItem
+import com.example.foodya.util.toCurrency
 
 @Composable
 fun CheckoutDialog(
@@ -218,7 +219,7 @@ fun CheckoutDialog(
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = "$${String.format("%.2f", total)}",
+                                        text = total.toCurrency(),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -289,7 +290,7 @@ private fun OrderItemRow(item: CartItem) {
             )
         }
         Text(
-            text = "$${String.format("%.2f", item.menuItem.price * item.quantity)}",
+            text = (item.menuItem.price * item.quantity).toCurrency(),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -307,7 +308,7 @@ private fun PriceRow(label: String, amount: Double) {
             style = MaterialTheme.typography.bodyMedium
         )
         Text(
-            text = "$${String.format("%.2f", amount)}",
+            text = amount.toCurrency(),
             style = MaterialTheme.typography.bodyMedium
         )
     }

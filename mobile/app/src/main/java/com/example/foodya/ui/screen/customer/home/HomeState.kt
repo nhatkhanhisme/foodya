@@ -16,6 +16,8 @@ data class HomeState(
     val searchQuery: String = "",
     val isSearchActive: Boolean = false, // Thanh tìm kiếm đang mở hay đóng
     val searchSuggestions: List<String> = emptyList(), // Gợi ý khi gõ
+    val searchResults: List<Restaurant> = emptyList(), // Kết quả tìm kiếm
+    val isSearching: Boolean = false, // Đang tìm kiếm
 
     val selectedFood: Food? = null,
 

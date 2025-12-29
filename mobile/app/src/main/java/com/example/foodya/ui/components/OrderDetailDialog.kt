@@ -22,8 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.Order
-import java.text.NumberFormat
-import java.util.*
+import com.example.foodya.util.toCurrency
 
 @Composable
 fun OrderDetailDialog(
@@ -295,7 +294,7 @@ fun OrderDetailDialog(
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = formatPrice(order.totalPrice),
+                                        text = order.totalPrice.toCurrency(),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -364,7 +363,7 @@ private fun OrderDetailItemRow(item: com.example.foodya.domain.model.OrderItem) 
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "SL: ${item.quantity} × ${formatPrice(item.priceAtPurchase)}",
+                text = "SL: ${item.quantity} × ${item.priceAtPurchase.toCurrency()}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -378,7 +377,7 @@ private fun OrderDetailItemRow(item: com.example.foodya.domain.model.OrderItem) 
             }
         }
         Text(
-            text = formatPrice(item.subtotal),
+            text = item.subtotal.toCurrency(),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -396,13 +395,8 @@ private fun PriceDetailRow(label: String, amount: Double) {
             style = MaterialTheme.typography.bodyMedium
         )
         Text(
-            text = formatPrice(amount),
+            text = amount.toCurrency(),
             style = MaterialTheme.typography.bodyMedium
         )
     }
-}
-
-private fun formatPrice(price: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-    return formatter.format(price)
 }

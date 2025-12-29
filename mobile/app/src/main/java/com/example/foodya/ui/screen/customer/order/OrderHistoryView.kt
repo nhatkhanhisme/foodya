@@ -21,6 +21,8 @@ import com.example.foodya.domain.model.enums.OrderStatus
 import com.example.foodya.ui.components.OrderDetailDialog
 import com.example.foodya.ui.components.OrderItemCard
 import com.example.foodya.ui.screen.customer.CustomerViewModel
+import com.example.foodya.ui.common.UiEvent
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,16 +30,27 @@ fun OrderHistoryView(
     viewModel: CustomerViewModel = hiltViewModel()
 ) {
     val state by viewModel.orderHistoryState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     var showCancelDialog by remember { mutableStateOf(false) }
     var selectedOrderId by remember { mutableStateOf<String?>(null) }
     var cancelReason by remember { mutableStateOf("") }
     var showOrderDetail by remember { mutableStateOf(false) }
     var selectedOrder by remember { mutableStateOf<Order?>(null) }
 
-    // Show cancel error snackbar
-    LaunchedEffect(state.cancelError) {
-        if (state.cancelError != null) {
-            // Error will be shown in snackbar, clear after showing
+    // Observe UI events
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = if (event.isError) SnackbarDuration.Long else SnackbarDuration.Short
+                    )
+                }
+                is UiEvent.Navigate -> {
+                    // Handle navigation if needed
+                }
+            }
         }
     }
 
@@ -51,18 +64,7 @@ fun OrderHistoryView(
 
     Scaffold(
         snackbarHost = {
-            if (state.cancelError != null) {
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    action = {
-                        TextButton(onClick = { viewModel.clearCancelError() }) {
-                            Text("Đóng")
-                        }
-                    }
-                ) {
-                    Text(state.cancelError ?: "")
-                }
-            }
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { paddingValues ->
         Column(

@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +30,8 @@ import com.example.foodya.ui.components.FoodItemCard
 import com.example.foodya.ui.components.RestaurantCard
 import com.example.foodya.ui.components.SectionTitle
 import com.example.foodya.ui.screen.customer.CustomerViewModel
+import com.example.foodya.ui.common.UiEvent
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +42,24 @@ fun HomeView(
     onQuickOrderClick: (String) -> Unit
 ) {
     val state by viewModel.homeState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Observe UI events
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = if (event.isError) SnackbarDuration.Long else SnackbarDuration.Short
+                    )
+                }
+                is UiEvent.Navigate -> {
+                    // Handle navigation if needed
+                }
+            }
+        }
+    }
 
     // Show checkout dialog
     if (state.showCheckoutDialog) {
@@ -74,6 +93,9 @@ fun HomeView(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
             // Header: Tên App
             if (!state.isSearchActive) {
@@ -200,48 +222,10 @@ fun HomeView(
                                         viewModel.onFoodSelected(food)
                                     },
                                     onOrderClick = {
-                                        // Add to cart instead of quick order
-                                        viewModel.addToCart(food, food.restaurantId, food.restaurantName)
+                                        // Quick order - directly show checkout dialog
+                                        viewModel.quickOrder(food, food.restaurantId, food.restaurantName)
                                     }
                                 )
-                            }
-                        }
-                    }
-
-                    // Floating Cart Button
-                    if (state.cartItems.isNotEmpty()) {
-                        FloatingActionButton(
-                            onClick = { viewModel.showCheckout() },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp),
-                            containerColor = MaterialTheme.colorScheme.primary
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ShoppingCart,
-                                    contentDescription = "Cart",
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                                // Badge with item count
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.secondary),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "${state.cartItems.sumOf { it.quantity }}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSecondary
-                                    )
-                                }
                             }
                         }
                     }

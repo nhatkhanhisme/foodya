@@ -23,7 +23,9 @@ import com.example.foodya.domain.model.OrderWithDetails
 import com.example.foodya.domain.model.enums.OrderStatus
 import com.example.foodya.ui.components.RestaurantEditDialog
 import com.example.foodya.ui.screen.merchant.MerchantViewModel
+import com.example.foodya.ui.common.UiEvent
 import com.example.foodya.util.toCurrency
+import kotlinx.coroutines.flow.collectLatest
 import java.text.NumberFormat
 import java.util.*
 
@@ -34,6 +36,24 @@ fun DashboardView(
     onNavigateToRegisterRestaurant: () -> Unit
 ) {
     val state by viewModel.dashboardState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Observe UI events
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is UiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = if (event.isError) SnackbarDuration.Long else SnackbarDuration.Short
+                    )
+                }
+                is UiEvent.Navigate -> {
+                    // Handle navigation if needed
+                }
+            }
+        }
+    }
 
     // Restaurant edit dialog
     if (state.showEditRestaurantDialog && state.selectedRestaurant != null) {
@@ -83,6 +103,9 @@ fun DashboardView(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
