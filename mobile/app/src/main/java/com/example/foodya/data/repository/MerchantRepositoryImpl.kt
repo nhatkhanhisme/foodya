@@ -89,7 +89,7 @@ class MerchantRepositoryImpl @Inject constructor(
                 status = status.name,
                 cancelReason = cancelReason
             )
-            val response = api.updateOrderStatus(orderId, request)
+            val response = api.updateOrderStatus(orderId, request.status)
             Result.success(response.toDomain())
         } catch (e: Exception) {
             Log.e("MerchantRepository", "Error updating order status", e)

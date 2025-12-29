@@ -17,6 +17,7 @@ import com.example.foodya.domain.repository.ThemeRepository
 import com.example.foodya.ui.screen.merchant.dashboard.DashboardState
 import com.example.foodya.ui.screen.merchant.menu.MenuState
 import com.example.foodya.ui.screen.merchant.profile.MerchantProfileState
+import com.example.foodya.util.toUserFriendlyMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -140,21 +141,23 @@ class MerchantViewModel @Inject constructor(
         val currentState = _dashboardState.value
         val restaurant = currentState.selectedRestaurant ?: return
         
-        // Validation
-        if (currentState.editName.isBlank()) {
-            _dashboardState.update { it.copy(editRestaurantError = "Restaurant name is required") }
-            return
-        }
-        if (currentState.editAddress.isBlank()) {
-            _dashboardState.update { it.copy(editRestaurantError = "Address is required") }
-            return
-        }
-        if (currentState.editPhoneNumber.isBlank()) {
-            _dashboardState.update { it.copy(editRestaurantError = "Phone number is required") }
-            return
-        }
-        if (currentState.editCuisine.isBlank()) {
-            _dashboardState.update { it.copy(editRestaurantError = "Cuisine type is required") }
+        // Comprehensive validation based on backend constraints
+        val validationError = validateRestaurantData(
+            name = currentState.editName,
+            address = currentState.editAddress,
+            phoneNumber = currentState.editPhoneNumber,
+            email = currentState.editEmail,
+            description = currentState.editDescription,
+            cuisine = currentState.editCuisine,
+            openingTime = currentState.editOpeningTime,
+            closingTime = currentState.editClosingTime,
+            openingHours = currentState.editOpeningHours,
+            minimumOrder = currentState.editMinimumOrder,
+            maxDeliveryDistance = currentState.editMaxDeliveryDistance
+        )
+        
+        if (validationError != null) {
+            _dashboardState.update { it.copy(editRestaurantError = validationError) }
             return
         }
         
@@ -198,15 +201,131 @@ class MerchantViewModel @Inject constructor(
                 _menuState.update { it.copy(selectedRestaurant = updatedRestaurant) }
                 
             }.onFailure { error ->
-                Log.e("MerchantViewModel", "Failed to update restaurant: ${error.message}")
+                Log.e("MerchantViewModel", "Failed to update restaurant: ${error.message}", error)
+                val friendlyError = error.toUserFriendlyMessage()
                 _dashboardState.update {
                     it.copy(
                         isUpdatingRestaurant = false,
-                        editRestaurantError = error.message ?: "Failed to update restaurant"
+                        editRestaurantError = friendlyError
                     )
                 }
             }
         }
+    }
+    
+    /**
+     * Validates restaurant data based on backend constraints
+     * Returns error message if validation fails, null otherwise
+     */
+    private fun validateRestaurantData(
+        name: String,
+        address: String,
+        phoneNumber: String,
+        email: String,
+        description: String,
+        cuisine: String,
+        openingTime: String,
+        closingTime: String,
+        openingHours: String,
+        minimumOrder: String,
+        maxDeliveryDistance: String
+    ): String? {
+        // Name validation: @NotBlank @Size(min = 2, max = 200)
+        if (name.isBlank()) {
+            return "Tên nhà hàng không được để trống"
+        }
+        if (name.trim().length < 2) {
+            return "Tên nhà hàng phải có ít nhất 2 ký tự"
+        }
+        if (name.trim().length > 200) {
+            return "Tên nhà hàng không được vượt quá 200 ký tự"
+        }
+        
+        // Address validation: @NotBlank @Size(max = 500)
+        if (address.isBlank()) {
+            return "Địa chỉ không được để trống"
+        }
+        if (address.trim().length > 500) {
+            return "Địa chỉ không được vượt quá 500 ký tự"
+        }
+        
+        // Phone number validation: @NotBlank @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$")
+        if (phoneNumber.isBlank()) {
+            return "Số điện thoại không được để trống"
+        }
+        val phoneRegex = Regex("^\\+?[1-9]\\d{1,14}$")
+        if (!phoneNumber.trim().matches(phoneRegex)) {
+            return "Số điện thoại không hợp lệ (ví dụ: +84909123456 hoặc 0909123456)"
+        }
+        
+        // Email validation: @Email (optional)
+        if (email.isNotBlank()) {
+            val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+            if (!email.trim().matches(emailRegex)) {
+                return "Email không hợp lệ"
+            }
+        }
+        
+        // Description validation: @Size(max = 2000)
+        if (description.trim().length > 2000) {
+            return "Mô tả không được vượt quá 2000 ký tự"
+        }
+        
+        // Cuisine validation: @NotBlank @Size(max = 100)
+        if (cuisine.isBlank()) {
+            return "Loại ẩm thực không được để trống"
+        }
+        if (cuisine.trim().length > 100) {
+            return "Loại ẩm thực không được vượt quá 100 ký tự"
+        }
+        
+        // Opening time validation: @Pattern(regexp = "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
+        if (openingTime.isNotBlank()) {
+            val timeRegex = Regex("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
+            if (!openingTime.trim().matches(timeRegex)) {
+                return "Giờ mở cửa không hợp lệ (định dạng: HH:mm, ví dụ: 08:00)"
+            }
+        }
+        
+        // Closing time validation: @Pattern(regexp = "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
+        if (closingTime.isNotBlank()) {
+            val timeRegex = Regex("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
+            if (!closingTime.trim().matches(timeRegex)) {
+                return "Giờ đóng cửa không hợp lệ (định dạng: HH:mm, ví dụ: 22:00)"
+            }
+        }
+        
+        // Opening hours validation: @Size(max = 200)
+        if (openingHours.trim().length > 200) {
+            return "Mô tả giờ mở cửa không được vượt quá 200 ký tự"
+        }
+        
+        // Minimum order validation: @Min(0)
+        if (minimumOrder.isNotBlank()) {
+            val minOrderValue = minimumOrder.trim().toDoubleOrNull()
+            if (minOrderValue == null) {
+                return "Đơn hàng tối thiểu phải là số"
+            }
+            if (minOrderValue < 0) {
+                return "Đơn hàng tối thiểu không được âm"
+            }
+        }
+        
+        // Max delivery distance validation: @Min(0) @Max(100)
+        if (maxDeliveryDistance.isNotBlank()) {
+            val maxDistance = maxDeliveryDistance.trim().toDoubleOrNull()
+            if (maxDistance == null) {
+                return "Khoảng cách giao hàng tối đa phải là số"
+            }
+            if (maxDistance < 0) {
+                return "Khoảng cách giao hàng không được âm"
+            }
+            if (maxDistance > 100) {
+                return "Khoảng cách giao hàng không được vượt quá 100 km"
+            }
+        }
+        
+        return null
     }
     
     fun toggleRestaurantStatus() {

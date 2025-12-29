@@ -53,7 +53,7 @@ interface MerchantApi {
     @PATCH("merchant/orders/{id}/status")
     suspend fun updateOrderStatus(
         @Path("id") orderId: String,
-        @Body request: UpdateOrderStatusRequest
+        @Query("status") status: String
     ): OrderResponse
 
     // ==================== MENU MANAGEMENT ====================
