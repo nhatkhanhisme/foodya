@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.foodya.domain.model.OrderWithDetails
 import com.example.foodya.domain.model.enums.OrderStatus
 import com.example.foodya.ui.screen.merchant.MerchantViewModel
+import com.example.foodya.util.toCurrency
 import java.text.NumberFormat
 import java.util.*
 
@@ -323,7 +325,6 @@ private fun DashboardContent(
         }
     }
 }
-
 @Composable
 private fun OrderCard(
     order: OrderWithDetails,
@@ -340,61 +341,133 @@ private fun OrderCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Header: Order ID và Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Đơn hàng #${order.id.takeLast(8)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Receipt,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "#${order.id.takeLast(8)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 OrderStatusBadge(status = order.status)
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Khách hàng: ${order.customerName}",
-                style = MaterialTheme.typography.bodyMedium
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Thông tin khách hàng
+            InfoRow(
+                icon = Icons.Filled.Person,
+                text = order.customerName
             )
-            Text(
-                text = "SĐT: ${order.customerPhone}",
-                style = MaterialTheme.typography.bodyMedium
+
+            InfoRow(
+                icon = Icons.Filled.Phone,
+                text = order.customerPhone
             )
-            Text(
-                text = "Địa chỉ: ${order.deliveryAddress}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
+            InfoRow(
+                icon = Icons.Filled.LocationOn,
+                text = order.deliveryAddress,
+                textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Món: ${order.items.joinToString(", ") { "${it.name} x${it.quantity}" }}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Danh sách món
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = order.orderDate.take(10),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                Icon(
+                    imageVector = Icons.Filled.Restaurant,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.secondary
                 )
                 Text(
-                    text = formatCurrency(order.totalPrice),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    text = order.items.joinToString(", ") { "${it.name} x${it.quantity}" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Footer: Ngày và tổng tiền
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                    Text(
+                        text = order.orderDate.take(10),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = order.totalPrice.toCurrency(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun InfoRow(
+    icon: ImageVector,
+    text: String,
+    textColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.secondary
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor
+        )
     }
 }
 
@@ -532,9 +605,4 @@ private fun StatusButton(
     ) {
         Text(status.label)
     }
-}
-
-private fun formatCurrency(amount: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-    return formatter.format(amount)
 }
