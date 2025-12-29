@@ -87,7 +87,10 @@ public class JwtService {
       logger.error("JWT unsupported: {}", ex.getMessage());
     } catch (MalformedJwtException ex) {
       logger.error("JWT malformed: {}", ex.getMessage());
-    } catch (IllegalArgumentException ex) {
+    }
+    catch (SecurityException ex) {
+      logger.error("JWT security validation failed: {}", ex.getMessage());}
+     catch (IllegalArgumentException ex) {
       logger.error("JWT claims string is empty: {}", ex.getMessage());
     }
     return false;

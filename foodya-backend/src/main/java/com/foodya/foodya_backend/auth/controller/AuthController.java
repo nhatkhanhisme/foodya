@@ -25,6 +25,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +58,7 @@ public class AuthController {
       @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid username or password", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "403", description = "Forbidden - Account is deactivated", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
   })
+  @SecurityRequirements()
   @PostMapping("/login")
   public ResponseEntity<JwtAuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
     JwtAuthResponse response = authService.login(loginRequest);
