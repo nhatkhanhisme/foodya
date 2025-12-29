@@ -6,17 +6,16 @@ import com.foodya.foodya_backend.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/users")
 @Tag(name = "User", description = "User Profile APIs for mobile app")
 @SecurityRequirement(name = "bearerAuth")
+@Slf4j
 public class UserController {
   private final UserService userService;
 
@@ -53,6 +53,9 @@ public class UserController {
   @PutMapping("/me")
   public ResponseEntity<UserProfileResponse> updateProfile(
       @Valid @RequestBody UpdateProfileRequest request) {
+    log.info("Controller received request: {}", request);
+    log.info("FullName: '{}', Email: '{}', PhoneNumber: '{}', ProfileImageUrl: '{}'",
+        request.getFullName(), request.getEmail(), request.getPhoneNumber(), request.getProfileImageUrl());
     UserProfileResponse profile = userService.updateProfile(request);
     return ResponseEntity.ok(profile);
   }
