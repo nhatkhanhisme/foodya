@@ -1,14 +1,14 @@
 package com.foodya.foodya_backend.order.service;
 
 import com.foodya.foodya_backend.order.dto.OrderItemRequest;
-import com.foodya. foodya_backend.order.dto.OrderRequest;
-import com. foodya.foodya_backend. order.dto.OrderResponse;
-import com. foodya.foodya_backend. order.model.Order;
+import com.foodya.foodya_backend.order.dto.OrderRequest;
+import com.foodya.foodya_backend.order.dto.OrderResponse;
+import com.foodya.foodya_backend.order.model.Order;
 import com.foodya.foodya_backend.order.model.OrderItem;
 import com.foodya.foodya_backend.order.model.OrderStatus;
-import com.foodya.foodya_backend.order. repository.OrderRepository;
+import com.foodya.foodya_backend.order.repository.OrderRepository;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
-import com.foodya. foodya_backend.restaurant.model.Restaurant;
+import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import com.foodya.foodya_backend.user.model.User;
@@ -18,44 +18,56 @@ import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundExcept
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j. Slf4j;
-import org. springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java. util.ArrayList;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream. Collectors;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderService {
 
+  private static final EnumSet<OrderStatus> ACTIVE_STATUSES = EnumSet.of(OrderStatus.PENDING, OrderStatus.PREPARING,
+      OrderStatus.SHIPPING);
+
   private final OrderRepository orderRepository;
   private final UserRepository userRepository;
   private final RestaurantRepository restaurantRepository;
   private final MenuItemRepository menuItemRepository;
 
-  // ========== CREATE ORDER ==========
-
   @Transactional
-  public OrderResponse createOrder(OrderRequest request) {
-    log.info("Creating order for customer: {}, restaurant: {}",
-        request.getCustomerId(), request.getRestaurantId());
+  public OrderResponse createOrder(@NonNull Authentication authentication, @NonNull OrderRequest request) {
+    User customer = getCurrentUser(authentication);
 
-    // 1. Validate customer
-    User customer = userRepository.findById(request.getCustomerId())
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Customer not found with id: " + request.getCustomerId()));
+    if (request.getRestaurantId() == null) {
+      throw new BadRequestException("restaurantId is required");
+    }
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+      throw new BadRequestException("items is required");
+    }
+    if (!request.getItems().stream()
+        .allMatch(i -> i != null && i.getMenuItemId() != null && i.getQuantity() != null && i.getQuantity() > 0)) {
+      throw new BadRequestException("Each item must have menuItemId and quantity > 0");
+    }
+    if (request.getDeliveryAddress() == null || request.getDeliveryAddress().isBlank()) {
+      throw new BadRequestException("deliveryAddress is required");
+    }
 
-    // 2. Validate restaurant
-    Restaurant restaurant = restaurantRepository.findById(request. getRestaurantId())
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Restaurant not found with id: " + request.getRestaurantId()));
+    log.info("Creating order for customer: {}, restaurant: {}", customer.getId(), request.getRestaurantId());
 
-    // 3. Create Order (WITHOUT orderItems first)
+    Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
+        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + request.getRestaurantId()));
+
     Order order = Order.builder()
         .customer(customer)
         .restaurant(restaurant)
@@ -66,156 +78,151 @@ public class OrderService {
         .orderNotes(request.getOrderNotes())
         .totalPrice(0.0)
         .totalItems(0)
-        .orderItems(new ArrayList<>())  // ← Initialize empty list
+        .orderItems(new ArrayList<>())
         .build();
 
-    // 4. Create OrderItems
     for (OrderItemRequest itemRequest : request.getItems()) {
       MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
-          .orElseThrow(() -> new ResourceNotFoundException(
-              "Menu item not found with id: " + itemRequest.getMenuItemId()));
+          .orElseThrow(
+              () -> new ResourceNotFoundException("Menu item not found with id: " + itemRequest.getMenuItemId()));
 
-      // Validate menu item thuộc restaurant này
-      if (! menuItem.getRestaurant().getId().equals(restaurant.getId())) {
-        throw new BadRequestException(
-            "Menu item " + menuItem.getName() + " does not belong to this restaurant");
+      if (menuItem.getRestaurant() == null || menuItem.getRestaurant().getId() == null) {
+        throw new BadRequestException("Menu item has no restaurant mapping: " + menuItem.getId());
+      }
+      if (!menuItem.getRestaurant().getId().equals(restaurant.getId())) {
+        throw new BadRequestException("Menu item " + menuItem.getName() + " does not belong to this restaurant");
+      }
+      if (menuItem.getIsAvailable() == null || menuItem.getIsActive() == null || !menuItem.getIsAvailable()
+          || !menuItem.getIsActive()) {
+        throw new BadRequestException("Menu item " + menuItem.getName() + " is not available");
+      }
+      if (menuItem.getPrice() == null) {
+        throw new BadRequestException("Menu item " + menuItem.getName() + " has no price");
       }
 
-      // Validate menu item còn available
-      if (! menuItem.getIsAvailable() || ! menuItem.getIsActive()) {
-        throw new BadRequestException(
-            "Menu item " + menuItem.getName() + " is not available");
-      }
-
-      // 🔥 FIX: Tạo OrderItem VÀ manually calculate subtotal
       OrderItem orderItem = OrderItem.builder()
-          .order(order)  // ← SET ORDER NGAY
+          .order(order)
           .menuItem(menuItem)
-          .quantity(itemRequest. getQuantity())
+          .quantity(itemRequest.getQuantity())
           .priceAtPurchase(menuItem.getPrice())
           .build();
 
-      // Calculate subtotal manually (tránh @PrePersist issues)
       orderItem.setSubtotal(orderItem.getQuantity() * orderItem.getPriceAtPurchase());
-
-      // Add to order
       order.getOrderItems().add(orderItem);
     }
 
-    // 5. 🔥 FIX:  Calculate totals BEFORE save
     order.recalculateTotals();
 
-    // 6. Save order (cascade will save orderItems)
     Order savedOrder = orderRepository.save(order);
-
-    log.info("Order created successfully with ID: {}, Total: {}",
-        savedOrder.getId(), savedOrder.getTotalPrice());
-
     return OrderResponse.fromEntity(savedOrder);
   }
 
-  // ========== GET ORDER BY ID ==========
+  @Transactional(readOnly = true)
+  public List<OrderResponse> getMyOrders(@NonNull Authentication authentication) {
+    User customer = getCurrentUser(authentication);
+
+    List<Order> orders = orderRepository.findByCustomer_Id(customer.getId());
+    return orders.stream().map(OrderResponse::fromEntity).collect(Collectors.toList());
+  }
 
   @Transactional(readOnly = true)
-  public OrderResponse getOrderById(@NonNull UUID id) {
-    log.info("Fetching order with ID: {}", id);
+  public List<OrderResponse> getMyActiveOrders(@NonNull Authentication authentication) {
+    User customer = getCurrentUser(authentication);
 
+    List<Order> orders = orderRepository.findByCustomer_IdAndStatusIn(customer.getId(), List.copyOf(ACTIVE_STATUSES));
+    return orders.stream().map(OrderResponse::fromEntity).collect(Collectors.toList());
+  }
+
+  @Transactional
+  public OrderResponse cancelMyOrder(@NonNull Authentication authentication, @NonNull UUID orderId,
+      String cancelReason) {
+    User customer = getCurrentUser(authentication);
+
+    Order order = orderRepository.findById(orderId)
+        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+    if (order.getCustomerId() == null || !order.getCustomerId().equals(customer.getId())) {
+      throw new AccessDeniedException("You are not allowed to cancel this order");
+    }
+
+    if (!order.isCancellable()) {
+      throw new BadRequestException("Order cannot be cancelled in current status: " + order.getStatus());
+    }
+
+    order.cancel(cancelReason);
+    Order cancelledOrder = orderRepository.save(order);
+    return OrderResponse.fromEntity(cancelledOrder);
+  }
+
+  // Merchant/admin vẫn có thể dùng các methods cũ nếu cần
+  @Transactional(readOnly = true)
+  public OrderResponse getOrderById(@NonNull UUID id) {
     Order order = orderRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
-
     return OrderResponse.fromEntity(order);
   }
 
-  // ========== GET ORDERS BY CUSTOMER ==========
-
-  @Transactional(readOnly = true)
-  public List<OrderResponse> getOrdersByCustomer(@NonNull UUID customerId) {
-    log.info("Fetching orders for customer: {}", customerId);
-
-    List<Order> orders = orderRepository.findByCustomer_Id(customerId);
-
-    return orders.stream()
-        .map(OrderResponse::fromEntity)
-        .collect(Collectors.toList());
-  }
-
-  // ========== GET ORDERS BY RESTAURANT ==========
-
   @Transactional(readOnly = true)
   public List<OrderResponse> getOrdersByRestaurant(@NonNull UUID restaurantId) {
-    log.info("Fetching orders for restaurant: {}", restaurantId);
-
-    List<Order> orders = orderRepository. findByRestaurant_Id(restaurantId);
-
-    return orders.stream()
-        .map(OrderResponse::fromEntity)
-        .collect(Collectors.toList());
+    List<Order> orders = orderRepository.findByRestaurant_Id(restaurantId);
+    return orders.stream().map(OrderResponse::fromEntity).collect(Collectors.toList());
   }
-
-  // ========== GET ACTIVE ORDERS ==========
-
-  @Transactional(readOnly = true)
-  public List<OrderResponse> getActiveOrdersByCustomer(@NonNull UUID customerId) {
-    log.info("Fetching active orders for customer: {}", customerId);
-
-    List<Order> orders = orderRepository.findByCustomer_Id(customerId);
-
-    return orders.stream()
-        .filter(order -> order.getStatus() == OrderStatus.PENDING ||
-                        order.getStatus() == OrderStatus.PREPARING ||
-                        order.getStatus() == OrderStatus.SHIPPING)
-        .map(OrderResponse::fromEntity)
-        .collect(Collectors.toList());
-  }
-
-  // ========== UPDATE ORDER STATUS ==========
 
   @Transactional
   public OrderResponse updateOrderStatus(@NonNull UUID id, OrderStatus newStatus) {
-    log.info("Updating order {} to status: {}", id, newStatus);
-
     Order order = orderRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
     order.updateStatus(newStatus);
     Order updatedOrder = orderRepository.save(order);
-
-    log.info("Order status updated successfully");
     return OrderResponse.fromEntity(updatedOrder);
   }
 
-  // ========== CANCEL ORDER ==========
-
-  @Transactional
-  public OrderResponse cancelOrder(@NonNull UUID id, String cancelReason) {
-    log.info("Cancelling order:  {}", id);
-
-    Order order = orderRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
-
-    if (! order.isCancellable()) {
-      throw new BadRequestException(
-          "Order cannot be cancelled in current status: " + order.getStatus());
-    }
-
-    order.cancel(cancelReason);
-    Order cancelledOrder = orderRepository.save(order);
-
-    log.info("Order cancelled successfully");
-    return OrderResponse.fromEntity(cancelledOrder);
-  }
-
-  // ========== DELETE ORDER ==========
-
   @Transactional
   public void deleteOrder(@NonNull UUID id) {
-    log.info("Deleting order: {}", id);
-
-    if (! orderRepository.existsById(id)) {
+    if (!orderRepository.existsById(id)) {
       throw new ResourceNotFoundException("Order not found with id: " + id);
     }
-
     orderRepository.deleteById(id);
-    log.info("Order deleted successfully");
+  }
+
+  @Transactional(readOnly = true)
+  public List<OrderResponse> adminListOrders(
+      OrderStatus status,
+      UUID restaurantId,
+      UUID customerId,
+      LocalDateTime startDate,
+      LocalDateTime endDate) {
+    return orderRepository.adminSearch(status, restaurantId, customerId, startDate, endDate)
+        .stream()
+        .map(OrderResponse::fromEntity)
+        .collect(Collectors.toList());
+  }
+
+  @Transactional
+  public OrderResponse adminUpdateOrderStatus(UUID orderId, OrderStatus status) {
+    return updateOrderStatus(orderId, status);
+  }
+
+  @Transactional(readOnly = true)
+  public Double adminRevenueByRestaurantAndDateRange(UUID restaurantId, LocalDateTime startDate,
+      LocalDateTime endDate) {
+    if (restaurantId == null || startDate == null || endDate == null) {
+      throw new BadRequestException("restaurantId, startDate, endDate are required");
+    }
+    if (endDate.isBefore(startDate)) {
+      throw new BadRequestException("endDate must be after startDate");
+    }
+    Double sum = orderRepository.sumRevenueByRestaurantIdAndDateRange(restaurantId, startDate, endDate);
+    return sum == null ? 0.0 : sum;
+  }
+
+  private User getCurrentUser(Authentication authentication) {
+    if (authentication == null || authentication.getName() == null) {
+      throw new AccessDeniedException("Unauthenticated");
+    }
+    String username = authentication.getName();
+    return userRepository.findByUsername(username)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
   }
 }

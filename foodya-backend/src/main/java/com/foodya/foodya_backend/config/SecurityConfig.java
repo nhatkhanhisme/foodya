@@ -1,10 +1,13 @@
 package com.foodya.foodya_backend.config;
 
 import com.foodya.foodya_backend.middleware.JwtAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -48,7 +51,7 @@ public class SecurityConfig {
 
             // ========== USER ENDPOINTS ==========
 
-            .requestMatchers("/api/v1/users/me").authenticated()
+            .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
             .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
 
             // ========== MERCHANT REGISTRATION ENDPOINTS (NEW) ==========
@@ -69,7 +72,7 @@ public class SecurityConfig {
 
             // ========== ORDER ENDPOINTS ==========
             .requestMatchers("/api/v1/orders/**").authenticated()
-            
+
             // ========== ADMIN ENDPOINTS ==========
 
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
@@ -79,6 +82,17 @@ public class SecurityConfig {
             .anyRequest().authenticated())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(ex -> ex
+            .authenticationEntryPoint((request, response, authException) -> {
+              response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+              response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+              response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Unauthorized\"}");
+            })
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+              response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+              response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+              response.getWriter().write("{\"status\":403,\"error\":\"Forbidden\",\"message\":\"Forbidden\"}");
+            }))
         .authenticationProvider(authenticationProvider())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

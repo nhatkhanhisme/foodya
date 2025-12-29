@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,12 +37,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   protected void doFilterInternal(HttpServletRequest request,
       HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
-    try {
-      // Get JWT token from request
-      String token = getJwtTokenFromRequest(request);
+    String token = getJwtTokenFromRequest(request);
 
-      // Validate token
-      if (StringUtils.hasText(token) && jwtService.validateToken(token)) {
+    if (!StringUtils.hasText(token)) {
+      filterChain.doFilter(request, response);
+      logger.debug("No JWT token found in request");
+      return;
+    }
+
+    try {
+      if (!jwtService.validateToken(token)) {
+        filterChain.doFilter(request, response);
+        logger.debug("Expired or Invalid JWT token");
+        return;
+      }
         // extract username from token
         String username = jwtService.extractUsername(token);
 
@@ -60,11 +68,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         logger.debug("Set authentication for user: " + username);
-      }
+        filterChain.doFilter(request, response);
+
     } catch (Exception ex) {
       logger.error("Could not set user authentication in security context", ex);
+      writeUnauthorized(response, "Invalid or expired JWT token");
     }
-    filterChain.doFilter(request, response);
   }
 
   private String getJwtTokenFromRequest(HttpServletRequest request) {
@@ -73,5 +82,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return bearerToken.substring(7);
     }
     return null;
+  }
+  private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+    if (response.isCommitted()) {
+      logger.warn("Response already committed, cannot write unauthorized message");
+      return;
+    }
+    response.resetBuffer();
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"" + message + "\"}");
+    response.flushBuffer();
   }
 }

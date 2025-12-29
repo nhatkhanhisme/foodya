@@ -15,10 +15,14 @@ import com.foodya.foodya_backend.user.repository.UserRepository;
 import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
 import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class UserService {
   private final UserRepository userRepository;
 
@@ -60,47 +64,63 @@ public class UserService {
     return mapToUserProfileResponse(user);
   }
 
-
   @Transactional
-  public UserProfileResponse updateProfile(UpdateProfileRequest request) {
+  public UserProfileResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String username = authentication.getName();
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found:  " + username));
-
-    // Cập nhật Full Name
+        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+    log.info("request: " + request.getFullName() + " +" + request.getEmail() + " + " + request.getPhoneNumber()
+        + " + " + request.getProfileImageUrl());
+    // 1. Cập nhật Full Name (Chuẩn hóa trim)
     if (request.getFullName() != null && !request.getFullName().isBlank()) {
-      user.setFullName(request.getFullName());
+      log.info("Updating full name: ");
+      user.setFullName(request.getFullName().trim());
     }
 
-    // Cập nhật Email (kiểm tra trùng)
+    // 2. Cập nhật Email
     if (request.getEmail() != null && !request.getEmail().isBlank()) {
-      if (userRepository.existsByEmail(request.getEmail()) &&
-          !user.getEmail().equals(request.getEmail())) {
-        throw new DuplicateResourceException("Email already exists");
+      // Chuẩn hóa về chữ thường + xóa khoảng trắng
+      String newEmail = request.getEmail().trim().toLowerCase();
+      String currentEmail = user.getEmail().toLowerCase();
+
+      if (!newEmail.equals(currentEmail)) {
+        // Chỉ check DB nếu email thực sự thay đổi
+        if (userRepository.existsByEmail(newEmail)) {
+          throw new DuplicateResourceException("Email already exists");
+        }
+        user.setEmail(newEmail);
+        user.setIsEmailVerified(false);
       }
-      user.setEmail(request.getEmail());
-      user.setIsEmailVerified(false); // Reset verification
     }
 
-    // Cập nhật Phone (kiểm tra trùng)
+    // 3. Cập nhật Phone
     if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
-      if (userRepository.existsByPhoneNumber(request.getPhoneNumber()) &&
-          !user.getPhoneNumber().equals(request.getPhoneNumber())) {
-        throw new DuplicateResourceException("Phone number already exists");
+      String newPhone = request.getPhoneNumber().trim();
+
+      if (!newPhone.equals(user.getPhoneNumber())) {
+        if (userRepository.existsByPhoneNumber(newPhone)) {
+          throw new DuplicateResourceException("Phone number already exists");
+        }
+        user.setPhoneNumber(newPhone);
+        user.setIsPhoneNumberVerified(false);
       }
-      user.setPhoneNumber(request.getPhoneNumber());
-      user.setIsPhoneNumberVerified(false); // Reset verification
     }
 
-    // Cập nhật Profile Image
+    // 4. Cập nhật Profile Image
+    // Logic: Nếu gửi chuỗi rỗng "" nghĩa là muốn xóa ảnh. Nếu null thì bỏ qua.
     if (request.getProfileImageUrl() != null) {
-      user.setProfileImageUrl(request.getProfileImageUrl());
+      if (request.getProfileImageUrl().isEmpty()) {
+        user.setProfileImageUrl(null); // Xóa ảnh
+      } else {
+        user.setProfileImageUrl(request.getProfileImageUrl().trim()); // Cập nhật ảnh mới
+      }
     }
-
 
     User updatedUser = userRepository.save(user);
+    log.info("Updated user: " + user.getUsername());
+    log.info("imported user: " + updatedUser.getUsername());
     return UserProfileResponse.fromEntity(updatedUser);
   }
 

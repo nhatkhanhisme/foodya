@@ -27,8 +27,8 @@ public class RestaurantRequest {
   private String address;
 
   @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Invalid phone number format")
-    @Schema(description = "Restaurant phone number", example = "+84283123456")
+  @Pattern(regexp = "@Pattern(regexp = \"^\\\\+?\\\\d{9,15}$\", message = \"Phone number must be valid\"^\\+?[1-9]\\d{1,14}$", message = "Invalid phone number format")
+  @Schema(description = "Restaurant phone number", example = "+84283123456")
   private String phoneNumber;
 
   @Email(message = "Invalid email format")

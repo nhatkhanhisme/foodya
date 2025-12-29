@@ -20,7 +20,7 @@ public class UpdateProfileRequest {
   @Email(message = "Invalid email format")
   private String email;
 
-  @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Phone number must be valid")
+  @Pattern(regexp = "^\\+?\\d{9,15}$", message = "Phone number must be valid")
   private String phoneNumber;
 
   private String profileImageUrl;

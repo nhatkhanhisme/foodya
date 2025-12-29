@@ -4,10 +4,6 @@ import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
 import com.foodya. foodya_backend.restaurant.dto.MenuItemResponse;
 import com.foodya.foodya_backend.restaurant.service.MenuItemService;
 import com.foodya.foodya_backend.restaurant.service. OwnershipService;
-import com.foodya.foodya_backend.user.model.Role;
-import com.foodya. foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
