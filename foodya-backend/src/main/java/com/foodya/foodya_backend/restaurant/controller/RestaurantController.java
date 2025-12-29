@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend. restaurant.controller;
+package com.foodya.foodya_backend.restaurant.controller;
 
 import com. foodya.foodya_backend. restaurant.dto.RestaurantResponse;
 import com.foodya. foodya_backend.restaurant.service.RestaurantService;

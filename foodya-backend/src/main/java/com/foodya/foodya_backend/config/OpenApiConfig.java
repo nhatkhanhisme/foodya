@@ -21,11 +21,11 @@ import org.springframework.context.annotation.Configuration;
         )
     ),
     // 2. Yêu cầu Bảo mật mặc định cho TẤT CẢ endpoint
-    security = @SecurityRequirement(name = "BearerAuth")
+    security = @SecurityRequirement(name = "bearerAuth")
 )
 @SecurityScheme(
     // 3. Định nghĩa cơ chế Bảo mật JWT/Bearer
-    name = "BearerAuth", // Phải trùng với name trong @SecurityRequirement
+    name = "bearerAuth", // Phải trùng với name trong @SecurityRequirement
     type = SecuritySchemeType.HTTP,
     scheme = "bearer",
     bearerFormat = "JWT",
