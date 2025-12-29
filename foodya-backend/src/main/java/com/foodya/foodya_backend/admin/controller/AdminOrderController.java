@@ -23,7 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin - Orders  Management", description = "⚠️ Admin only - NOT for mobile app")
-@SecurityRequirement(name = "BearerAuth")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminOrderController {
 
   private final OrderService orderService;

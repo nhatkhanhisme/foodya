@@ -5,16 +5,12 @@ import com.foodya.foodya_backend.user.repository.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 
 @Service
@@ -49,20 +45,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails buildUserDetails(User user) {
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .authorities(getAuthorities(user))
-                .accountExpired(false)
-                .accountLocked(!user.getIsActive())
-                .credentialsExpired(false)
-                .disabled(!user.getIsActive())
-                .build();
-    }
-
-    private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        return Collections.singletonList(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
-        );
+        // Return User entity directly since it implements UserDetails
+        // This ensures that isEnabled(), isAccountNonLocked(), etc. methods
+        // from the User entity are correctly utilized by Spring Security
+        return user;
     }
 }

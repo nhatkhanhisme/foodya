@@ -33,7 +33,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
 @Tag(name = "Merchant - Restaurant Management", description = "⚠️ Restaurant owner only - Manage your restaurants")
-@SecurityRequirement(name = "BearerAuth")
+@SecurityRequirement(name = "bearerAuth")
 public class MerchantRestaurantController {
 
   private final RestaurantService restaurantService;

@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin - User Management", description = "⚠️ Admin only - NOT for mobile app")
-@SecurityRequirement(name = "BearerAuth")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminUserController {
 
     private final UserService userService;
