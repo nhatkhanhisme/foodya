@@ -2,7 +2,6 @@ package com.foodya.foodya_backend.order.controller;
 
 import com.foodya.foodya_backend.order.dto.OrderRequest;
 import com.foodya.foodya_backend.order.dto.OrderResponse;
-import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,9 +21,9 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping("/api/v1/customers/orders")
 @RequiredArgsConstructor
-@Tag(name = "Customer Orders", description = "Order APIs for mobile app")
+@Tag(name = "Customer Orders", description = "Customer Order APIs for mobile app")
 public class OrderController {
 
   private final OrderService orderService;
