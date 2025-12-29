@@ -75,7 +75,7 @@ dependencies {
 
     // Retrofit
     implementation(libs.retrofit)
-    implementation(libs.okhttp)
+    implementation(libs.okhttp.v4120)
     implementation(libs.logging.interceptor)
 
     // Gson
@@ -87,4 +87,15 @@ dependencies {
 
     // Icon
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.material.icons.core)
+    implementation(libs.androidx.material.icons.extended.v175)
+
+    // Coil
+    implementation(libs.coil.compose)
+
+    // Supabase Storage
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.storage)
+    implementation(libs.ktor.client.android)
 }

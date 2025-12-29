@@ -1,8 +1,7 @@
 package com.example.foodya.data.model
 
-// Data Class
+// Request DTOs
 data class LoginRequest(val username: String, val password: String)
-data class LoginResponse(val accessToken: String, val refreshToken: String)
 
 data class RegisterRequest(
     val username: String,
@@ -12,26 +11,31 @@ data class RegisterRequest(
     val phoneNumber: String,
     val role: UserRole
 )
-data class RegisterResponse(
-    val accessToken: String,
-    val refreshToken: String,
-    val tokenType: String,
-    val expiresIn: Int
-)
 
 data class RefreshRequest(val refreshToken: String)
-data class RefreshResponse(
+
+// Response DTOs - Matching Backend JwtAuthResponse
+data class JwtAuthResponse(
     val accessToken: String,
     val refreshToken: String,
-    val tokenType: String,
-    val expiresIn: Int
+    val tokenType: String = "Bearer",
+    val expiresIn: Long,
+    val refreshTokenExpiresIn: Long,
+    val userId: String,
+    val username: String,
+    val role: UserRole
 )
 
-// Enum
+// Legacy aliases for backward compatibility (can be removed later)
+typealias LoginResponse = JwtAuthResponse
+typealias RegisterResponse = JwtAuthResponse
+typealias RefreshResponse = JwtAuthResponse
+
+// Enum - matches backend Role enum
 enum class UserRole {
     CUSTOMER,
     MERCHANT,
-    OWNER,
+    SHIPPER,
     ADMIN
 }
 

@@ -52,7 +52,7 @@ fun AuthView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = if (state.isLoginMode) "Login" else "Register",
+            text = if (state.isLoginMode) "Đăng nhập" else "Đăng ký",
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -62,7 +62,7 @@ fun AuthView(
         OutlinedTextField(
             value = state.username,
             onValueChange = viewModel::onUsernameChange,
-            label = { Text("Username") },
+            label = { Text("Tên đăng nhập") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -74,7 +74,7 @@ fun AuthView(
         OutlinedTextField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            label = { Text("Password") },
+            label = { Text("Mật khẩu") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -94,7 +94,7 @@ fun AuthView(
                 else
                     Icons.Filled.VisibilityOff
 
-                val description = if (isPasswordVisible) "Hide password" else "Show password"
+                val description = if (isPasswordVisible) "Ẩn mật khẩu" else "Hiện mật khẩu"
 
                 IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                     Icon(imageVector = image, contentDescription = description)
@@ -118,7 +118,7 @@ fun AuthView(
             OutlinedTextField(
                 value = state.fullName,
                 onValueChange = viewModel::onFullNameChange,
-                label = { Text("Full Name") },
+                label = { Text("Họ và tên") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
@@ -128,7 +128,7 @@ fun AuthView(
             OutlinedTextField(
                 value = state.phoneNumber,
                 onValueChange = viewModel::onPhoneNumberChange,
-                label = { Text("Phone Number") },
+                label = { Text("Số điện thoại") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Done)
@@ -155,21 +155,21 @@ fun AuthView(
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Processing...")
+                Text("Đang xử lý...")
             } else {
-                Text(text = if (state.isLoginMode) "LOGIN" else "REGISTER")
+                Text(text = if (state.isLoginMode) "ĐĂNG NHẬP" else "ĐĂNG KÝ")
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
         // --- Switch Mode ---
-        TextButton(onClick = { viewModel.toggleAuthMode() }) {
+        TextButton(onClick = viewModel::toggleAuthMode) {
             Text(
                 if (state.isLoginMode)
-                    "Don't have an account? Register"
+                    "Chưa có tài khoản? Đăng ký"
                 else
-                    "Already have an account? Login"
+                    "Đã có tài khoản? Đăng nhập"
             )
         }
 

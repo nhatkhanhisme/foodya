@@ -14,14 +14,23 @@ sealed class Screen(val route: String){
 
     // Customer Screens
     data object CustomerHome : Screen("customer_home")
-    data object Cart : Screen("cart_screen")
+    data object Order : Screen("order_screen")
     data object CustomerProfile : Screen("customer_profile")
-
+    data object SearchResults : Screen("search_results/{query}") {
+        fun createRoute(query: String) = "search_results/$query"
+    }
+    data object RestaurantDetail : Screen("restaurant_detail/{restaurantId}") {
+        fun createRoute(restaurantId: String) = "restaurant_detail/$restaurantId"
+    }
+    data object Checkout : Screen("checkout")
 
     // Merchant Screens
     data object MerchantDashboard : Screen("merchant_dashboard")
     data object ManageMenu : Screen("manage_menu")
     data object MerchantProfile : Screen("merchant_profile")
+
+    // Security Screens (Shared)
+    data object ChangePassword : Screen("change_password")
 }
 
 
