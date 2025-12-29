@@ -67,6 +67,9 @@ public class SecurityConfig {
 
             .requestMatchers("/api/v1/merchant/**").hasAnyRole("MERCHANT", "ADMIN")
 
+            // ========== ORDER ENDPOINTS ==========
+            .requestMatchers("/api/v1/orders/**").authenticated()
+            
             // ========== ADMIN ENDPOINTS ==========
 
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
