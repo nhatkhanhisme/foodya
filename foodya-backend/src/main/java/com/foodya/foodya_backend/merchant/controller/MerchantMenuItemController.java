@@ -1,16 +1,16 @@
-package com.foodya.foodya_backend.merchant. controller;
+package com.foodya.foodya_backend.merchant.controller;
 
 import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
-import com.foodya. foodya_backend.restaurant.dto.MenuItemResponse;
+import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;
 import com.foodya.foodya_backend.restaurant.service.MenuItemService;
-import com.foodya.foodya_backend.restaurant.service. OwnershipService;
+import com.foodya.foodya_backend.restaurant.service.OwnershipService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses. ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
 @Tag(name = "Merchant - Menu Items", description = "⚠️ Restaurant owner only - Menu management")
-@SecurityRequirement(name = "BearerAuth")
+@SecurityRequirement(name = "bearerAuth")
 public class MerchantMenuItemController {
 
     private final MenuItemService menuItemService;
@@ -83,7 +83,7 @@ public class MerchantMenuItemController {
 
         // Get only active menu items
         List<MenuItemResponse> menuItems = menuItemService.getActiveMenuItemsByRestaurant(restaurantId);
-        return ResponseEntity. ok(menuItems);
+        return ResponseEntity.ok(menuItems);
     }
 
     // ========== CREATE MENU ITEM ==========

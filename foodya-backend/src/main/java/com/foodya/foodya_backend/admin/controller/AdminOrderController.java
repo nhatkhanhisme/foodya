@@ -3,8 +3,6 @@ package com.foodya.foodya_backend.admin.controller;
 import com.foodya.foodya_backend.order.dto.OrderResponse;
 import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.service.OrderService;
-import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
-import com.foodya.foodya_backend.restaurant.service.RestaurantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -25,7 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin - Orders  Management", description = "⚠️ Admin only - NOT for mobile app")
-@SecurityRequirement(name = "BearerAuth")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminOrderController {
 
   private final OrderService orderService;

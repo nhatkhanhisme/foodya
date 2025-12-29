@@ -15,7 +15,6 @@ import com.foodya.foodya_backend.user.repository.UserRepository;
 import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
 import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.NonNull;
@@ -65,14 +64,18 @@ public class UserService {
   }
 
   @Transactional
-  public UserProfileResponse updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+  public UserProfileResponse updateProfile(@Valid UpdateProfileRequest request) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String username = authentication.getName();
 
     User user = userRepository.findByUsername(username)
         .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
-    log.info("request: " + request.getFullName() + " +" + request.getEmail() + " + " + request.getPhoneNumber()
-        + " + " + request.getProfileImageUrl());
+
+    // Debug logging
+    log.info("Received updateProfile request for user: {}", username);
+    log.info("Request object: {}", request);
+    log.info("FullName: '{}', Email: '{}', PhoneNumber: '{}', ProfileImageUrl: '{}'",
+        request.getFullName(), request.getEmail(), request.getPhoneNumber(), request.getProfileImageUrl());
     // 1. Cập nhật Full Name (Chuẩn hóa trim)
     if (request.getFullName() != null && !request.getFullName().isBlank()) {
       log.info("Updating full name: ");
