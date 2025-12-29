@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend. restaurant.controller;
+package com.foodya.foodya_backend.middleware.controller;
 
 import com. foodya.foodya_backend. restaurant.dto.MenuItemResponse;
 import com.foodya. foodya_backend.restaurant.service.MenuItemService;
