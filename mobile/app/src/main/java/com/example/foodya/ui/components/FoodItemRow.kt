@@ -30,7 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.foodya.domain.model.Food
-import com.example.foodya.ui.screen.customer.restaurant.formatCurrency
+import com.example.foodya.util.toCurrency
 
 // Component hiển thị từng dòng món ăn
 @Composable
@@ -85,7 +85,7 @@ fun FoodItemRow(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = formatCurrency(item.price),
+                        text = item.price.toCurrency(),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
