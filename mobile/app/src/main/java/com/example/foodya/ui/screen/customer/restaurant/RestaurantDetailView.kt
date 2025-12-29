@@ -20,8 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.foodya.domain.model.CartItem
 import com.example.foodya.domain.model.Food
 import com.example.foodya.ui.components.BottomCartSummaryBox
+import com.example.foodya.ui.components.CheckoutDialog
 import com.example.foodya.ui.components.FoodDetailPopup
 import com.example.foodya.ui.components.FoodItemRow
 import com.example.foodya.util.toCurrency
@@ -44,7 +46,37 @@ fun RestaurantDetailView(
     viewModel: RestaurantDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val showCheckoutDialog by viewModel.showCheckoutDialog.collectAsState()
+    val deliveryAddress by viewModel.deliveryAddress.collectAsState()
+    val orderNotes by viewModel.orderNotes.collectAsState()
+    val isPlacingOrder by viewModel.isPlacingOrder.collectAsState()
+    val orderError by viewModel.orderError.collectAsState()
+    val orderSuccess by viewModel.orderSuccess.collectAsState()
+    
     var selectedFood by remember { mutableStateOf<Food?>(null) }
+
+    // Show checkout dialog
+    if (showCheckoutDialog && uiState is RestaurantUiState.Success) {
+        val successState = uiState as RestaurantUiState.Success
+        CheckoutDialog(
+            cartItems = successState.cartMap.values.map { 
+                com.example.foodya.domain.model.CartItem(
+                    menuItem = it.menuItem,
+                    quantity = it.quantity,
+                )
+            },
+            restaurantName = successState.restaurant.name,
+            deliveryAddress = deliveryAddress,
+            onAddressChange = viewModel::onDeliveryAddressChange,
+            orderNotes = orderNotes,
+            onNotesChange = viewModel::onOrderNotesChange,
+            deliveryFee = successState.restaurant.deliveryFee,
+            isLoading = isPlacingOrder,
+            error = orderError,
+            onConfirm = viewModel::placeOrder,
+            onDismiss = viewModel::hideCheckout
+        )
+    }
 
     // Show FoodDetailPopup when a food item is selected
     selectedFood?.let { food ->
@@ -89,7 +121,7 @@ fun RestaurantDetailView(
                         cartItems = successState.cartMap,
                         itemCount = successState.cartSummary.totalQuantity,
                         totalPrice = successState.cartSummary.totalPrice,
-                        onCheckoutClick = onGoToCheckout,
+                        onCheckoutClick = viewModel::showCheckout,
                         onClearCart = viewModel::clearCart
                     )
                 }

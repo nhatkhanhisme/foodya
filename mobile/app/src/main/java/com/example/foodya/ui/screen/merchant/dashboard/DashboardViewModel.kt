@@ -30,7 +30,6 @@ class DashboardViewModel @Inject constructor(
     private fun loadDashboard() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            delay(500) // Simulate network delay
             
             val result = merchantRepo.getMyRestaurants()
             result.onSuccess { restaurants ->
@@ -41,7 +40,7 @@ class DashboardViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             myRestaurants = restaurants,
-                            selectedRestaurant = firstRestaurant
+                            selectedRestaurant = firstRestaurant,
                         )
                     }
                     loadOrders(firstRestaurant.id)

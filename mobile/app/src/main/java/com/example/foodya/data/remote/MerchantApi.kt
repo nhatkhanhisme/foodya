@@ -42,7 +42,7 @@ interface MerchantApi {
     /**
      * Get all orders for a specific restaurant
      */
-    @GET("merchant/restaurants/{restaurantId}/orders")
+    @GET("merchant/orders/restaurant/{restaurantId}")
     suspend fun getOrdersByRestaurant(
         @Path("restaurantId") restaurantId: String
     ): List<OrderResponse>

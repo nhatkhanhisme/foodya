@@ -2,11 +2,13 @@ package com.example.foodya.di
 
 import com.example.foodya.data.repository.AuthRepositoryImpl
 import com.example.foodya.data.repository.MerchantRepositoryImpl
+import com.example.foodya.data.repository.OrderRepositoryImpl
 import com.example.foodya.data.repository.RestaurantRepositoryImpl
 import com.example.foodya.data.repository.StorageRepositoryImpl
 import com.example.foodya.data.repository.ThemeRepositoryImpl
 import com.example.foodya.domain.repository.AuthRepository
 import com.example.foodya.domain.repository.MerchantRepository
+import com.example.foodya.domain.repository.OrderRepository
 import com.example.foodya.domain.repository.RestaurantRepository
 import com.example.foodya.domain.repository.StorageRepository
 import com.example.foodya.domain.repository.ThemeRepository
@@ -48,4 +50,10 @@ abstract class RepositoryModule {
     abstract fun bindStorageRepository(
         impl: StorageRepositoryImpl
     ): StorageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOrderRepository(
+        impl: OrderRepositoryImpl
+    ): OrderRepository
 }

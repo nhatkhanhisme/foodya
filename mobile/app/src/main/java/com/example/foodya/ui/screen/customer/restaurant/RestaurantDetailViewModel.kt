@@ -4,11 +4,15 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.foodya.data.model.OrderItemRequest
+import com.example.foodya.data.model.OrderRequest
 import com.example.foodya.domain.model.CartItem
 import com.example.foodya.domain.model.CartSummary
 import com.example.foodya.domain.model.Food
+import com.example.foodya.domain.repository.OrderRepository
 import com.example.foodya.domain.repository.RestaurantRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +32,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RestaurantDetailViewModel @Inject constructor(
     private val repository: RestaurantRepository,
+    private val orderRepository: OrderRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -41,6 +46,25 @@ class RestaurantDetailViewModel @Inject constructor(
 
     // Internal cart state (not exposed directly)
     private val _cartMap = MutableStateFlow<Map<String, CartItem>>(emptyMap())
+
+    // Checkout state
+    private val _showCheckoutDialog = MutableStateFlow(false)
+    val showCheckoutDialog = _showCheckoutDialog.asStateFlow()
+
+    private val _deliveryAddress = MutableStateFlow("")
+    val deliveryAddress = _deliveryAddress.asStateFlow()
+
+    private val _orderNotes = MutableStateFlow("")
+    val orderNotes = _orderNotes.asStateFlow()
+
+    private val _isPlacingOrder = MutableStateFlow(false)
+    val isPlacingOrder = _isPlacingOrder.asStateFlow()
+
+    private val _orderError = MutableStateFlow<String?>(null)
+    val orderError = _orderError.asStateFlow()
+
+    private val _orderSuccess = MutableStateFlow(false)
+    val orderSuccess = _orderSuccess.asStateFlow()
 
     init {
         loadRestaurantDetails()
@@ -200,5 +224,92 @@ class RestaurantDetailViewModel @Inject constructor(
      */
     fun retry() {
         loadRestaurantDetails()
+    }
+
+    // --- Checkout Functions ---
+
+    fun showCheckout() {
+        if (_cartMap.value.isEmpty()) {
+            Log.w(TAG, "Cannot show checkout with empty cart")
+            return
+        }
+        _showCheckoutDialog.value = true
+        _orderError.value = null
+        _orderSuccess.value = false
+    }
+
+    fun hideCheckout() {
+        _showCheckoutDialog.value = false
+        _orderError.value = null
+    }
+
+    fun onDeliveryAddressChange(address: String) {
+        _deliveryAddress.value = address
+    }
+
+    fun onOrderNotesChange(notes: String) {
+        _orderNotes.value = notes
+    }
+
+    fun placeOrder() {
+        val currentUiState = _uiState.value
+        if (currentUiState !is RestaurantUiState.Success) {
+            _orderError.value = "Restaurant information not loaded"
+            return
+        }
+
+        if (_cartMap.value.isEmpty()) {
+            _orderError.value = "Cart is empty"
+            return
+        }
+
+        if (_deliveryAddress.value.isBlank()) {
+            _orderError.value = "Please enter delivery address"
+            return
+        }
+
+        viewModelScope.launch {
+            _isPlacingOrder.value = true
+            _orderError.value = null
+
+            val orderRequest = OrderRequest(
+                restaurantId = currentUiState.restaurant.id,
+                items = _cartMap.value.values.map { cartItem ->
+                    OrderItemRequest(
+                        menuItemId = cartItem.menuItem.id,
+                        quantity = cartItem.quantity,
+                        notes = null
+                    )
+                },
+                deliveryAddress = _deliveryAddress.value,
+                deliveryFee = currentUiState.restaurant.deliveryFee,
+                orderNotes = _orderNotes.value.ifBlank { null }
+            )
+
+            val result = orderRepository.createOrder(orderRequest)
+
+            result.onSuccess { response ->
+                Log.d(TAG, "Order placed successfully: ${response.id}")
+                _isPlacingOrder.value = false
+                _orderSuccess.value = true
+                _orderError.value = null
+
+                // Clear cart and reset form
+                _cartMap.value = emptyMap()
+                _deliveryAddress.value = ""
+                _orderNotes.value = ""
+                updateCartInSuccessState()
+
+                // Auto-close dialog after success
+                delay(2000)
+                _showCheckoutDialog.value = false
+                _orderSuccess.value = false
+
+            }.onFailure { error ->
+                Log.e(TAG, "Failed to place order: ${error.message}")
+                _isPlacingOrder.value = false
+                _orderError.value = error.message ?: "Failed to place order. Please try again."
+            }
+        }
     }
 }
