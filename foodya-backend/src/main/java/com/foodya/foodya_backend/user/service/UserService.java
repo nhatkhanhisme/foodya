@@ -98,9 +98,16 @@ public class UserService {
       }
     }
 
-    // 3. Cập nhật Phone
+    // 3. Cập nhật Phone với normalization
     if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
       String newPhone = request.getPhoneNumber().trim();
+
+      // Normalize the phone number
+      try {
+        newPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(newPhone, "VN");
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
+      }
 
       if (!newPhone.equals(user.getPhoneNumber())) {
         if (userRepository.existsByPhoneNumber(newPhone)) {

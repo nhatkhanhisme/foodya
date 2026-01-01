@@ -142,8 +142,19 @@ public class RestaurantService {
     if (restaurantRepository.existsByName(request.getName())) {
       throw new DuplicateResourceException("Restaurant with name '" + request.getName() + "' already exists");
     }
-    if (restaurantRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-      throw new DuplicateResourceException("Restaurant with phone number '" + request.getPhoneNumber() + "' already exists");
+    // Normalize phone number
+    String normalizedPhone = null;
+    if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+      try {
+        normalizedPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(
+            request.getPhoneNumber(), "VN");
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
+      }
+
+      if (restaurantRepository.existsByPhoneNumber(normalizedPhone)) {
+        throw new DuplicateResourceException("Restaurant with phone number '" + normalizedPhone + "' already exists");
+      }
     }
 
     // Build restaurant entity
@@ -151,7 +162,7 @@ public class RestaurantService {
         // Basic Information
         .name(request.getName())
         .address(request.getAddress())
-        .phoneNumber(request.getPhoneNumber())
+        .phoneNumber(normalizedPhone)
         .email(request.getEmail())
         .description(request.getDescription())
         .cuisine(request.getCuisine())
@@ -208,16 +219,28 @@ public class RestaurantService {
         throw new DuplicateResourceException("Restaurant with name '" + request.getName() + "' already exists");
       }
     }
-    if (!restaurant.getPhoneNumber().equals(request.getPhoneNumber())) {
-      if (restaurantRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-        throw new DuplicateResourceException("Restaurant with phone number '" + request.getPhoneNumber() + "' already exists");
+
+    // Normalize phone number if changed
+    String normalizedPhone = null;
+    if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+      try {
+        normalizedPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(
+            request.getPhoneNumber(), "VN");
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
+      }
+
+      if (!restaurant.getPhoneNumber().equals(normalizedPhone)) {
+        if (restaurantRepository.existsByPhoneNumber(normalizedPhone)) {
+          throw new DuplicateResourceException("Restaurant with phone number '" + normalizedPhone + "' already exists");
+        }
       }
     }
 
     // Update all fields
     restaurant.setName(request.getName());
     restaurant.setAddress(request.getAddress());
-    restaurant.setPhoneNumber(request.getPhoneNumber());
+    restaurant.setPhoneNumber(normalizedPhone != null ? normalizedPhone : restaurant.getPhoneNumber());
     restaurant.setEmail(request.getEmail());
     restaurant.setDescription(request.getDescription());
     restaurant.setCuisine(request.getCuisine());
