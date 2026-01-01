@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.utils.exception.business;
+package com.foodya.foodya_backend.exception.business;
 
 public class DuplicateResourceException extends RuntimeException {
   public DuplicateResourceException(String message) {

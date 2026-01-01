@@ -8,12 +8,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;

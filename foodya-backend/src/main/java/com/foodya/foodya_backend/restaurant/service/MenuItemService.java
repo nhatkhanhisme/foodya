@@ -1,5 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
+import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemMapper;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;
@@ -7,8 +9,6 @@ import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
-import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -163,7 +163,7 @@ public class MenuItemService {
    * Get all menu items by restaurant (including inactive) - FOR MERCHANT
    */
   @Transactional(readOnly = true)
-  public List<MenuItemResponse> getAllMenuItemsByRestaurant(UUID restaurantId) {
+  public List<MenuItemResponse> getAllMenuItemsByRestaurant(@NonNull UUID restaurantId) {
     log.info("Fetching all menu items (including inactive) for restaurant ID: {}", restaurantId);
 
     // Verify restaurant exists
@@ -180,7 +180,7 @@ public class MenuItemService {
    * Get only active menu items by restaurant - FOR MERCHANT
    */
   @Transactional(readOnly = true)
-  public List<MenuItemResponse> getActiveMenuItemsByRestaurant(UUID restaurantId) {
+  public List<MenuItemResponse> getActiveMenuItemsByRestaurant(@NonNull UUID restaurantId) {
     log.info("Fetching active menu items for restaurant ID: {}", restaurantId);
 
     // Verify restaurant exists

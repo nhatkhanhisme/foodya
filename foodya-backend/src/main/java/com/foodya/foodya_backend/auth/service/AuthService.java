@@ -14,14 +14,14 @@ import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
+import com.foodya.foodya_backend.exception.business.AccountDeactivatedException;
+import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.exception.security.UnauthorizedException;
 import com.foodya.foodya_backend.jwt.JwtService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.exception.business.AccountDeactivatedException;
-import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.utils.exception.security.UnauthorizedException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

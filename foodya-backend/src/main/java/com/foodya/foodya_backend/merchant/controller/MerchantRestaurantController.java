@@ -1,12 +1,17 @@
 package com.foodya.foodya_backend.merchant.controller;
 
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Conflict;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Forbidden;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,6 +56,13 @@ public class MerchantRestaurantController {
   }
 
   @Operation(summary = "Get my restaurants", description = "Get all restaurants owned by current merchant")
+  @ApiResponses(value = {
+      @ApiResponse(
+          responseCode = "200",
+          description = "Restaurants retrieved successfully"
+      )
+  })
+  @Unauthorized
   @GetMapping("/me")
   public ResponseEntity<List<RestaurantResponse>> getMyRestaurants() {
     User currentUser = getCurrentUser();
@@ -60,9 +72,15 @@ public class MerchantRestaurantController {
 
   @Operation(summary = "Create new restaurant", description = "Merchant creates a new restaurant")
   @ApiResponses(value = {
-      @ApiResponse(responseCode = "201", description = "Restaurant created successfully", content = @Content(schema = @Schema(implementation = RestaurantResponse.class))),
-      @ApiResponse(responseCode = "400", description = "Invalid input or duplicate name/phone")
+      @ApiResponse(
+          responseCode = "201",
+          description = "Restaurant created successfully. Phone number auto-normalized to +84...",
+          content = @Content(schema = @Schema(implementation = RestaurantResponse.class))
+      )
   })
+  @BadRequest
+  @Unauthorized
+  @Conflict
   @PostMapping
   public ResponseEntity<RestaurantResponse> createRestaurant(
       @Valid @RequestBody RestaurantRequest request) {
@@ -74,10 +92,16 @@ public class MerchantRestaurantController {
 
   @Operation(summary = "Update restaurant", description = "Update restaurant information (owner only)")
   @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "Restaurant updated successfully"),
-      @ApiResponse(responseCode = "403", description = "Forbidden - You don't own this restaurant"),
-      @ApiResponse(responseCode = "404", description = "Restaurant not found")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Restaurant updated successfully"
+      )
   })
+  @BadRequest
+  @Unauthorized
+  @Forbidden
+  @NotFound
+  @Conflict
   @PutMapping("/{id}")
   public ResponseEntity<RestaurantResponse> updateRestaurant(
       @Parameter(description = "Restaurant ID") @PathVariable UUID id,

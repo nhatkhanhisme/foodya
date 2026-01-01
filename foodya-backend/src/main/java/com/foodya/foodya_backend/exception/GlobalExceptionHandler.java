@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.utils.exception;
+package com.foodya.foodya_backend.exception;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -16,12 +16,12 @@ import org.springframework.web.bind. annotation.ExceptionHandler;
 import org.springframework.web.bind. annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import com.foodya.foodya_backend.utils.exception.business.AccountDeactivatedException;
-import com.foodya.foodya_backend.utils.exception.business.BadRequestException;
-import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.utils.exception.dto.ErrorResponse;
-import com.foodya.foodya_backend.utils.exception.security.UnauthorizedException;
+import com.foodya.foodya_backend.exception.business.AccountDeactivatedException;
+import com.foodya.foodya_backend.exception.business.BadRequestException;
+import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.exception.dto.ErrorResponse;
+import com.foodya.foodya_backend.exception.security.UnauthorizedException;
 
 import java. time.LocalDateTime;
 import java.util.List;
