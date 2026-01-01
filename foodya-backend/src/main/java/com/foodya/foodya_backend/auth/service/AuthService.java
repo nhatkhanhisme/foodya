@@ -14,14 +14,14 @@ import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
+import com.foodya.foodya_backend.exception.business.AccountDeactivatedException;
+import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.exception.security.UnauthorizedException;
 import com.foodya.foodya_backend.jwt.JwtService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.exception.business.AccountDeactivatedException;
-import com.foodya.foodya_backend.utils.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.utils.exception.security.UnauthorizedException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +51,21 @@ public class AuthService {
     if (userRepository.existsByEmail(registerRequest.getEmail())) {
       throw new DuplicateResourceException("Email already exists");
     }
-    if (registerRequest.getPhoneNumber() != null
-        && userRepository.existsByPhoneNumber(registerRequest.getPhoneNumber())) {
-      throw new DuplicateResourceException("Phone number already exists");
+
+    // Normalize phone number if provided
+    String normalizedPhone = null;
+    if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isBlank()) {
+      try {
+        normalizedPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(
+            registerRequest.getPhoneNumber(), "VN");
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
+      }
+
+      // Check if normalized phone already exists
+      if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+        throw new DuplicateResourceException("Phone number already exists");
+      }
     }
 
     // Create new user
@@ -62,7 +74,7 @@ public class AuthService {
     user.setEmail(registerRequest.getEmail());
     user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
     user.setFullName(registerRequest.getFullName());
-    user.setPhoneNumber(registerRequest.getPhoneNumber());
+    user.setPhoneNumber(normalizedPhone);
     user.setRole(Role.valueOf(registerRequest.getRole().toUpperCase()));
     user.setIsActive(true);
     user.setIsEmailVerified(false);

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,9 +36,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER_PREFIX = "Bearer ";
 
   @Override
-  protected void doFilterInternal(HttpServletRequest request,
-      HttpServletResponse response,
-      FilterChain filterChain) throws ServletException, IOException {
+  protected void doFilterInternal(@NonNull HttpServletRequest request,
+      @NonNull HttpServletResponse response,
+      @NonNull FilterChain filterChain) throws ServletException, IOException {
 
     String requestPath = request.getRequestURI();
     logger.debug("Processing request: {} {}", request.getMethod(), requestPath);
@@ -113,13 +114,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String bearerToken = request.getHeader("Authorization");
     logger.debug("Authorization header: {}", bearerToken != null ? "present" : "missing");
 
-    if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+    if (bearerToken != null && StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
       String token = bearerToken.substring(BEARER_PREFIX.length());
       logger.debug("Extracted JWT token (length: {})", token.length());
       return token;
     }
 
-    if (StringUtils.hasText(bearerToken) && !bearerToken.startsWith(BEARER_PREFIX)) {
+    if (bearerToken != null &&  StringUtils.hasText(bearerToken) && !bearerToken.startsWith(BEARER_PREFIX)) {
       logger.warn("Authorization header does not start with 'Bearer ' prefix");
     }
 

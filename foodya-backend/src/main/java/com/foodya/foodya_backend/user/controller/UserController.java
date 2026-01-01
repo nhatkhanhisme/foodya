@@ -3,6 +3,11 @@ package com.foodya.foodya_backend.user.controller;
 import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.service.UserService;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Conflict;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound;
+import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,11 +38,14 @@ public class UserController {
 
   @Operation(summary = "Get Current User Profile", description = "Retrieve the profile of the currently authenticated user")
   @ApiResponses(value = {
-      // Define responses here
-      @ApiResponse(responseCode = "200", description = "Successfully retrieved user profile", content = @Content(schema = @Schema(implementation = UserProfileResponse.class))),
-      @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing authentication token"),
-      @ApiResponse(responseCode = "404", description = "User not found")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Successfully retrieved user profile",
+          content = @Content(schema = @Schema(implementation = UserProfileResponse.class))
+      )
   })
+  @Unauthorized
+  @NotFound
   @GetMapping("/me")
   public ResponseEntity<UserProfileResponse> getCurrentUserProfile() {
     UserProfileResponse profile = userService.getCurrentUserProfile();
@@ -46,10 +54,15 @@ public class UserController {
 
   @Operation(summary = "Update my profile", description = "Update profile information of the current user")
   @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "Profile updated successfully", content = @Content(schema = @Schema(implementation = UserProfileResponse.class))),
-      @ApiResponse(responseCode = "400", description = "Invalid input - Validation failed or duplicate email/phone"),
-      @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing authentication token")
+      @ApiResponse(
+          responseCode = "200",
+          description = "Profile updated successfully. Phone number auto-normalized to +84...",
+          content = @Content(schema = @Schema(implementation = UserProfileResponse.class))
+      )
   })
+  @BadRequest
+  @Unauthorized
+  @Conflict
   @PutMapping("/me")
   public ResponseEntity<UserProfileResponse> updateProfile(
       @Valid @RequestBody UpdateProfileRequest request) {

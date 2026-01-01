@@ -1,5 +1,7 @@
 package com.foodya.foodya_backend.order.service;
 
+import com.foodya.foodya_backend.exception.business.BadRequestException;
+import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.order.dto.OrderItemRequest;
 import com.foodya.foodya_backend.order.dto.OrderRequest;
 import com.foodya.foodya_backend.order.dto.OrderResponse;
@@ -13,8 +15,6 @@ import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.exception.business.BadRequestException;
-import com.foodya.foodya_backend.utils.exception.business.ResourceNotFoundException;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -65,8 +65,12 @@ public class OrderService {
 
     log.info("Creating order for customer: {}, restaurant: {}", customer.getId(), request.getRestaurantId());
 
-    Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + request.getRestaurantId()));
+    UUID restaurantId = request.getRestaurantId();
+    if (restaurantId == null) {
+        throw new BadRequestException("restaurantId is required");
+    }
+    Restaurant restaurant = restaurantRepository.findById(restaurantId)
+        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
 
     Order order = Order.builder()
         .customer(customer)
@@ -82,7 +86,11 @@ public class OrderService {
         .build();
 
     for (OrderItemRequest itemRequest : request.getItems()) {
-      MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
+      UUID menuItemId = itemRequest.getMenuItemId();
+      if (menuItemId == null) {
+        throw new BadRequestException("Menu item ID cannot be null");
+      }
+      MenuItem menuItem = menuItemRepository.findById(menuItemId)
           .orElseThrow(
               () -> new ResourceNotFoundException("Menu item not found with id: " + itemRequest.getMenuItemId()));
 

@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.utils.exception.security;
+package com.foodya.foodya_backend.exception.security;
 
 public class UnauthorizedException extends RuntimeException {
   public UnauthorizedException(String message) {
