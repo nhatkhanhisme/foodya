@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;

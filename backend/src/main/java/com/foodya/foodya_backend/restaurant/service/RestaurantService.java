@@ -1,8 +1,8 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.exception.security.UnauthorizedException;
+import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.security.UnauthorizedException;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantMapper;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
@@ -146,7 +146,7 @@ public class RestaurantService {
     String normalizedPhone = null;
     if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
       try {
-        normalizedPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(
+        normalizedPhone = com.foodya.foodya_backend.common.utils.phone.PhoneNumberUtil.normalize(
             request.getPhoneNumber(), "VN");
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
@@ -224,7 +224,7 @@ public class RestaurantService {
     String normalizedPhone = null;
     if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
       try {
-        normalizedPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(
+        normalizedPhone = com.foodya.foodya_backend.common.utils.phone.PhoneNumberUtil.normalize(
             request.getPhoneNumber(), "VN");
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());

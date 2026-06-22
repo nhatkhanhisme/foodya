@@ -18,12 +18,12 @@ import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
 import com.foodya.foodya_backend.auth.service.AuthService;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Conflict;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Forbidden;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.InternalServerError;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Conflict;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Forbidden;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.InternalServerError;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.order.service;
 
-import com.foodya.foodya_backend.exception.business.BadRequestException;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.business.BadRequestException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.order.dto.OrderItemRequest;
 import com.foodya.foodya_backend.order.dto.OrderRequest;
 import com.foodya.foodya_backend.order.dto.OrderResponse;

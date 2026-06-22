@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.utils.swagger;
+package com.foodya.foodya_backend.common.utils.swagger;
 
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -11,7 +11,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.foodya.foodya_backend.exception.dto.ErrorResponse;
+import com.foodya.foodya_backend.common.exception.dto.ErrorResponse;
 
 /**
  * Utility class containing reusable API response annotations for Swagger documentation.

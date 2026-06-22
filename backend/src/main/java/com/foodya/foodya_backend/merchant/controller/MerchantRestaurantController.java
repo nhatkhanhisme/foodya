@@ -1,17 +1,17 @@
 package com.foodya.foodya_backend.merchant.controller;
 
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Conflict;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Forbidden;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Conflict;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Forbidden;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

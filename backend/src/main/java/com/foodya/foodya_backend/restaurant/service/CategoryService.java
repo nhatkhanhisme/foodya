@@ -1,9 +1,9 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.exception.business.BadRequestException;
-import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.exception.security.UnauthorizedException;
+import com.foodya.foodya_backend.common.exception.business.BadRequestException;
+import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.security.UnauthorizedException;
 import com.foodya.foodya_backend.restaurant.dto.CategoryRequest;
 import com.foodya.foodya_backend.restaurant.dto.CategoryResponse;
 import com.foodya.foodya_backend.restaurant.model.Category;

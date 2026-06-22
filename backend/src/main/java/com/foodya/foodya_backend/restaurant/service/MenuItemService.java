@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemMapper;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;

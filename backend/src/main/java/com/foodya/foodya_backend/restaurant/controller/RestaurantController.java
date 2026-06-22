@@ -1,10 +1,10 @@
 package com.foodya.foodya_backend.restaurant.controller;
 
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.InternalServerError;
+import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantService;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.InternalServerError;
-import com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

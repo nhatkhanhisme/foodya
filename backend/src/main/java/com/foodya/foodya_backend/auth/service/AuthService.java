@@ -14,10 +14,10 @@ import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
-import com.foodya.foodya_backend.exception.business.AccountDeactivatedException;
-import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.exception.security.UnauthorizedException;
+import com.foodya.foodya_backend.common.exception.business.AccountDeactivatedException;
+import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
+import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.security.UnauthorizedException;
 import com.foodya.foodya_backend.jwt.JwtService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
@@ -56,7 +56,7 @@ public class AuthService {
     String normalizedPhone = null;
     if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isBlank()) {
       try {
-        normalizedPhone = com.foodya.foodya_backend.utils.phone.PhoneNumberUtil.normalize(
+        normalizedPhone = com.foodya.foodya_backend.common.utils.phone.PhoneNumberUtil.normalize(
             registerRequest.getPhoneNumber(), "VN");
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());

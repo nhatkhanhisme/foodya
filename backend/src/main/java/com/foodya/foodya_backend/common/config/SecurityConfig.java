@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.config;
+package com.foodya.foodya_backend.common.config;
 
 import com.foodya.foodya_backend.middleware.JwtAuthenticationFilter;
 

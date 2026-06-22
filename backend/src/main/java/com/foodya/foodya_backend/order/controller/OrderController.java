@@ -38,10 +38,10 @@ public class OrderController {
           content = @Content(schema = @Schema(implementation = OrderResponse.class))
       )
   })
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.InternalServerError
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.InternalServerError
   @PostMapping
   public ResponseEntity<OrderResponse> createOrder(
       Authentication authentication,
@@ -59,7 +59,7 @@ public class OrderController {
           description = "Orders retrieved successfully"
       )
   })
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized
   @GetMapping("/me")
   public ResponseEntity<List<OrderResponse>> getMyOrders(Authentication authentication) {
     List<OrderResponse> orders = orderService.getMyOrders(authentication);
@@ -73,7 +73,7 @@ public class OrderController {
           description = "Active orders retrieved successfully"
       )
   })
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized
   @GetMapping("/me/active")
   public ResponseEntity<List<OrderResponse>> getMyActiveOrders(Authentication authentication) {
     List<OrderResponse> orders = orderService.getMyActiveOrders(authentication);
@@ -87,9 +87,9 @@ public class OrderController {
           description = "Order cancelled successfully"
       )
   })
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.BadRequest
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.Unauthorized
-  @com.foodya.foodya_backend.utils.swagger.ApiResponseExamples.NotFound
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized
+  @com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound
   @PatchMapping("/{id}/cancel")
   public ResponseEntity<OrderResponse> cancelOrder(
       Authentication authentication,

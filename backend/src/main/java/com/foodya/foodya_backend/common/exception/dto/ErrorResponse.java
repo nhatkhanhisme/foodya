@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.exception.dto;
+package com.foodya.foodya_backend.common.exception.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
