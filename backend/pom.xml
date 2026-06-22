@@ -9,9 +9,9 @@
     <!--  lookup parent from repository  -->
   </parent>
   <groupId>com.foodya</groupId>
-  <artifactId>foodya-backend</artifactId>
+  <artifactId>backend</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>foodya-backend</name>
+  <name>backend</name>
   <description>Backend service for Foodya delivery application</description>
   <url/>
   <licenses>
