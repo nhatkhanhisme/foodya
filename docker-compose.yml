@@ -3,9 +3,9 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./foodya-backend
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: foodya-backend
+    container_name: backend
 
     env_file:
       - .env

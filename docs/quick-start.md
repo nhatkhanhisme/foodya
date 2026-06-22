@@ -17,7 +17,7 @@ Hướng dẫn nhanh để bắt đầu sử dụng Foodya Backend API.
 1. **Clone repository**
    ```bash
    git clone <repository-url>
-   cd foodya-backend
+   cd backend
    ```
 
 2. **Configure database**
