@@ -50,7 +50,7 @@ FRONTEND_URL=http://localhost:3000
 ### Bước 3: Chạy ứng dụng
 
 ```bash
-cd foodya-backend
+cd backend
 ./mvnw spring-boot:run
 ```
 
@@ -161,7 +161,7 @@ foodya/                              # Root project
 ├── .env                             # ⚠️ Environment variables (KHÔNG commit)
 ├── .env.example                     # ✅ Template (commit được)
 ├── .gitignore                       # Phải chứa .env
-└── foodya-backend/
+└── backend/
     └── src/main/resources/
         └── application.properties   # Đọc từ ../.env
 ```
@@ -171,7 +171,7 @@ foodya/                              # Root project
 spring.config.import=optional:file:../.env[.properties]
 ```
 
-Path `../` nghĩa là lên 1 cấp từ `foodya-backend/` → root project
+Path `../` nghĩa là lên 1 cấp từ `backend/` → root project
 
 ---
 
@@ -348,7 +348,7 @@ app.jwt.secret=${SPRING_JWT_SECRET_KEY}
 # Dockerfile
 FROM openjdk:21-jdk-slim
 COPY .env /app/.env
-COPY foodya-backend/target/*.jar /app/app.jar
+COPY backend/target/*.jar /app/app.jar
 WORKDIR /app
 CMD ["java", "-jar", "app.jar"]
 ```

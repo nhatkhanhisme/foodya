@@ -87,7 +87,7 @@ Before you begin, ensure you have the following installed:
 🚀 Installation
 1. Clone repository
 git clone https://github.com/yourusername/foodya.git
-cd foodya/foodya-backend
+cd foodya/backend
 
 2. Database configuration
 Option A: Supabase
@@ -136,7 +136,7 @@ Maven
 mvn spring-boot:run
 
 JAR
-java -jar target/foodya-backend-0.0.1-SNAPSHOT.jar
+java -jar target/backend-0.0.1-SNAPSHOT.jar
 
 Docker
 docker-compose up -d
@@ -172,7 +172,7 @@ Authorization Header
 Authorization: Bearer <ACCESS_TOKEN>
 
 📁 Project Structure
-foodya-backend/
+backend/
 ├── admin/
 ├── auth/
 ├── config/
@@ -182,8 +182,8 @@ foodya-backend/
 └── FoodyaBackendApplication.java
 
 🐳 Docker Support
-docker build -t foodya-backend .
-docker run -p 8080:8080 foodya-backend
+docker build -t backend .
+docker run -p 8080:8080 backend
 
 🧪 Testing
 mvn test
