@@ -79,7 +79,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
           AND o.status = 'DELIVERED'
           AND o.orderDate BETWEEN :startDate AND :endDate
       """)
-  Double sumRevenueByRestaurantIdAndDateRange(
+  Long sumRevenueByRestaurantIdAndDateRange(
       @Param("restaurantId") UUID restaurantId,
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate);

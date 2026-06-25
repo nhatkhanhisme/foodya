@@ -50,13 +50,13 @@ public class OrderResponse {
     // ========== PRICING ==========
 
     @Schema(description = "Subtotal (before delivery fee)")
-    private Double subtotal;
+    private Long subtotal;
 
     @Schema(description = "Delivery fee")
-    private Double deliveryFee;
+    private Long deliveryFee;
 
     @Schema(description = "Total price (subtotal + delivery fee)")
-    private Double totalPrice;
+    private Long totalPrice;
 
     @Schema(description = "Total number of items")
     private Integer totalItems;
@@ -130,7 +130,7 @@ public class OrderResponse {
         }
 
         // Pricing
-        double subtotal = order.getTotalPrice() - order.getDeliveryFee();
+        long subtotal = order.getTotalPrice() - order.getDeliveryFee();
         response.setSubtotal(subtotal);
         response.setDeliveryFee(order.getDeliveryFee());
         response.setTotalPrice(order.getTotalPrice());

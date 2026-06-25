@@ -57,7 +57,7 @@ public class Order {
     // ========== ORDER SUMMARY ==========
 
     @Column(nullable = false)
-    private Double totalPrice;
+    private Long totalPrice;
 
     @Column(nullable = false)
     private Integer totalItems;
@@ -78,7 +78,7 @@ public class Order {
 
     @Column(nullable = false)
     @Builder.Default
-    private Double deliveryFee = 0.0;
+    private Long deliveryFee = 0L;
 
     @Column(length = 1000)
     private String orderNotes;
@@ -125,8 +125,8 @@ public class Order {
 
     public void recalculateTotals() {
         this.totalPrice = orderItems.stream()
-                .mapToDouble(OrderItem::getSubtotal)
-                .sum() + this.deliveryFee;
+                .mapToLong(OrderItem::getSubtotal)
+                .sum() + (this.deliveryFee != null ? this.deliveryFee : 0L);
 
         this.totalItems = orderItems.stream()
                 .mapToInt(OrderItem::getQuantity)

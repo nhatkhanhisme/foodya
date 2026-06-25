@@ -53,7 +53,7 @@ public class AdminOrderController {
   }
 
   @GetMapping("/metrics/revenue")
-  public ResponseEntity<Double> revenue(
+  public ResponseEntity<Long> revenue(
       @RequestParam UUID restaurantId,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate

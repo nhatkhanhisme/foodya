@@ -38,7 +38,7 @@ public class OrderRequest {
 
   @DecimalMin(value = "0.0", message = "Delivery fee must be non-negative")
   @Schema(description = "Delivery fee", example = "15000.0")
-  private Double deliveryFee;
+  private Long deliveryFee;
 
   @Size(max = 1000, message = "Order notes must not exceed 1000 characters")
   @Schema(description = "Special notes for the order", example = "Giao trước 12h")

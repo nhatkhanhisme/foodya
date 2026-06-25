@@ -53,13 +53,13 @@ public class OrderItem {
      * Không dùng trực tiếp từ MenuItem vì giá có thể thay đổi sau này
      */
     @Column(nullable = false)
-    private Double priceAtPurchase;
+    private Long priceAtPurchase;
 
     /**
      * Tổng giá cho item này (quantity * priceAtPurchase)
      */
     @Column(nullable = false)
-    private Double subtotal;
+    private Long subtotal;
 
 
     @CreationTimestamp

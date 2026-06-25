@@ -24,10 +24,10 @@ public class OrderItemResponse {
     private Integer quantity;
 
     @Schema(description = "Price at time of purchase")
-    private Double priceAtPurchase;
+    private Long priceAtPurchase;
 
     @Schema(description = "Subtotal (quantity × price)")
-    private Double subtotal;
+    private Long subtotal;
 
     @Schema(description = "Special instructions")
     private String specialInstructions;

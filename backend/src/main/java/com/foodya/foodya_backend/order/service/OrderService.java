@@ -78,9 +78,9 @@ public class OrderService {
         .status(OrderStatus.PENDING)
         .orderDate(request.getOrderDate() != null ? request.getOrderDate() : Instant.now())
         .deliveryAddress(request.getDeliveryAddress())
-        .deliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0.0)
+        .deliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0L)
         .orderNotes(request.getOrderNotes())
-        .totalPrice(0.0)
+        .totalPrice(0L)
         .totalItems(0)
         .orderItems(new ArrayList<>())
         .build();
@@ -207,15 +207,15 @@ public class OrderService {
   }
 
   @Transactional(readOnly = true)
-  public Double calculateRevenue(UUID restaurantId, Instant startDate, Instant endDate) {
+  public Long calculateRevenue(UUID restaurantId, Instant startDate, Instant endDate) {
     if (restaurantId == null || startDate == null || endDate == null) {
       throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId, startDate, endDate are required");
     }
     if (endDate.isBefore(startDate)) {
       throw new AppException(ErrorCode.VALIDATION_ERROR, "endDate must be after startDate");
     }
-    Double sum = orderRepository.sumRevenueByRestaurantIdAndDateRange(restaurantId, startDate, endDate);
-    return sum == null ? 0.0 : sum;
+    Long sum = orderRepository.sumRevenueByRestaurantIdAndDateRange(restaurantId, startDate, endDate);
+    return sum == null ? 0L : sum;
   }
 
   private User getCurrentUser(Authentication authentication) {
