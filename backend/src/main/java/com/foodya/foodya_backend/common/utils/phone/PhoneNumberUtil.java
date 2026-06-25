@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.utils.phone;
+package com.foodya.foodya_backend.common.utils.phone;
 
 import java.util.Map;
 import java.util.regex.Pattern;

@@ -1,13 +1,10 @@
-package com.foodya.foodya_backend.config;
+package com.foodya.foodya_backend.common.security;
 
-import com.foodya.foodya_backend.middleware.JwtAuthenticationFilter;
-
-import jakarta.servlet.http.HttpServletResponse;
+import com.foodya.foodya_backend.common.filter.TraceIdFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -30,6 +27,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+  private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+  private final TraceIdFilter traceIdFilter;
   private final UserDetailsService userDetailsService;
 
   @Bean
@@ -37,63 +37,36 @@ public class SecurityConfig {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-            // ========== PUBLIC ENDPOINTS ==========
-
+            // Public
             .requestMatchers("/api/v1/auth/**").permitAll()
             .requestMatchers("/error").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/actuator/**").permitAll()
-
-            // ========== MOBILE APP ENDPOINTS ==========
-
+            // Public read
             .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/*/menu-items/**").permitAll()
-
-            // ========== USER ENDPOINTS ==========
-
+            // User
             .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
             .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
-
-            // ========== MERCHANT REGISTRATION ENDPOINTS (NEW) ==========
-
-            // Customer can submit registration
+            // Merchant registration
             .requestMatchers(HttpMethod.POST, "/api/v1/merchant-registration").hasRole("CUSTOMER")
-
-            // Authenticated users can view their registrations
             .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/me").authenticated()
             .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/*").authenticated()
-
-            // Can cancel their own registration
             .requestMatchers(HttpMethod.DELETE, "/api/v1/merchant-registration/*").authenticated()
-
-            // ========== MERCHANT ENDPOINTS ==========
-
+            // Merchant
             .requestMatchers("/api/v1/merchant/**").hasAnyRole("MERCHANT", "ADMIN")
-
-            // ========== ORDER ENDPOINTS ==========
+            // Orders
             .requestMatchers("/api/v1/orders/**").authenticated()
-
-            // ========== ADMIN ENDPOINTS ==========
-
+            // Admin
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-
-            // ========== DEFAULT ==========
-
             .anyRequest().authenticated())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .exceptionHandling(ex -> ex
-            .authenticationEntryPoint((request, response, authException) -> {
-              response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-              response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-              response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Unauthorized\"}");
-            })
-            .accessDeniedHandler((request, response, accessDeniedException) -> {
-              response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-              response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-              response.getWriter().write("{\"status\":403,\"error\":\"Forbidden\",\"message\":\"Forbidden\"}");
-            }))
+            .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+            .accessDeniedHandler(jwtAccessDeniedHandler))
         .authenticationProvider(authenticationProvider())
+        .addFilterBefore(traceIdFilter, JwtAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
