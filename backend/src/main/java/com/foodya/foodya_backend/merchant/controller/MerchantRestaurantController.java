@@ -1,6 +1,7 @@
 package com.foodya.foodya_backend.merchant.controller;
 
-import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantService;
@@ -42,7 +43,7 @@ public class MerchantRestaurantController {
   private User getCurrentUser() {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
     return userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
   }
 
   private boolean isAdmin() {
