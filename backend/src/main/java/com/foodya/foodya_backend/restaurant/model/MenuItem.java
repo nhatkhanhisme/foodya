@@ -39,12 +39,14 @@ public class MenuItem {
     private String description;
 
     @Column(nullable = false)
-    private Double price;
+    private Long price;
 
     private String imageUrl;
 
-    @Column(nullable = false)
-    private String category; // Appetizer, Main Course, Dessert, Beverage, etc.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @JsonIgnore
+    private Category category;
 
     @Column(nullable = false)
     @Builder.Default
@@ -53,6 +55,11 @@ public class MenuItem {
     @Column(nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    // Soft delete flag (BR-10: never hard-delete items referenced by order history)
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     private Integer preparationTime; // in minutes
 

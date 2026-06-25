@@ -5,8 +5,10 @@ import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemMapper;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;
+import com.foodya.foodya_backend.restaurant.model.Category;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
+import com.foodya.foodya_backend.restaurant.repository.CategoryRepository;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 
@@ -30,6 +32,7 @@ public class MenuItemService {
 
   private final MenuItemRepository menuItemRepository;
   private final RestaurantRepository restaurantRepository;
+  private final CategoryRepository categoryRepository;
   private final MenuItemMapper menuItemMapper;
 
   /**
@@ -49,10 +52,17 @@ public class MenuItemService {
           "Menu item with name '" + request.getName() + "' already exists for this restaurant");
     }
 
+    // Resolve category
+    Category category = categoryRepository.findById(request.getCategoryId())
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+            "Category not found with id: " + request.getCategoryId()));
+
     // Create menu item
     MenuItem menuItem = menuItemMapper.toMenuItem(request);
     menuItem.setRestaurant(restaurant);
+    menuItem.setCategory(category);
     menuItem.setIsActive(true);
+    menuItem.setIsDeleted(false);
     menuItem.setOrderCount(0);
 
     MenuItem savedMenuItem = menuItemRepository.save(menuItem);
@@ -80,6 +90,16 @@ public class MenuItemService {
     }
 
     menuItemMapper.updateMenuItemFromRequest(menuItem, request);
+
+    // Update category if changed
+    if (request.getCategoryId() != null &&
+        (menuItem.getCategory() == null || !menuItem.getCategory().getId().equals(request.getCategoryId()))) {
+      Category category = categoryRepository.findById(request.getCategoryId())
+          .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+              "Category not found with id: " + request.getCategoryId()));
+      menuItem.setCategory(category);
+    }
+
     MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
 
     log.info("Menu item updated successfully: {}", menuItemId);
@@ -99,6 +119,7 @@ public class MenuItemService {
 
     menuItem.setIsActive(false);
     menuItem.setIsAvailable(false);
+    menuItem.setIsDeleted(true);
     menuItemRepository.save(menuItem);
 
     log.info("Menu item soft deleted successfully: {}", menuItemId);
@@ -208,10 +229,10 @@ public class MenuItemService {
    * Get menu items by category
    */
   @Transactional(readOnly = true)
-  public List<MenuItemResponse> getMenuItemsByCategory(@NonNull UUID restaurantId, String category) {
-    log.info("Fetching menu items for restaurant ID: {} with category: {}", restaurantId, category);
+  public List<MenuItemResponse> getMenuItemsByCategory(@NonNull UUID restaurantId, @NonNull UUID categoryId) {
+    log.info("Fetching menu items for restaurant ID: {} with categoryId: {}", restaurantId, categoryId);
 
-    List<MenuItem> menuItems = menuItemRepository.findByRestaurantIdAndCategoryAndIsActiveTrue(restaurantId, category);
+    List<MenuItem> menuItems = menuItemRepository.findByRestaurantIdAndCategory_IdAndIsActiveTrue(restaurantId, categoryId);
     return menuItemMapper.toMenuItemResponseList(menuItems);
   }
 

@@ -118,14 +118,14 @@ public class MenuItemController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Menu items filtered successfully")
     })
-    @GetMapping("/category/{category}")
+    @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<MenuItemResponse>> getMenuItemsByCategory(
             @Parameter(description = "Restaurant ID")
             @PathVariable UUID restaurantId,
-            @Parameter(description = "Category name", example = "Main Course")
-            @PathVariable String category) {
+            @Parameter(description = "Category ID")
+            @PathVariable UUID categoryId) {
 
-        List<MenuItemResponse> response = menuItemService.getMenuItemsByCategory(restaurantId, category);
+        List<MenuItemResponse> response = menuItemService.getMenuItemsByCategory(restaurantId, categoryId);
         return ResponseEntity.ok(response);
     }
 

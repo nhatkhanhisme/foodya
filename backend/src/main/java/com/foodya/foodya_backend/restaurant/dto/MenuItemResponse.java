@@ -32,13 +32,16 @@ public class MenuItemResponse {
     private String description;
 
     @Schema(description = "Price", example = "12.99")
-    private Double price;
+    private Long price;
 
     @Schema(description = "Image URL")
     private String imageUrl;
 
-    @Schema(description = "Category", example = "Main Course")
-    private String category;
+    @Schema(description = "Category ID")
+    private UUID categoryId;
+
+    @Schema(description = "Category name", example = "Main Course")
+    private String categoryName;
 
     @Schema(description = "Is available?", example = "true")
     private Boolean isAvailable;

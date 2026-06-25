@@ -18,6 +18,7 @@ public class CategoryResponse {
 
   private UUID id;
   private String name;
+  private Integer displayOrder;
   private UUID restaurantId;
 
   /**
@@ -31,8 +32,8 @@ public class CategoryResponse {
     return CategoryResponse.builder()
         .id(category.getId())
         .name(category.getName())
+        .displayOrder(category.getDisplayOrder())
         .restaurantId(category.getRestaurantId())
-
         .build();
   }
 
