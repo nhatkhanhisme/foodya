@@ -2,10 +2,10 @@ package com.foodya.foodya_backend.restaurant.service;
 
 import com.foodya.foodya_backend.common.exception.AppException;
 import com.foodya.foodya_backend.common.exception.ErrorCode;
-import com.foodya.foodya_backend.restaurant.dto.RestaurantMapper;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
+import com.foodya.foodya_backend.restaurant.model.RestaurantStatus;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 
 import lombok.NonNull;
@@ -27,7 +27,6 @@ import org.springframework.data.domain.Sort;
 public class RestaurantService {
 
   private final RestaurantRepository restaurantRepository;
-  private final RestaurantMapper restaurantMapper;
 
   /**
    * Get all active restaurants (for internal)
@@ -35,8 +34,8 @@ public class RestaurantService {
   @Transactional(readOnly = true)
   public List<RestaurantResponse> getAllRestaurants() {
     log.info("Fetching all active restaurants");
-    List<Restaurant> restaurants = restaurantRepository.findByIsActiveTrue();
-    return restaurantMapper.toRestaurantResponseList(restaurants);
+    List<Restaurant> restaurants = restaurantRepository.findByStatus(RestaurantStatus.APPROVED);
+    return restaurants.stream().map(RestaurantResponse::fromEntity).toList();
   }
 
   /**
@@ -81,13 +80,13 @@ public class RestaurantService {
           keyword != null && !keyword.isBlank() ? keyword : null,
           cuisine != null && !cuisine.isBlank() ? cuisine : null,
           minRating,
+          RestaurantStatus.APPROVED,
           pageable);
     } else {
-      // Không có filter, lấy tất cả
-      restaurants = restaurantRepository.findByIsActiveTrue(pageable);
+      restaurants = restaurantRepository.findByStatus(RestaurantStatus.APPROVED, pageable);
     }
 
-    return restaurants.map(restaurantMapper::toRestaurantResponse);
+    return restaurants.map(RestaurantResponse::fromEntity);
   }
 
   /**
@@ -97,7 +96,7 @@ public class RestaurantService {
   public List<RestaurantResponse> getAllRestaurantsIncludingInactive() {
     log.info("Fetching all restaurants including inactive");
     List<Restaurant> restaurants = restaurantRepository.findAll();
-    return restaurantMapper.toRestaurantResponseList(restaurants);
+    return restaurants.stream().map(RestaurantResponse::fromEntity).toList();
   }
 
   /**
@@ -108,7 +107,7 @@ public class RestaurantService {
     log.info("Fetching restaurant with id: {}", id);
     Restaurant restaurant = restaurantRepository.findById(id)
         .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
-    return restaurantMapper.toRestaurantResponse(restaurant);
+    return RestaurantResponse.fromEntity(restaurant);
   }
 
   /**
@@ -119,8 +118,8 @@ public class RestaurantService {
     log.info("Fetching top {} popular restaurants", limit);
     Pageable pageable = PageRequest.of(0, limit,
         Sort.by("totalReviews").descending().and(Sort.by("rating").descending()));
-    Page<Restaurant> restaurants = restaurantRepository.findByIsActiveTrue(pageable);
-    return restaurantMapper.toRestaurantResponseList(restaurants.getContent());
+    Page<Restaurant> restaurants = restaurantRepository.findByStatus(RestaurantStatus.APPROVED, pageable);
+    return restaurants.getContent().stream().map(RestaurantResponse::fromEntity).toList();
   }
 
   // Delete restaurant by ID (for admin)
@@ -176,10 +175,9 @@ public class RestaurantService {
         .openingHours(request.getOpeningHours())
 
         // Delivery Information
-        // Status
+        // Status — mặc định PENDING, chờ admin approve (BR-17)
+        .status(RestaurantStatus.PENDING)
         .isOpen(request.getIsOpen() != null ? request.getIsOpen() : true)
-        .isActive(true)
-        .isVerified(false) // Admin sẽ verify sau
         .isFeatured(false)
 
         // Initial values
@@ -187,7 +185,7 @@ public class RestaurantService {
         .totalReviews(0)
         .totalOrders(0)
         .orderCount(0)
-        .averageOrderValue(0.0)
+        .averageOrderValue(0L)
 
         // Owner
         .ownerId(ownerId)
@@ -294,6 +292,33 @@ public class RestaurantService {
 
     log.info("Restaurant status toggled to: {}", updatedRestaurant.getIsOpen() ? "OPEN" : "CLOSED");
     return RestaurantResponse.fromEntity(updatedRestaurant);
+  }
+
+  @Transactional
+  public RestaurantResponse approveRestaurant(@NonNull UUID id) {
+    Restaurant restaurant = restaurantRepository.findById(id)
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found: " + id));
+    restaurant.setStatus(RestaurantStatus.APPROVED);
+    log.info("Restaurant {} approved", id);
+    return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
+  }
+
+  @Transactional
+  public RestaurantResponse rejectRestaurant(@NonNull UUID id) {
+    Restaurant restaurant = restaurantRepository.findById(id)
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found: " + id));
+    restaurant.setStatus(RestaurantStatus.REJECTED);
+    log.info("Restaurant {} rejected", id);
+    return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
+  }
+
+  @Transactional
+  public RestaurantResponse suspendRestaurant(@NonNull UUID id) {
+    Restaurant restaurant = restaurantRepository.findById(id)
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found: " + id));
+    restaurant.setStatus(RestaurantStatus.SUSPENDED);
+    log.info("Restaurant {} suspended", id);
+    return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
   }
 
 }

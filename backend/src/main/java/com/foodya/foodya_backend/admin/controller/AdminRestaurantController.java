@@ -34,14 +34,27 @@ public class AdminRestaurantController {
         return ResponseEntity.ok(restaurants);
     }
 
-    @Operation(
-        summary = "Delete restaurant",
-        description = "Admin only - Permanently delete a restaurant"
-    )
+    @Operation(summary = "Approve restaurant", description = "Admin only - Approve a pending restaurant")
+    @PatchMapping("/{id}/approve")
+    public ResponseEntity<RestaurantResponse> approveRestaurant(@PathVariable UUID id) {
+        return ResponseEntity.ok(restaurantService.approveRestaurant(id));
+    }
+
+    @Operation(summary = "Reject restaurant", description = "Admin only - Reject a pending restaurant")
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<RestaurantResponse> rejectRestaurant(@PathVariable UUID id) {
+        return ResponseEntity.ok(restaurantService.rejectRestaurant(id));
+    }
+
+    @Operation(summary = "Suspend restaurant", description = "Admin only - Suspend restaurant for policy violation")
+    @PatchMapping("/{id}/suspend")
+    public ResponseEntity<RestaurantResponse> suspendRestaurant(@PathVariable UUID id) {
+        return ResponseEntity.ok(restaurantService.suspendRestaurant(id));
+    }
+
+    @Operation(summary = "Delete restaurant", description = "Admin only - Permanently delete a restaurant")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRestaurant(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID id) {
+    public ResponseEntity<Void> deleteRestaurant(@PathVariable UUID id) {
         restaurantService.deleteRestaurantById(id);
         return ResponseEntity.noContent().build();
     }

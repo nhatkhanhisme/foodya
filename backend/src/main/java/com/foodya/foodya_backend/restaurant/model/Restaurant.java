@@ -72,17 +72,14 @@ public class Restaurant {
 
   // ========== STATUS ==========
 
-  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
   @Builder.Default
-  private Boolean isOpen = true; // Đang mở cửa hay đóng cửa
+  private RestaurantStatus status = RestaurantStatus.PENDING;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean isActive = true; // Admin có thể deactivate
-
-  @Column(nullable = false)
-  @Builder.Default
-  private Boolean isVerified = false;
+  private Boolean isOpen = true; // Merchant toggle: đang mở cửa hay đóng cửa
 
   @Column(nullable = false)
   @Builder.Default
@@ -103,15 +100,15 @@ public class Restaurant {
 
   @Column(nullable = false)
   @Builder.Default
-  private Double deliveryFee = 0.0;
+  private Long deliveryFee = 0L;
 
   @Column(nullable = false)
   @Builder.Default
-  private Double minimumOrder = 0.0;
+  private Long minimumOrder = 0L;
 
   @Column(nullable = false)
   @Builder.Default
-  private Double freeDeliveryThreshold = 0.0;
+  private Long freeDeliveryThreshold = 0L;
 
   private Integer estimatedDeliveryTime;
 
@@ -136,7 +133,7 @@ public class Restaurant {
 
   @Column(nullable = false)
   @Builder.Default
-  private Double averageOrderValue = 0.0;
+  private Long averageOrderValue = 0L;
 
   // ========== PROMO & FEATURES ==========
 
@@ -207,7 +204,7 @@ public class Restaurant {
     this.orderCount++;
   }
 
-  public void updateAverageOrderValue(Double totalRevenue) {
+  public void updateAverageOrderValue(Long totalRevenue) {
     if (this.totalOrders > 0) {
       this.averageOrderValue = totalRevenue / this.totalOrders;
     }
@@ -217,26 +214,22 @@ public class Restaurant {
    * Check if restaurant is currently open based on current time
    */
   public boolean isCurrentlyOpen() {
-    if (!this.isOpen || !this.isActive) {
-      return false;
-    }
-
-    return this.isOpen;
+    return this.status == RestaurantStatus.APPROVED && Boolean.TRUE.equals(this.isOpen);
   }
 
   /**
    * Check if delivery is free for given order value
    */
-  public boolean isFreeDelivery(Double orderValue) {
+  public boolean isFreeDelivery(Long orderValue) {
     return orderValue >= this.freeDeliveryThreshold;
   }
 
   /**
    * Calculate delivery fee for given order value
    */
-  public Double calculateDeliveryFee(Double orderValue) {
+  public Long calculateDeliveryFee(Long orderValue) {
     if (isFreeDelivery(orderValue)) {
-      return 0.0;
+      return 0L;
     }
     return this.deliveryFee;
   }
