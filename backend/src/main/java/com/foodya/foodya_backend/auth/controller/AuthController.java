@@ -18,13 +18,6 @@ import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
 import com.foodya.foodya_backend.auth.service.AuthService;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Conflict;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Forbidden;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.InternalServerError;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -59,9 +52,6 @@ public class AuthController {
           )
       )
   })
-  @BadRequest
-  @Conflict
-  @InternalServerError
   @PostMapping("/register")
   public ResponseEntity<JwtAuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
     JwtAuthResponse response = authService.registerUser(registerRequest);
@@ -82,8 +72,6 @@ public class AuthController {
           )
       )
   })
-  @Unauthorized
-  @Forbidden
   @SecurityRequirements()
   @PostMapping("/login")
   public ResponseEntity<JwtAuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -105,8 +93,6 @@ public class AuthController {
           )
       )
   })
-  @Unauthorized
-  @NotFound
   @PostMapping("/refresh")
   public ResponseEntity<JwtAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
     JwtAuthResponse response = authService.refreshToken(request);
@@ -129,8 +115,6 @@ public class AuthController {
           )
       )
   })
-  @BadRequest
-  @Unauthorized
   @PreAuthorize("isAuthenticated()")
   @PostMapping("/change-password")
   public ResponseEntity<Map<String, String>> changePassword(

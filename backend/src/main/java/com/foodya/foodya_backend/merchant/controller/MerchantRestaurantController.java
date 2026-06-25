@@ -1,11 +1,6 @@
 package com.foodya.foodya_backend.merchant.controller;
 
 import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Conflict;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Forbidden;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantService;
@@ -62,7 +57,6 @@ public class MerchantRestaurantController {
           description = "Restaurants retrieved successfully"
       )
   })
-  @Unauthorized
   @GetMapping("/me")
   public ResponseEntity<List<RestaurantResponse>> getMyRestaurants() {
     User currentUser = getCurrentUser();
@@ -78,9 +72,6 @@ public class MerchantRestaurantController {
           content = @Content(schema = @Schema(implementation = RestaurantResponse.class))
       )
   })
-  @BadRequest
-  @Unauthorized
-  @Conflict
   @PostMapping
   public ResponseEntity<RestaurantResponse> createRestaurant(
       @Valid @RequestBody RestaurantRequest request) {
@@ -97,11 +88,6 @@ public class MerchantRestaurantController {
           description = "Restaurant updated successfully"
       )
   })
-  @BadRequest
-  @Unauthorized
-  @Forbidden
-  @NotFound
-  @Conflict
   @PutMapping("/{id}")
   public ResponseEntity<RestaurantResponse> updateRestaurant(
       @Parameter(description = "Restaurant ID") @PathVariable UUID id,

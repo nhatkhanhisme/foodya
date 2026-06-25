@@ -1,8 +1,5 @@
 package com.foodya.foodya_backend.restaurant.controller;
 
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.InternalServerError;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantService;
 
@@ -33,8 +30,6 @@ public class RestaurantController {
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Restaurants retrieved successfully", content = @Content(schema = @Schema(implementation = Page.class)))
   })
-  @BadRequest
-  @InternalServerError
   @GetMapping
   public ResponseEntity<Page<RestaurantResponse>> getRestaurants(
       @Parameter(description = "Search keyword (searches in name, description, cuisine)", example = "Pizza") @RequestParam(required = false) String keyword,
@@ -58,8 +53,6 @@ public class RestaurantController {
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Restaurant found", content = @Content(schema = @Schema(implementation = RestaurantResponse.class)))
   })
-  @NotFound
-  @InternalServerError
   @GetMapping("/{id}")
   public ResponseEntity<RestaurantResponse> getRestaurantById(
       @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
@@ -71,7 +64,6 @@ public class RestaurantController {
   @ApiResponses(value = {
       @ApiResponse(responseCode = "200", description = "Popular restaurants retrieved successfully")
   })
-  @InternalServerError
   @GetMapping("/popular")
   public ResponseEntity<List<RestaurantResponse>> getPopularRestaurants(
       @Parameter(description = "Number of restaurants to return", example = "10") @RequestParam(defaultValue = "10") int limit) {

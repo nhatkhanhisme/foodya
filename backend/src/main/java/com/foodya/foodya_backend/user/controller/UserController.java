@@ -1,9 +1,5 @@
 package com.foodya.foodya_backend.user.controller;
 
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.BadRequest;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Conflict;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.NotFound;
-import com.foodya.foodya_backend.common.utils.swagger.ApiResponseExamples.Unauthorized;
 import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.service.UserService;
@@ -44,8 +40,6 @@ public class UserController {
           content = @Content(schema = @Schema(implementation = UserProfileResponse.class))
       )
   })
-  @Unauthorized
-  @NotFound
   @GetMapping("/me")
   public ResponseEntity<UserProfileResponse> getCurrentUserProfile() {
     UserProfileResponse profile = userService.getCurrentUserProfile();
@@ -60,9 +54,6 @@ public class UserController {
           content = @Content(schema = @Schema(implementation = UserProfileResponse.class))
       )
   })
-  @BadRequest
-  @Unauthorized
-  @Conflict
   @PutMapping("/me")
   public ResponseEntity<UserProfileResponse> updateProfile(
       @Valid @RequestBody UpdateProfileRequest request) {
