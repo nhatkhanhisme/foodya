@@ -1,7 +1,8 @@
 package com.foodya.foodya_backend.restaurant.service;
 
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
@@ -31,7 +32,7 @@ public class OwnershipService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
     }
 
     /**
@@ -40,7 +41,7 @@ public class OwnershipService {
     public boolean isRestaurantOwner(@NonNull UUID restaurantId) {
         User currentUser = getCurrentUser();
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found"));
 
         return restaurant.getOwnerId().equals(currentUser.getId());
     }
@@ -51,7 +52,7 @@ public class OwnershipService {
     public boolean isMenuItemOwner(@NonNull UUID menuItemId) {
         User currentUser = getCurrentUser();
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found"));
 
         return menuItem.getRestaurant().getOwnerId().equals(currentUser.getId());
     }

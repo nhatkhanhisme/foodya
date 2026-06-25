@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemMapper;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;
@@ -41,11 +41,11 @@ public class MenuItemService {
 
     // Check if restaurant exists
     Restaurant restaurant = restaurantRepository.findById(restaurantId)
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId));
 
     // Check if menu item name already exists for this restaurant
     if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), restaurantId)) {
-      throw new DuplicateResourceException(
+      throw new AppException(ErrorCode.DUPLICATE_RESOURCE, 
           "Menu item with name '" + request.getName() + "' already exists for this restaurant");
     }
 
@@ -69,12 +69,12 @@ public class MenuItemService {
     log.info("Updating menu item with ID: {}", menuItemId);
 
     MenuItem menuItem = menuItemRepository.findById(menuItemId)
-        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + menuItemId));
 
     // Check if name is being changed and if it conflicts with another item
     if (!menuItem.getName().equals(request.getName())) {
       if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), menuItem.getRestaurant().getId())) {
-        throw new DuplicateResourceException(
+        throw new AppException(ErrorCode.DUPLICATE_RESOURCE, 
             "Menu item with name '" + request.getName() + "' already exists for this restaurant");
       }
     }
@@ -95,7 +95,7 @@ public class MenuItemService {
     log.info("Soft deleting menu item with ID: {}", menuItemId);
 
     MenuItem menuItem = menuItemRepository.findById(menuItemId)
-        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + menuItemId));
 
     menuItem.setIsActive(false);
     menuItem.setIsAvailable(false);
@@ -113,7 +113,7 @@ public class MenuItemService {
     log.info("Hard deleting menu item with ID: {}", menuItemId);
 
     if (!menuItemRepository.existsById(menuItemId)) {
-      throw new ResourceNotFoundException("Menu item not found with id: " + menuItemId);
+      throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + menuItemId);
     }
 
     menuItemRepository.deleteById(menuItemId);
@@ -128,7 +128,7 @@ public class MenuItemService {
     log.info("Fetching menu item with ID: {}", menuItemId);
 
     MenuItem menuItem = menuItemRepository.findById(menuItemId)
-        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + menuItemId));
 
     return menuItemMapper.toMenuItemResponse(menuItem);
   }
@@ -168,7 +168,7 @@ public class MenuItemService {
 
     // Verify restaurant exists
     Restaurant restaurant = restaurantRepository.findById(restaurantId)
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId));
 
     List<MenuItem> menuItems = menuItemRepository.findByRestaurantId(restaurantId);
     return menuItems.stream()
@@ -235,7 +235,7 @@ public class MenuItemService {
     log.info("Toggling availability for menu item ID: {}", menuItemId);
 
     MenuItem menuItem = menuItemRepository.findById(menuItemId)
-        .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + menuItemId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + menuItemId));
 
     menuItem.setIsAvailable(!menuItem.getIsAvailable());
     MenuItem updatedMenuItem = menuItemRepository.save(menuItem);
