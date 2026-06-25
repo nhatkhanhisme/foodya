@@ -195,8 +195,9 @@ If Foodya later needs independent scaling (e.g., `delivery` module under heavy G
 - Postcondition: User created and authenticated.
 
 **UC-C02 — Login**
-- Main flow: Submit email + password → validate credentials → issue access + refresh token.
-- Alternative: 1a. Invalid credentials → 401, `AUTH_INVALID_CREDENTIALS` (see BR-02 for rate limiting). 1b. Account banned → 403, `AUTH_ACCOUNT_BANNED`.
+- Primary identifier: **email** (not username). The system looks up the user by email, then verifies the password. `username` is a display/profile field only and is not used for authentication.
+- Main flow: Submit email + password → validate credentials → issue access + refresh token pair.
+- Alternative: 1a. Invalid credentials → 401, `AUTH_INVALID_CREDENTIALS` (see BR-02 for rate limiting). 1b. Account banned → 403, `AUTH_ACCOUNT_BANNED`. 1c. Account with that email not found → same 401 as 1a (do not distinguish — avoids email enumeration).
 
 **UC-C03 — Browse / Search Restaurants**
 - Main flow: Guest or Customer lists restaurants, optionally filtered by name, category, or location radius → paginated results sorted by distance or rating.
@@ -250,7 +251,9 @@ If Foodya later needs independent scaling (e.g., `delivery` module under heavy G
 - Main flow: Update name, phone, avatar; change password (requires current password).
 
 **UC-C13 — Logout / Refresh Token**
-- Main flow: Exchange refresh token for new access token; logout invalidates refresh token server-side (BR-03).
+- Refresh flow: Client sends refresh token → system validates, generates new access token, returns same refresh token unchanged.
+- Logout flow: Client sends refresh token in request body → system denylists the token server-side (BR-03) → returns 200; client discards both tokens locally. Subsequent use of that refresh token returns 401 `AUTH_TOKEN_REVOKED`.
+- Alternative: Refresh token is expired or not found in server store → 401, `AUTH_TOKEN_REVOKED`.
 
 **UC-C14 — Confirm Online Payment (webhook-driven)**
 - Precondition: Order in `AWAITING_PAYMENT`.
@@ -364,6 +367,7 @@ If Foodya later needs independent scaling (e.g., `delivery` module under heavy G
 | BR-18 | OrderItem stores a snapshot of item name and price at order time; later menu price changes never retroactively alter historical orders. |
 | BR-19 | Road distance for an order is fetched once at checkout from the mapping provider and stored on the Order (`distance_km`); if the provider call fails or times out, the system falls back to a straight-line estimate and flags the order's `distance_source` as `FALLBACK` for later review. |
 | BR-20 | Every Admin moderation action (ban/unban, restaurant or shipper approval/rejection, dispute resolution) writes an AuditLog row with actor, action, target, reason, and timestamp. AuditLog rows are append-only — never updated or deleted. |
+| BR-21 | *(removed — rule merged into BR-17: the APPROVED requirement already covers both restaurant and shipper visibility)* |
 | BR-22 | Any column storing a coordinate (`Address.latitude/longitude`, `Restaurant.latitude/longitude`, `DeliveryTracking.latitude/longitude`) is enforced at the database level with `CHECK (latitude BETWEEN -90 AND 90)` and `CHECK (longitude BETWEEN -180 AND 180)`. |
 | BR-23 | An order paid online starts in `AWAITING_PAYMENT` and is invisible to the restaurant (UC-R04) until the provider confirms success and it moves to `PENDING`; a COD order skips this state and starts directly at `PENDING`. |
 | BR-24 | If an online payment fails, is declined, or no provider confirmation arrives within 15 minutes, the order moves to `CANCELLED` with reason `PAYMENT_FAILED` or `PAYMENT_TIMEOUT`; the cart is not automatically restored — the customer re-orders if they still want it. |
@@ -371,8 +375,13 @@ If Foodya later needs independent scaling (e.g., `delivery` module under heavy G
 | BR-26 | Every payment webhook is verified against the sending provider's signature before processing, and processed idempotently keyed by `provider_txn_ref` — a duplicate delivery from the provider never double-applies a state change. |
 | BR-27 | Foodya never stores raw card numbers or wallet credentials; every online payment redirects the customer to the provider's own hosted checkout page, keeping card/wallet data entirely outside Foodya's systems. |
 | BR-28 | Every Order has exactly one Payment row regardless of method. For COD, Payment.status starts `PENDING` and flips to `SUCCESS` only when the shipper marks the order `DELIVERED` (UC-S06) — that's the moment cash is actually collected. For online, Payment.status is driven entirely by provider webhooks (BR-23–BR-26) and is never touched by delivery events. |
+| BR-29 | When an online payment fails or times out (BR-24), **no payment retry is allowed on the same Order** — the order moves to `CANCELLED` and the customer must place a new order. This keeps Order state transitions simple and unambiguous; a retry would require resetting Order status which violates the terminal-state invariant (§8.2). |
+| BR-30 | `User.status` values: `ACTIVE` (default on registration), `BANNED` (set by Admin via UC-A01, blocks login with `AUTH_ACCOUNT_BANNED`). No other status values exist; account deactivation is always done via `BANNED`, not by deleting the row (deletion is blocked by FK constraints — see §6.4). |
+| BR-31 | `Restaurant.status` values: `PENDING` (on creation, not visible to customers), `APPROVED` (visible and orderable), `REJECTED` (owner notified with reason, can resubmit), `SUSPENDED` (set by Admin for policy violation via UC-A06, same visibility as `PENDING`; owner notified). Only `APPROVED` restaurants are returned by the public restaurant listing (§7.3). |
+| BR-32 | A `ShipperProfile` row is created alongside the `User` when a shipper registers (UC-S01). It holds vehicle-specific data (vehicle type, license plate) and a separate `status` field (`PENDING_APPROVAL` → `APPROVED` / `REJECTED`) managed by Admin (UC-A03). The `User.role = SHIPPER` is set on registration but the shipper cannot accept delivery jobs until `ShipperProfile.status = APPROVED` (BR-17). |
+| BR-33 | Every HTTP request receives a unique `traceId` (UUID v4) generated by a servlet filter (`TraceIdFilter`) at the start of request processing. The value is stored in the MDC under key `traceId` so it appears in all log lines for that request, and is written into every `ApiResponse` via `ApiResponse.setTraceId(...)`. Business code never generates or sets `traceId` manually. |
 
-*(Numbering left open above BR-28 for future additions; cross-reference BR IDs from use case alternative flows as new rules are added.)*
+*(Numbering left open above BR-33 for future additions; cross-reference BR IDs from use case alternative flows as new rules are added.)*
 
 ---
 
@@ -382,20 +391,28 @@ If Foodya later needs independent scaling (e.g., `delivery` module under heavy G
 
 | Entity | Key Attributes |
 |---|---|
-| **User** | id, email, password_hash, full_name, phone, role, status, created_at |
+| **User** | id, email, username, password_hash, full_name, phone, role (`CUSTOMER`\|`RESTAURANT_OWNER`\|`SHIPPER`\|`ADMIN`), status (`ACTIVE`\|`BANNED` — BR-30), created_at |
+| **ShipperProfile** | id, user_id (FK → User, unique), vehicle_type, license_plate, status (`PENDING_APPROVAL`\|`APPROVED`\|`REJECTED` — BR-32), rejection_reason, created_at |
 | **Address** | id, user_id, label, recipient_name, phone, street, ward, district, city, latitude, longitude, is_default |
-| **Restaurant** | id, owner_id, name, description, address, latitude, longitude, phone, status, opening_hours, rating_avg |
+| **Restaurant** | id, owner_id, name, description, address, latitude, longitude, phone, status (`PENDING`\|`APPROVED`\|`REJECTED`\|`SUSPENDED` — BR-31), opening_hours, rating_avg, created_at |
 | **Category** | id, restaurant_id, name, display_order |
-| **MenuItem** | id, restaurant_id, category_id, name, description, price, image_url, is_available |
+| **MenuItem** | id, restaurant_id, category_id (FK → Category), name, description, price (integer, BR-08), image_url, is_available, is_deleted (soft-delete flag — BR-10), created_at |
 | **Cart** | id, customer_id, restaurant_id, updated_at |
 | **CartItem** | id, cart_id, menu_item_id, quantity, note |
-| **Order** | id, customer_id, restaurant_id, shipper_id, delivery_address_id, status, subtotal, shipping_fee, distance_km, distance_source, total, version, created_at, confirmed_at, picked_up_at, delivered_at, cancelled_at, cancel_reason |
-| **OrderItem** | id, order_id, menu_item_id, item_name_snapshot, item_price_snapshot, quantity, subtotal |
+| **Order** | id, customer_id, restaurant_id, shipper_id (nullable), delivery_address_id, status, subtotal (integer), shipping_fee (integer), distance_km, distance_source (`PROVIDER`\|`FALLBACK`), total (integer), version (optimistic lock — BR-13), cancel_reason, created_at, confirmed_at, picked_up_at, delivered_at, cancelled_at |
+| **OrderItem** | id, order_id, menu_item_id (FK kept for analytics — BR-18), item_name_snapshot, item_price_snapshot (integer), quantity, subtotal (integer) |
 | **DeliveryTracking** | id, order_id, shipper_id, latitude, longitude, recorded_at |
-| **Review** | id, order_id, customer_id, restaurant_id, rating, comment, created_at |
-| **Notification** | id, user_id, type, title, message, is_read, related_order_id, created_at |
+| **Review** | id, order_id, customer_id, restaurant_id, rating (1–5), comment, created_at |
+| **Notification** | id, user_id, type, title, message, is_read, related_order_id (nullable), created_at |
 | **AuditLog** | id, actor_user_id, action, target_type, target_id, reason, created_at |
-| **Payment** | id, order_id, method, provider, status, provider_txn_ref, amount, paid_at, created_at |
+| **Payment** | id, order_id, method (`COD`\|`ONLINE`), provider (`VNPAY`\|`MOMO`\|`null` for COD), status (`PENDING`\|`SUCCESS`\|`FAILED`\|`REFUNDED`), provider_txn_ref, amount (integer), paid_at, created_at |
+
+**Status enum notes:**
+- `User.status`: `ACTIVE` (default), `BANNED` — see BR-30.
+- `Restaurant.status`: `PENDING` → `APPROVED` / `REJECTED`; `APPROVED` → `SUSPENDED` (admin action) — see BR-31.
+- `ShipperProfile.status`: `PENDING_APPROVAL` → `APPROVED` / `REJECTED` — see BR-32.
+- `Payment.status`: `PENDING` → `SUCCESS` or `FAILED`; `SUCCESS` → `REFUNDED` (online only, BR-25).
+- `username` on `User` is a profile display field. Login uses `email` (UC-C02). `username` must be unique but is not the authentication identifier.
 
 ### 6.2 Entity-Relationship Diagram
 
@@ -430,10 +447,12 @@ erDiagram
 
 ### 6.3 Relationship Notes
 - `Cart` is 1:1 with an active checkout session per customer (one open cart at a time, scoped to one restaurant — BR-05).
-- `OrderItem` does **not** have a live foreign-key dependency on `MenuItem.price` for display — it snapshots name/price (BR-18); the FK to `MenuItem` is kept for analytics/traceability only.
+- `OrderItem` does **not** have a live foreign-key dependency on `MenuItem.price` for display — it snapshots name/price into `item_name_snapshot` / `item_price_snapshot` (BR-18); the FK to `MenuItem` is kept for analytics/traceability only and is never followed at query time for price display.
 - `Order.shipper_id` is nullable until UC-S03 assignment occurs.
 - `AuditLog` is append-only and references its target generically (`target_type` + `target_id`) rather than a typed FK per target, since a single admin action can target a User, Restaurant, or Shipper account.
 - `Payment` is mandatory 1:1 with `Order` (BR-28) — every order has exactly one Payment row whether COD or online; `provider` is null for COD, populated (`VNPAY`/`MOMO`) for online.
+- `ShipperProfile` is 1:1 with `User` (only users with `role = SHIPPER` have one). It is created atomically in the same transaction as the User row during shipper registration (UC-S01). The `User` row alone does not grant delivery capabilities — `ShipperProfile.status = APPROVED` is also required (BR-32).
+- `MenuItem.category_id` is a non-nullable FK to `Category` (RESTRICT on category delete — see §6.4). Before deleting a category, all items in it must be reassigned or soft-deleted first; the service layer enforces this, not the DB cascade.
 
 ### 6.4 Data Integrity Constraints
 
@@ -478,7 +497,7 @@ erDiagram
 ```
   - `meta` appears only on paginated list endpoints (omitted otherwise).
   - `code` appears only on error responses (omitted on success).
-  - `traceId` is injected per-request by a filter/`TraceIdUtil` — never set manually in business code.
+  - `traceId` is a UUID v4 generated by `TraceIdFilter` (a `OncePerRequestFilter`) at the start of each request, stored in MDC under key `traceId` so it appears in every log line for that request, and written into the response via `ApiResponse`. Business code never generates or sets `traceId` manually — see BR-33.
   - Controllers only ever return one of six factory calls — no ad-hoc response shapes: `ApiResponse.success(message, data)`, `ApiResponse.success(message, data, meta)`, `ApiResponse.error(message)`, `ApiResponse.error(message, data)`, `ApiResponse.error(message, errorCode)`, `ApiResponse.error(message, data, errorCode)`.
 - **Exception:** the payment webhook endpoint (§7.4.1) does **not** use this envelope — the provider calling it doesn't parse Foodya's JSON shape, it only needs an HTTP status to know whether to stop retrying.
 
@@ -489,6 +508,7 @@ POST /api/v1/auth/register
 POST /api/v1/auth/login
 POST /api/v1/auth/refresh
 POST /api/v1/auth/logout
+POST /api/v1/auth/change-password   (authenticated)
 ```
 
 **POST /auth/login — Request**
@@ -503,7 +523,8 @@ POST /api/v1/auth/logout
   "data": {
     "accessToken": "eyJ...",
     "refreshToken": "eyJ...",
-    "user": { "id": 12, "fullName": "Nguyen Van A", "role": "CUSTOMER" }
+    "expiresIn": 86400,
+    "user": { "id": "uuid", "fullName": "Nguyen Van A", "role": "CUSTOMER" }
   },
   "timestamp": "2026-06-22T10:15:00Z",
   "traceId": "550e8400-e29b-41d4-a716-446655440000"
@@ -520,17 +541,79 @@ POST /api/v1/auth/logout
 }
 ```
 
+**POST /auth/logout — Request**
+```json
+{ "refreshToken": "eyJ..." }
+```
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Logged out successfully",
+  "timestamp": "2026-06-22T10:15:00Z",
+  "traceId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+*The server denylists the refresh token (BR-03). The client must discard both access and refresh tokens locally. Subsequent calls using this refresh token return 401 `AUTH_TOKEN_REVOKED`.*
+
+**POST /auth/refresh — Request**
+```json
+{ "refreshToken": "eyJ..." }
+```
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Token refreshed",
+  "data": {
+    "accessToken": "eyJ...",
+    "refreshToken": "eyJ...",
+    "expiresIn": 86400
+  },
+  "timestamp": "2026-06-22T10:15:00Z",
+  "traceId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**POST /auth/change-password — Request** *(requires Bearer token)*
+```json
+{ "currentPassword": "old", "newPassword": "new", "confirmPassword": "new" }
+```
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Password changed successfully",
+  "timestamp": "2026-06-22T10:15:00Z",
+  "traceId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
 ### 7.3 Restaurant & Menu
 
 ```
-GET  /api/v1/restaurants?lat=&lng=&radiusKm=&search=&page=&size=
+# Public (no auth required)
+GET  /api/v1/restaurants?lat=&lng=&radiusKm=&search=&cuisine=&minRating=&sortBy=&page=&size=
 GET  /api/v1/restaurants/{id}
 GET  /api/v1/restaurants/{id}/menu
-POST /api/v1/restaurants                 (owner, creates PENDING restaurant)
-PUT  /api/v1/restaurants/{id}             (owner)
-POST /api/v1/restaurants/{id}/categories  (owner)
-POST /api/v1/restaurants/{id}/menu-items  (owner)
-PUT  /api/v1/menu-items/{id}              (owner)
+
+# Owner (RESTAURANT_OWNER role, own restaurant only)
+POST   /api/v1/restaurants                          (creates restaurant with status=PENDING)
+PUT    /api/v1/restaurants/{id}
+PATCH  /api/v1/restaurants/{id}/toggle-status       (open/close for orders)
+
+# Categories (owner)
+POST   /api/v1/restaurants/{id}/categories
+PUT    /api/v1/restaurants/{id}/categories/{catId}
+DELETE /api/v1/restaurants/{id}/categories/{catId}  (blocked if category has active items — RESTRICT)
+PATCH  /api/v1/restaurants/{id}/categories/reorder  (update display_order)
+
+# Menu Items (owner)
+GET    /api/v1/restaurants/{id}/menu-items          (includes inactive — owner view)
+POST   /api/v1/restaurants/{id}/menu-items
+PUT    /api/v1/restaurants/{id}/menu-items/{itemId}
+PATCH  /api/v1/restaurants/{id}/menu-items/{itemId}/toggle-availability
+DELETE /api/v1/restaurants/{id}/menu-items/{itemId} (soft-delete only — BR-10)
 ```
 
 **GET /restaurants/{id}/menu — Response 200**
@@ -721,11 +804,71 @@ GET   /api/v1/admin/analytics/overview?from=&to=
 ### 7.8 Reviews & Notifications
 
 ```
-POST /api/v1/orders/{id}/review
-GET  /api/v1/restaurants/{id}/reviews?page=&size=
-GET  /api/v1/notifications
+POST  /api/v1/orders/{id}/review
+GET   /api/v1/restaurants/{id}/reviews?page=&size=
+GET   /api/v1/notifications?page=&size=
 PATCH /api/v1/notifications/{id}/read
+PATCH /api/v1/notifications/read-all
 ```
+
+---
+
+### 7.9 User Profile & Addresses
+
+```
+# Profile (authenticated, own account)
+GET  /api/v1/users/me
+PUT  /api/v1/users/me
+
+# Delivery Addresses (authenticated, own addresses)
+GET    /api/v1/users/me/addresses
+POST   /api/v1/users/me/addresses
+GET    /api/v1/users/me/addresses/{id}
+PUT    /api/v1/users/me/addresses/{id}
+DELETE /api/v1/users/me/addresses/{id}    (blocked if address referenced by a non-terminal order)
+PATCH  /api/v1/users/me/addresses/{id}/set-default
+```
+
+**GET /users/me — Response 200**
+```json
+{
+  "success": true,
+  "message": "Profile retrieved",
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "username": "nguyenvana",
+    "fullName": "Nguyen Van A",
+    "phone": "+84901234567",
+    "role": "CUSTOMER",
+    "status": "ACTIVE",
+    "profileImageUrl": "https://...",
+    "createdAt": "2026-01-01T00:00:00Z"
+  },
+  "timestamp": "2026-06-22T10:15:00Z",
+  "traceId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**POST /users/me/addresses — Request**
+```json
+{
+  "label": "Home",
+  "recipientName": "Nguyen Van A",
+  "phone": "0901234567",
+  "street": "123 Nguyen Trai",
+  "ward": "Phuong 3",
+  "district": "Quan 5",
+  "city": "Ho Chi Minh",
+  "latitude": 10.762622,
+  "longitude": 106.660172,
+  "isDefault": false
+}
+```
+
+*Notes:*
+- `DELETE /addresses/{id}`: returns 422 `ADDRESS_LAST_ONE` if this is the user's only address and a non-terminal order references it (UC-C06 alt flow).
+- `PATCH /addresses/{id}/set-default`: sets `is_default = true` on the target and `false` on all others for that user (atomic).
 
 ---
 
@@ -739,6 +882,7 @@ stateDiagram-v2
     [*] --> AWAITING_PAYMENT : Customer checks out with online payment (UC-C07)
     AWAITING_PAYMENT --> PENDING : Payment succeeded (UC-C14, BR-23)
     AWAITING_PAYMENT --> CANCELLED : Payment failed / timed out (UC-C14, BR-24)
+    AWAITING_PAYMENT --> CANCELLED : Customer cancels before paying (UC-C09, 0a)
     PENDING --> CONFIRMED : Restaurant confirms (UC-R05)
     PENDING --> REJECTED : Restaurant rejects (UC-R05)
     PENDING --> CANCELLED : Customer cancels (UC-C09) / Auto-timeout (BR-12)
@@ -759,7 +903,8 @@ stateDiagram-v2
 | — | PENDING | Customer checkout with COD (UC-C07) | Cart cleared, restaurant notified immediately |
 | — | AWAITING_PAYMENT | Customer checkout with online payment (UC-C07) | Cart cleared, customer redirected to provider checkout; restaurant **not** notified yet |
 | AWAITING_PAYMENT | PENDING | Provider confirms payment success (UC-C14, BR-23) | Restaurant notified — order becomes visible to them for the first time |
-| AWAITING_PAYMENT | CANCELLED | Payment failed or timed out (UC-C14, BR-24) | Customer notified; restaurant never sees this order |
+| AWAITING_PAYMENT | CANCELLED | Customer cancels before paying (UC-C09, alt 0a) | No payment completed, nothing to refund; restaurant never sees this order; cart not restored (BR-29) |
+| AWAITING_PAYMENT | CANCELLED | Payment failed or timed out (UC-C14, BR-24) | Customer notified; restaurant never sees this order; cart not restored (BR-29) |
 | PENDING | CONFIRMED | Restaurant confirms (UC-R05) | Customer notified |
 | PENDING | REJECTED | Restaurant rejects (UC-R05) | Customer notified with reason |
 | PENDING | CANCELLED | Customer cancels (UC-C09), or system auto-timeout (BR-12) | No penalty; restaurant notified if applicable |
@@ -770,6 +915,8 @@ stateDiagram-v2
 | PICKED_UP | CANCELLED | Delivery exception (UC-S06 alt, BR-14) | Admin notified for manual follow-up; refund issued if paid online (BR-25) |
 
 **Invariant:** Once an order reaches `DELIVERED`, `REJECTED`, or `CANCELLED`, no further transitions are permitted (terminal states), enforced at the service layer regardless of any direct DB access. `AWAITING_PAYMENT` is the only state the restaurant never sees (BR-23).
+
+**Implementation note:** `Order.updateStatus(newStatus)` in the service layer must validate the transition against the table above and throw `InvalidOrderStateException` (→ 422 `ORDER_NOT_CANCELLABLE` or a new `INVALID_ORDER_TRANSITION` code) if the transition is not in the allowed set. No status change may bypass this check — including admin actions.
 
 ---
 
@@ -824,19 +971,28 @@ Each value below is what the handler passes as `errorCode` into `ApiResponse.err
 
 | HTTP Status | Error Code | Used In |
 |---|---|---|
-| 400 | VALIDATION_ERROR | Any malformed request body |
-| 400 | WEBHOOK_INVALID_SIGNATURE | UC-C14 |
-| 401 | AUTH_INVALID_CREDENTIALS | UC-C02 |
-| 402 | PAYMENT_FAILED | UC-C14 |
-| 403 | AUTH_ACCOUNT_BANNED | UC-C02 |
+| 400 | VALIDATION_ERROR | Any malformed/invalid request body |
+| 400 | WEBHOOK_INVALID_SIGNATURE | UC-C14 (BR-26) |
+| 401 | AUTH_INVALID_CREDENTIALS | UC-C02 (covers wrong password AND email not found — no distinction) |
+| 401 | AUTH_TOKEN_REVOKED | UC-C13 (logout), expired or denylisted refresh token |
+| 402 | PAYMENT_FAILED | UC-C14 (provider reports failure) |
+| 403 | AUTH_ACCOUNT_BANNED | UC-C02 (BR-30) |
+| 403 | FORBIDDEN | Any authorization check failure (not owner, wrong role) |
 | 404 | RESOURCE_NOT_FOUND | Generic, any entity lookup |
 | 409 | AUTH_EMAIL_TAKEN | UC-C01 |
-| 409 | JOB_ALREADY_TAKEN | UC-S03 |
-| 422 | RESTAURANT_CLOSED | UC-C07 |
-| 422 | ITEMS_UNAVAILABLE | UC-C07 |
-| 422 | ORDER_NOT_CANCELLABLE | UC-C09 |
-| 422 | REVIEW_ALREADY_EXISTS | UC-C10 |
-| 429 | RATE_LIMIT_EXCEEDED | BR-02 |
+| 409 | AUTH_USERNAME_TAKEN | UC-C01 |
+| 409 | JOB_ALREADY_TAKEN | UC-S03 (BR-13, optimistic lock race) |
+| 409 | DUPLICATE_RESOURCE | Generic duplicate (phone, restaurant name, etc.) |
+| 422 | RESTAURANT_CLOSED | UC-C07 (restaurant not APPROVED or outside opening hours) |
+| 422 | RESTAURANT_SUSPENDED | UC-C07 (restaurant is SUSPENDED — BR-31) |
+| 422 | ITEMS_UNAVAILABLE | UC-C07 (one or more items not available) |
+| 422 | ORDER_NOT_CANCELLABLE | UC-C09 (status is READY_FOR_PICKUP or later) |
+| 422 | INVALID_ORDER_TRANSITION | Any invalid state machine transition |
+| 422 | REVIEW_ALREADY_EXISTS | UC-C10 (BR-15) |
+| 422 | ADDRESS_LAST_ONE | UC-C06 (attempt to delete only address in use) |
+| 422 | PAYMENT_TIMEOUT | UC-C14, scheduled sweep (BR-24) |
+| 422 | SHIPPER_NOT_APPROVED | UC-S02/UC-S03 (ShipperProfile.status ≠ APPROVED) |
+| 429 | RATE_LIMIT_EXCEEDED | BR-02 (login endpoint) |
 | 500 | INTERNAL_ERROR | Unhandled exceptions |
 
 ---
