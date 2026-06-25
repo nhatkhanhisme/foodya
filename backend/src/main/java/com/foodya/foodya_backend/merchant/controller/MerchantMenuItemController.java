@@ -26,7 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/merchant/restaurants/{restaurantId}/menu-items")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANT_OWNER', 'ADMIN')")
 @Tag(name = "Merchant - Menu Items", description = "⚠️ Restaurant owner only - Menu management")
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantMenuItemController {

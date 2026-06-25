@@ -26,7 +26,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/merchant/restaurants/{restaurantId}/categories")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANT_OWNER', 'ADMIN')")
 @Tag(name = "Merchant - Category Management", description = "Category management APIs for restaurant owners and admins")
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantCategoryController {

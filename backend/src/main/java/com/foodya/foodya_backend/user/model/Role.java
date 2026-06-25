@@ -2,7 +2,7 @@ package com.foodya.foodya_backend.user.model;
 
 public enum Role {
   CUSTOMER,
-  MERCHANT,
-  DELIVERY,
+  RESTAURANT_OWNER,
+  SHIPPER,
   ADMIN
 }

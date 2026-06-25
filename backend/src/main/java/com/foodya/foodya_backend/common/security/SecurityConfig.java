@@ -54,7 +54,7 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/*").authenticated()
             .requestMatchers(HttpMethod.DELETE, "/api/v1/merchant-registration/*").authenticated()
             // Merchant
-            .requestMatchers("/api/v1/merchant/**").hasAnyRole("MERCHANT", "ADMIN")
+            .requestMatchers("/api/v1/merchant/**").hasAnyRole("RESTAURANT_OWNER", "ADMIN")
             // Orders
             .requestMatchers("/api/v1/orders/**").authenticated()
             // Admin

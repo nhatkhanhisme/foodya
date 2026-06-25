@@ -45,7 +45,7 @@ public class RegisterRequest {
   private String phoneNumber;
 
   @Schema(description = "User role (default: CUSTOMER)", example = "CUSTOMER", allowableValues = { "CUSTOMER",
-      "MERCHANT", "DELIVERY", "ADMIN" })
+      "RESTAURANT_OWNER", "SHIPPER", "ADMIN" })
   @Builder.Default
   private String role = "CUSTOMER";
 

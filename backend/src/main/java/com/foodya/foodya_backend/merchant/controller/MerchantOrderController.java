@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/merchant/orders")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANT_OWNER', 'ADMIN')")
 @Tag(name = "Merchant - Order Management", description = "⚠️ Merchant  owner only - Manage your orders")
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantOrderController {

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/merchant/test")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANT_OWNER', 'ADMIN')")
 public class MerchantTestController {
 
     @GetMapping("/auth")
