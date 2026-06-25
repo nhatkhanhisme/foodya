@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.restaurant.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -69,10 +69,10 @@ public class MenuItem {
 
     @CreationTimestamp
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // Relationship with Restaurant
     @ManyToOne(fetch = FetchType.LAZY)

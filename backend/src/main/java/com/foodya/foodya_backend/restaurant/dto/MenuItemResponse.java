@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -68,8 +68,8 @@ public class MenuItemResponse {
     private Integer orderCount;
 
     @Schema(description = "Created timestamp")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Schema(description = "Last updated timestamp")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

@@ -7,8 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -82,16 +81,13 @@ public class OrderResponse {
     // ========== DATES ==========
 
     @Schema(description = "Order date")
-    private LocalDateTime orderDate;
-
-    @Schema(description = "Order date formatted", example = "28/12/2025 14:30")
-    private String orderDateFormatted;
+    private Instant orderDate;
 
     @Schema(description = "Created at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Schema(description = "Updated at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // ========== ACTIONS (for mobile UI) ==========
 
@@ -150,7 +146,6 @@ public class OrderResponse {
 
         // Dates
         response.setOrderDate(order.getOrderDate());
-        response.setOrderDateFormatted(formatDate(order.getOrderDate()));
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
 
@@ -160,11 +155,4 @@ public class OrderResponse {
         return response;
     }
 
-    // ========== HELPER METHODS ==========
-
-    private static String formatDate(LocalDateTime dateTime) {
-        if (dateTime == null) return null;
-        DateTimeFormatter formatter = DateTimeFormatter. ofPattern("dd/MM/yyyy HH:mm");
-        return dateTime.format(formatter);
-    }
 }

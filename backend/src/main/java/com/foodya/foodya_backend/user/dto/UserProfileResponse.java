@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend. user.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java. util.UUID;
 
 import com.foodya.foodya_backend.user.model.Role;
@@ -33,9 +33,9 @@ public class UserProfileResponse {
     private String profileImageUrl;
 
     // Timestamps
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant lastLoginAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     /**
      * Convert User entity to UserProfileResponse DTO

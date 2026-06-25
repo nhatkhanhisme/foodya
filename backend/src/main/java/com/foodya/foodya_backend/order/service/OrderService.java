@@ -25,7 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class OrderService {
 
-  private static final EnumSet<OrderStatus> ACTIVE_STATUSES = EnumSet.of(OrderStatus.PENDING, OrderStatus.PREPARING,
-      OrderStatus.SHIPPING);
+  private static final EnumSet<OrderStatus> ACTIVE_STATUSES = EnumSet.of(OrderStatus.PENDING, OrderStatus.CONFIRMED,  OrderStatus.READY_FOR_PICKUP,
+      OrderStatus.PICKED_UP);
 
   private final OrderRepository orderRepository;
   private final UserRepository userRepository;
@@ -76,7 +76,7 @@ public class OrderService {
         .customer(customer)
         .restaurant(restaurant)
         .status(OrderStatus.PENDING)
-        .orderDate(request.getOrderDate() != null ? request.getOrderDate() : LocalDateTime.now())
+        .orderDate(request.getOrderDate() != null ? request.getOrderDate() : Instant.now())
         .deliveryAddress(request.getDeliveryAddress())
         .deliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0.0)
         .orderNotes(request.getOrderNotes())
@@ -154,7 +154,7 @@ public class OrderService {
     }
 
     if (!order.isCancellable()) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, "Order cannot be cancelled in current status: " + order.getStatus());
+      throw new AppException(ErrorCode.ORDER_NOT_CANCELLABLE, "Order cannot be cancelled in current status: " + order.getStatus());
     }
 
     order.cancel(cancelReason);
@@ -162,7 +162,6 @@ public class OrderService {
     return OrderResponse.fromEntity(cancelledOrder);
   }
 
-  // Merchant/admin vẫn có thể dùng các methods cũ nếu cần
   @Transactional(readOnly = true)
   public OrderResponse getOrderById(@NonNull UUID id) {
     Order order = orderRepository.findById(id)
@@ -195,26 +194,20 @@ public class OrderService {
   }
 
   @Transactional(readOnly = true)
-  public List<OrderResponse> adminListOrders(
+  public List<OrderResponse> searchOrders(
       OrderStatus status,
       UUID restaurantId,
       UUID customerId,
-      LocalDateTime startDate,
-      LocalDateTime endDate) {
+      Instant startDate,
+      Instant endDate) {
     return orderRepository.adminSearch(status, restaurantId, customerId, startDate, endDate)
         .stream()
         .map(OrderResponse::fromEntity)
         .collect(Collectors.toList());
   }
 
-  @Transactional
-  public OrderResponse adminUpdateOrderStatus(UUID orderId, OrderStatus status) {
-    return updateOrderStatus(orderId, status);
-  }
-
   @Transactional(readOnly = true)
-  public Double adminRevenueByRestaurantAndDateRange(UUID restaurantId, LocalDateTime startDate,
-      LocalDateTime endDate) {
+  public Double calculateRevenue(UUID restaurantId, Instant startDate, Instant endDate) {
     if (restaurantId == null || startDate == null || endDate == null) {
       throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId, startDate, endDate are required");
     }

@@ -1,6 +1,8 @@
-package com. foodya.foodya_backend. order.model;
+package com.foodya.foodya_backend.order.model;
 
-import com. foodya.foodya_backend. user.model.User;
+import com.foodya.foodya_backend.user.model.User;
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -14,9 +16,11 @@ import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -24,7 +28,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"orderItems", "customer", "restaurant"})
+@ToString(exclude = { "orderItems", "customer", "restaurant" })
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,29 +45,20 @@ public class Order {
     @JsonIgnore
     private User customer;
 
-    @ManyToOne(fetch = FetchType. LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurant_id", nullable = false)
     @JsonIgnore
     private Restaurant restaurant;
 
-    /**
-     * 🔥 ONE-TO-MANY: Order có nhiều OrderItem
-     */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
 
     // ========== ORDER SUMMARY ==========
 
-    /**
-     * Tổng giá (tính từ tất cả orderItems)
-     */
     @Column(nullable = false)
     private Double totalPrice;
 
-    /**
-     * Tổng số món (tính từ sum của quantity)
-     */
     @Column(nullable = false)
     private Integer totalItems;
 
@@ -73,7 +68,7 @@ public class Order {
     private OrderStatus status = OrderStatus.PENDING;
 
     @Column(nullable = false)
-    private LocalDateTime orderDate;
+    private Instant orderDate;
 
     @Column(nullable = false, length = 500)
     private String deliveryAddress;
@@ -81,58 +76,53 @@ public class Order {
     @Column(length = 500)
     private String cancelReason;
 
-    /**
-     * Phí giao hàng (optional)
-     */
     @Column(nullable = false)
     @Builder.Default
     private Double deliveryFee = 0.0;
 
-    /**
-     * Ghi chú chung cho đơn hàng
-     */
     @Column(length = 1000)
     private String orderNotes;
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // ========== HELPER METHODS ==========
+
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOW_TRANSITIONS = Map.of(
+            OrderStatus.AWAITING_PAYMENT, Set.of(OrderStatus.PENDING, OrderStatus.CANCELLED),
+            OrderStatus.PENDING, Set.of(OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.CANCELLED),
+            OrderStatus.CONFIRMED, Set.of(OrderStatus.READY_FOR_PICKUP, OrderStatus.CANCELLED),
+            OrderStatus.READY_FOR_PICKUP, Set.of(OrderStatus.PICKED_UP, OrderStatus.CANCELLED),
+            OrderStatus.PICKED_UP, Set.of(OrderStatus.DELIVERED, OrderStatus.CANCELLED),
+            OrderStatus.DELIVERED, Set.of(),
+            OrderStatus.REJECTED, Set.of(),
+            OrderStatus.CANCELLED, Set.of());
 
     public UUID getCustomerId() {
         return customer != null ? customer.getId() : null;
     }
 
     public UUID getRestaurantId() {
-        return restaurant != null ?  restaurant.getId() : null;
+        return restaurant != null ? restaurant.getId() : null;
     }
 
-    /**
-     * Thêm OrderItem vào Order
-     */
     public void addOrderItem(OrderItem item) {
         orderItems.add(item);
         item.setOrder(this);
         recalculateTotals();
     }
 
-    /**
-     * Xóa OrderItem khỏi Order
-     */
     public void removeOrderItem(OrderItem item) {
         orderItems.remove(item);
         item.setOrder(null);
         recalculateTotals();
     }
 
-    /**
-     * 🔥 QUAN TRỌNG: Tính lại tổng tiền và số món
-     */
     public void recalculateTotals() {
         this.totalPrice = orderItems.stream()
                 .mapToDouble(OrderItem::getSubtotal)
@@ -144,16 +134,23 @@ public class Order {
     }
 
     public void updateStatus(OrderStatus newStatus) {
+        Set<OrderStatus> allowed = ALLOW_TRANSITIONS.getOrDefault(this.status, Set.of());
+        if (!allowed.contains(newStatus)) {
+            throw new AppException(ErrorCode.INVALID_ORDER_TRANSITION,
+                    "Cannot transition from " + this.status + " to " + newStatus);
+        }
         this.status = newStatus;
     }
 
     public void cancel(String reason) {
-        this.status = OrderStatus.CANCELLED;
-        this.cancelReason = reason;
+       updateStatus(OrderStatus.CANCELLED);
+        this.cancelReason = reason; 
     }
 
     public boolean isCancellable() {
-        return this.status == OrderStatus.PENDING || this.status == OrderStatus.PREPARING;
+        return this.status == OrderStatus.AWAITING_PAYMENT
+                || this.status == OrderStatus.PENDING
+                || this.status == OrderStatus.CONFIRMED;
     }
 
     public boolean isDelivered() {
@@ -161,7 +158,7 @@ public class Order {
     }
 
     public boolean isCancelled() {
-        return this. status == OrderStatus.CANCELLED;
+        return this.status == OrderStatus.CANCELLED;
     }
 
     @PrePersist
@@ -169,4 +166,5 @@ public class Order {
     public void prePersist() {
         recalculateTotals();
     }
+
 }

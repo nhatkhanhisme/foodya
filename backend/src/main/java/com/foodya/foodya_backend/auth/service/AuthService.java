@@ -1,8 +1,9 @@
 package com.foodya.foodya_backend.auth.service;
+import java.time.Instant;
 
 import com.foodya.foodya_backend.common.exception.AppException;
 import com.foodya.foodya_backend.common.exception.ErrorCode;
-import java.time.LocalDateTime;
+
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -98,7 +99,7 @@ public class AuthService {
     // Update last login time
     User user = userRepository.findByUsername(loginRequest.getUsername())
         .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
-    user.setLastLoginAt(LocalDateTime.now());
+    user.setLastLoginAt(Instant.now());
     userRepository.save(user);
 
     return generateTokenResponse(authentication);

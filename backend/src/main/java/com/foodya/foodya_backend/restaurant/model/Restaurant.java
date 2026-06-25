@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.restaurant.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -159,13 +159,13 @@ public class Restaurant {
 
   @CreationTimestamp
   @Column(updatable = false, nullable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
   @UpdateTimestamp
   @Column(nullable = false)
-  private LocalDateTime updatedAt;
+  private Instant updatedAt;
 
-  private LocalDateTime deletedAt; // ← THÊM MỚI - Soft delete
+  private Instant deletedAt; // ← THÊM MỚI - Soft delete
 
   // ========== RELATIONSHIPS ==========
 

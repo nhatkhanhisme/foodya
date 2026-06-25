@@ -4,7 +4,7 @@ import com.foodya.foodya_backend.order.model.OrderItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Schema(description = "Response containing order item details")
@@ -33,10 +33,10 @@ public class OrderItemResponse {
     private String specialInstructions;
 
     @Schema(description = "Created timestamp")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Schema(description = "Updated timestamp")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // ========== CONSTRUCTORS ==========
 

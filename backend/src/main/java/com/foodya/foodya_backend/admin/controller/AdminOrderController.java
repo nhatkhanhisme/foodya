@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,35 +33,32 @@ public class AdminOrderController {
       @RequestParam(required = false) OrderStatus status,
       @RequestParam(required = false) UUID restaurantId,
       @RequestParam(required = false) UUID customerId,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate
   ) {
-    return ResponseEntity.ok(orderService.adminListOrders(status, restaurantId, customerId, startDate, endDate));
+    return ResponseEntity.ok(orderService.searchOrders(status, restaurantId, customerId, startDate, endDate));
   }
 
-  // 2) Detail
   @GetMapping("/{id}")
   public ResponseEntity<OrderResponse> getOrder(@PathVariable UUID id) {
     return ResponseEntity.ok(orderService.getOrderById(id));
   }
 
-  // 3) Update status
   @PatchMapping("/{id}/status")
   public ResponseEntity<OrderResponse> updateStatus(
       @PathVariable UUID id,
       @RequestParam OrderStatus status
   ) {
-    return ResponseEntity.ok(orderService.adminUpdateOrderStatus(id, status));
+    return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
   }
 
-  // 4) Revenue
   @GetMapping("/metrics/revenue")
   public ResponseEntity<Double> revenue(
       @RequestParam UUID restaurantId,
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate
   ) {
-    return ResponseEntity.ok(orderService.adminRevenueByRestaurantAndDateRange(restaurantId, startDate, endDate));
+    return ResponseEntity.ok(orderService.calculateRevenue(restaurantId, startDate, endDate));
   }
   // ========== 8. DELETE ORDER (Admin only) ==========
 
