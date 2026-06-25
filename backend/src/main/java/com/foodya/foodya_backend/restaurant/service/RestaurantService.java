@@ -1,8 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.common.exception.security.UnauthorizedException;
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantMapper;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
@@ -108,7 +107,7 @@ public class RestaurantService {
   public RestaurantResponse getRestaurantById(@NonNull UUID id) {
     log.info("Fetching restaurant with id: {}", id);
     Restaurant restaurant = restaurantRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
     return restaurantMapper.toRestaurantResponse(restaurant);
   }
 
@@ -129,7 +128,7 @@ public class RestaurantService {
   public void deleteRestaurantById(@NonNull UUID id) {
     log.info("Deleting restaurant with id: {}", id);
     if (!restaurantRepository.existsById(id)) {
-      throw new ResourceNotFoundException("Restaurant not found with id: " + id);
+      throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id);
     }
     restaurantRepository.deleteById(id);
   }
@@ -140,7 +139,7 @@ public class RestaurantService {
 
     // Validation
     if (restaurantRepository.existsByName(request.getName())) {
-      throw new DuplicateResourceException("Restaurant with name '" + request.getName() + "' already exists");
+      throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Restaurant with name '" + request.getName() + "' already exists");
     }
     // Normalize phone number
     String normalizedPhone = null;
@@ -153,7 +152,7 @@ public class RestaurantService {
       }
 
       if (restaurantRepository.existsByPhoneNumber(normalizedPhone)) {
-        throw new DuplicateResourceException("Restaurant with phone number '" + normalizedPhone + "' already exists");
+        throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Restaurant with phone number '" + normalizedPhone + "' already exists");
       }
     }
 
@@ -206,17 +205,17 @@ public class RestaurantService {
     log.info("Updating restaurant with ID: {}", id);
 
     Restaurant restaurant = restaurantRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
 
     // Check ownership
     if (!isAdmin && !restaurant.getOwnerId().equals(currentUserId)) {
-      throw new UnauthorizedException("You don't have permission to update this restaurant");
+      throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to update this restaurant");
     }
 
     // Check duplicates
     if (!restaurant.getName().equals(request.getName())) {
       if (restaurantRepository.existsByName(request.getName())) {
-        throw new DuplicateResourceException("Restaurant with name '" + request.getName() + "' already exists");
+        throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Restaurant with name '" + request.getName() + "' already exists");
       }
     }
 
@@ -232,7 +231,7 @@ public class RestaurantService {
 
       if (!restaurant.getPhoneNumber().equals(normalizedPhone)) {
         if (restaurantRepository.existsByPhoneNumber(normalizedPhone)) {
-          throw new DuplicateResourceException("Restaurant with phone number '" + normalizedPhone + "' already exists");
+          throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Restaurant with phone number '" + normalizedPhone + "' already exists");
         }
       }
     }
@@ -283,11 +282,11 @@ public class RestaurantService {
     log.info("Toggling status for restaurant ID: {}", id);
 
     Restaurant restaurant = restaurantRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + id));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
 
     // Check ownership
     if (!isAdmin && !restaurant.getOwnerId().equals(currentUserId)) {
-      throw new UnauthorizedException("You don't have permission to update this restaurant");
+      throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to update this restaurant");
     }
 
     restaurant.setIsOpen(!restaurant.getIsOpen());

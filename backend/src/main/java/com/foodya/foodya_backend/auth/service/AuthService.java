@@ -1,5 +1,7 @@
 package com.foodya.foodya_backend.auth.service;
 
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import java.time.LocalDateTime;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,11 +16,7 @@ import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
-import com.foodya.foodya_backend.common.exception.business.AccountDeactivatedException;
-import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.common.exception.security.UnauthorizedException;
-import com.foodya.foodya_backend.jwt.JwtService;
+import com.foodya.foodya_backend.common.security.JwtService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
@@ -46,10 +44,10 @@ public class AuthService {
   public JwtAuthResponse registerUser(RegisterRequest registerRequest) {
     // Validate unique constraints
     if (userRepository.existsByUsername(registerRequest.getUsername())) {
-      throw new DuplicateResourceException("Username already exists");
+      throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Username already exists");
     }
     if (userRepository.existsByEmail(registerRequest.getEmail())) {
-      throw new DuplicateResourceException("Email already exists");
+      throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
     }
 
     // Normalize phone number if provided
@@ -64,7 +62,7 @@ public class AuthService {
 
       // Check if normalized phone already exists
       if (userRepository.existsByPhoneNumber(normalizedPhone)) {
-        throw new DuplicateResourceException("Phone number already exists");
+        throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
       }
     }
 
@@ -99,7 +97,7 @@ public class AuthService {
 
     // Update last login time
     User user = userRepository.findByUsername(loginRequest.getUsername())
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
     user.setLastLoginAt(LocalDateTime.now());
     userRepository.save(user);
 
@@ -111,7 +109,7 @@ public class AuthService {
 
     // Validate refresh token
     if (!jwtService.validateToken(refreshToken)) {
-      throw new UnauthorizedException("Invalid refresh token");
+      throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Invalid refresh token");
     }
 
     // Extract username from refresh token
@@ -119,11 +117,11 @@ public class AuthService {
 
     // Load user
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
 
     // Check if account is active
     if (!user.getIsActive()) {
-      throw new AccountDeactivatedException("Account is deactivated");
+      throw new AppException(ErrorCode.AUTH_ACCOUNT_BANNED, "Account is deactivated");
     }
 
     // Create new authentication
@@ -154,12 +152,12 @@ public class AuthService {
     Long expiresIn = getExpireIn(accessToken);
     Long refreshTokenExpiresIn = getRefreshTokenExpireIn(refreshToken);
     String userId = userRepository.findByUsername(authentication.getName())
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"))
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"))
         .getId()
         .toString();
     String username = authentication.getName();
     Role role = userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found"))
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"))
         .getRole();
 
     return JwtAuthResponse.builder()

@@ -1,5 +1,7 @@
 package com.foodya.foodya_backend.user.service;
 
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -8,8 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
 import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.model.User;
@@ -38,17 +38,17 @@ public class UserService {
 
   public void deleteUserById(@NonNull UUID userId) {
     if (userRepository.findById(userId).isEmpty()) {
-      throw new ResourceNotFoundException("User not found with id: " + userId);
+      throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId);
     }
     if (userRepository.findById(userId).isEmpty()) {
-      throw new ResourceNotFoundException("User not found with id: " + userId);
+      throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId);
     }
     userRepository.deleteById(userId);
   }
 
   public UserProfileResponse toggleUserActiveStatus(@NonNull UUID userId) {
     User updateUser = userRepository.findById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId));
     updateUser.setIsActive(!updateUser.getIsActive());
     userRepository.save(updateUser);
     return mapToUserProfileResponse(updateUser);
@@ -59,7 +59,7 @@ public class UserService {
     String username = authentication.getName();
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found: " + username));
     return mapToUserProfileResponse(user);
   }
 
@@ -69,7 +69,7 @@ public class UserService {
     String username = authentication.getName();
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found: " + username));
 
     // Debug logging
     log.info("Received updateProfile request for user: {}", username);
@@ -91,7 +91,7 @@ public class UserService {
       if (!newEmail.equals(currentEmail)) {
         // Chỉ check DB nếu email thực sự thay đổi
         if (userRepository.existsByEmail(newEmail)) {
-          throw new DuplicateResourceException("Email already exists");
+          throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
         }
         user.setEmail(newEmail);
         user.setIsEmailVerified(false);
@@ -111,7 +111,7 @@ public class UserService {
 
       if (!newPhone.equals(user.getPhoneNumber())) {
         if (userRepository.existsByPhoneNumber(newPhone)) {
-          throw new DuplicateResourceException("Phone number already exists");
+          throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
         }
         user.setPhoneNumber(newPhone);
         user.setIsPhoneNumberVerified(false);

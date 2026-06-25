@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.order.service;
 
-import com.foodya.foodya_backend.common.exception.business.BadRequestException;
-import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.order.dto.OrderItemRequest;
 import com.foodya.foodya_backend.order.dto.OrderRequest;
 import com.foodya.foodya_backend.order.dto.OrderResponse;
@@ -50,27 +50,27 @@ public class OrderService {
     User customer = getCurrentUser(authentication);
 
     if (request.getRestaurantId() == null) {
-      throw new BadRequestException("restaurantId is required");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId is required");
     }
     if (request.getItems() == null || request.getItems().isEmpty()) {
-      throw new BadRequestException("items is required");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "items is required");
     }
     if (!request.getItems().stream()
         .allMatch(i -> i != null && i.getMenuItemId() != null && i.getQuantity() != null && i.getQuantity() > 0)) {
-      throw new BadRequestException("Each item must have menuItemId and quantity > 0");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "Each item must have menuItemId and quantity > 0");
     }
     if (request.getDeliveryAddress() == null || request.getDeliveryAddress().isBlank()) {
-      throw new BadRequestException("deliveryAddress is required");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "deliveryAddress is required");
     }
 
     log.info("Creating order for customer: {}, restaurant: {}", customer.getId(), request.getRestaurantId());
 
     UUID restaurantId = request.getRestaurantId();
     if (restaurantId == null) {
-        throw new BadRequestException("restaurantId is required");
+        throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId is required");
     }
     Restaurant restaurant = restaurantRepository.findById(restaurantId)
-        .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId));
 
     Order order = Order.builder()
         .customer(customer)
@@ -88,24 +88,24 @@ public class OrderService {
     for (OrderItemRequest itemRequest : request.getItems()) {
       UUID menuItemId = itemRequest.getMenuItemId();
       if (menuItemId == null) {
-        throw new BadRequestException("Menu item ID cannot be null");
+        throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item ID cannot be null");
       }
       MenuItem menuItem = menuItemRepository.findById(menuItemId)
           .orElseThrow(
-              () -> new ResourceNotFoundException("Menu item not found with id: " + itemRequest.getMenuItemId()));
+              () -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + itemRequest.getMenuItemId()));
 
       if (menuItem.getRestaurant() == null || menuItem.getRestaurant().getId() == null) {
-        throw new BadRequestException("Menu item has no restaurant mapping: " + menuItem.getId());
+        throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item has no restaurant mapping: " + menuItem.getId());
       }
       if (!menuItem.getRestaurant().getId().equals(restaurant.getId())) {
-        throw new BadRequestException("Menu item " + menuItem.getName() + " does not belong to this restaurant");
+        throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item " + menuItem.getName() + " does not belong to this restaurant");
       }
       if (menuItem.getIsAvailable() == null || menuItem.getIsActive() == null || !menuItem.getIsAvailable()
           || !menuItem.getIsActive()) {
-        throw new BadRequestException("Menu item " + menuItem.getName() + " is not available");
+        throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item " + menuItem.getName() + " is not available");
       }
       if (menuItem.getPrice() == null) {
-        throw new BadRequestException("Menu item " + menuItem.getName() + " has no price");
+        throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item " + menuItem.getName() + " has no price");
       }
 
       OrderItem orderItem = OrderItem.builder()
@@ -147,14 +147,14 @@ public class OrderService {
     User customer = getCurrentUser(authentication);
 
     Order order = orderRepository.findById(orderId)
-        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + orderId));
 
     if (order.getCustomerId() == null || !order.getCustomerId().equals(customer.getId())) {
       throw new AccessDeniedException("You are not allowed to cancel this order");
     }
 
     if (!order.isCancellable()) {
-      throw new BadRequestException("Order cannot be cancelled in current status: " + order.getStatus());
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "Order cannot be cancelled in current status: " + order.getStatus());
     }
 
     order.cancel(cancelReason);
@@ -166,7 +166,7 @@ public class OrderService {
   @Transactional(readOnly = true)
   public OrderResponse getOrderById(@NonNull UUID id) {
     Order order = orderRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
     return OrderResponse.fromEntity(order);
   }
 
@@ -179,7 +179,7 @@ public class OrderService {
   @Transactional
   public OrderResponse updateOrderStatus(@NonNull UUID id, OrderStatus newStatus) {
     Order order = orderRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
 
     order.updateStatus(newStatus);
     Order updatedOrder = orderRepository.save(order);
@@ -189,7 +189,7 @@ public class OrderService {
   @Transactional
   public void deleteOrder(@NonNull UUID id) {
     if (!orderRepository.existsById(id)) {
-      throw new ResourceNotFoundException("Order not found with id: " + id);
+      throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id);
     }
     orderRepository.deleteById(id);
   }
@@ -216,10 +216,10 @@ public class OrderService {
   public Double adminRevenueByRestaurantAndDateRange(UUID restaurantId, LocalDateTime startDate,
       LocalDateTime endDate) {
     if (restaurantId == null || startDate == null || endDate == null) {
-      throw new BadRequestException("restaurantId, startDate, endDate are required");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId, startDate, endDate are required");
     }
     if (endDate.isBefore(startDate)) {
-      throw new BadRequestException("endDate must be after startDate");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "endDate must be after startDate");
     }
     Double sum = orderRepository.sumRevenueByRestaurantIdAndDateRange(restaurantId, startDate, endDate);
     return sum == null ? 0.0 : sum;
@@ -231,6 +231,6 @@ public class OrderService {
     }
     String username = authentication.getName();
     return userRepository.findByUsername(username)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found: " + username));
   }
 }

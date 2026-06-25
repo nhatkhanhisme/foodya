@@ -1,9 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.common.exception.business.BadRequestException;
-import com.foodya.foodya_backend.common.exception.business.DuplicateResourceException;
-import com.foodya.foodya_backend.common.exception.business.ResourceNotFoundException;
-import com.foodya.foodya_backend.common.exception.security.UnauthorizedException;
+import com.foodya.foodya_backend.common.exception.AppException;
+import com.foodya.foodya_backend.common.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.dto.CategoryRequest;
 import com.foodya.foodya_backend.restaurant.dto.CategoryResponse;
 import com.foodya.foodya_backend.restaurant.model.Category;
@@ -41,16 +39,16 @@ public class CategoryService {
 
         // Check if restaurant exists
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with id: " + restaurantId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId));
 
         // Check ownership
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new UnauthorizedException("You don't have permission to create categories for this restaurant");
+            throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to create categories for this restaurant");
         }
 
         // Validate: Tên không được trùng trong cùng một nhà hàng
         if (categoryRepository.existsByNameAndRestaurantId(request.getName(), restaurantId)) {
-            throw new DuplicateResourceException("Category with name '" + request.getName() + "' already exists for this restaurant");
+            throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Category with name '" + request.getName() + "' already exists for this restaurant");
         }
 
         // Create category
@@ -75,15 +73,15 @@ public class CategoryService {
 
         // Check ownership
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new UnauthorizedException("You don't have permission to update categories for this restaurant");
+            throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to update categories for this restaurant");
         }
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Category not found with id: " + categoryId));
 
         // Verify category belongs to restaurant
         if (!category.getRestaurantId().equals(restaurantId)) {
-            throw new BadRequestException("Category does not belong to this restaurant");
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Category does not belong to this restaurant");
         }
 
         // Validate: Nếu đổi tên, tên mới không được trùng
@@ -93,7 +91,7 @@ public class CategoryService {
                 Category existingCategory = categoryRepository.findByNameAndRestaurantId(request.getName(), restaurantId)
                         .orElse(null);
                 if (existingCategory != null && !existingCategory.getId().equals(categoryId)) {
-                    throw new DuplicateResourceException("Category with name '" + request.getName() + "' already exists for this restaurant");
+                    throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Category with name '" + request.getName() + "' already exists for this restaurant");
                 }
             }
         }
@@ -116,15 +114,15 @@ public class CategoryService {
 
         // Check ownership
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new UnauthorizedException("You don't have permission to delete categories for this restaurant");
+            throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to delete categories for this restaurant");
         }
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Category not found with id: " + categoryId));
 
         // Verify category belongs to restaurant
         if (!category.getRestaurantId().equals(restaurantId)) {
-            throw new BadRequestException("Category does not belong to this restaurant");
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Category does not belong to this restaurant");
         }
 
         // Delete category
@@ -143,12 +141,12 @@ public class CategoryService {
 
         // Check if restaurant exists
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new ResourceNotFoundException("Restaurant not found with id: " + restaurantId);
+            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
         }
 
         // Check ownership (optional - có thể cho phép admin xem)
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new UnauthorizedException("You don't have permission to view all categories for this restaurant");
+            throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to view all categories for this restaurant");
         }
 
         List<Category> categories = categoryRepository.findAllByRestaurantId(restaurantId);
@@ -167,7 +165,7 @@ public class CategoryService {
 
         // Check if restaurant exists
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new ResourceNotFoundException("Restaurant not found with id: " + restaurantId);
+            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
         }
 
         List<Category> categories = categoryRepository.findPublicCategoriesByRestaurantId(restaurantId);
