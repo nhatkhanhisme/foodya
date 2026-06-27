@@ -41,7 +41,8 @@ public class Restaurant {
   @Column(nullable = false, length = 500)
   private String address;
 
-  @Column(nullable = false, unique = true, length = 20)
+  // V5 migration renamed column phone_number → phone
+  @Column(name = "phone", nullable = false, unique = true, length = 20)
   private String phoneNumber;
 
   @Column(length = 100)
@@ -62,7 +63,8 @@ public class Restaurant {
 
   // ========== RATING & REVIEWS ==========
 
-  @Column(nullable = false)
+  // V5 migration renamed column rating → rating_avg (BR-16: simple arithmetic mean)
+  @Column(name = "rating_avg", nullable = false)
   @Builder.Default
   private Double rating = 0.0;
 
