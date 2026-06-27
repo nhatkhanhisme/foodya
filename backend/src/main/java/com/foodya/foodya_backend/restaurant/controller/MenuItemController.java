@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.controller;
 
-import com. foodya.foodya_backend. restaurant.dto.MenuItemResponse;
-import com.foodya. foodya_backend.restaurant.service.MenuItemService;
+import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;
+import com.foodya.foodya_backend.restaurant.service.MenuItemQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,7 +23,7 @@ import java.util.UUID;
 @Tag(name = "Menu Items", description = "Menu items APIs for mobile app (read-only)")
 public class MenuItemController {
 
-    private final MenuItemService menuItemService;
+    private final MenuItemQueryService menuItemService;
 
     @Operation(
         summary = "Get menu items with pagination",

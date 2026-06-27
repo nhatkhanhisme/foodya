@@ -1,10 +1,11 @@
 package com.foodya.foodya_backend.merchant.controller;
 
-import com.foodya.foodya_backend.common.exception.AppException;
-import com.foodya.foodya_backend.common.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AppException;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
-import com.foodya.foodya_backend.restaurant.service.RestaurantService;
+import com.foodya.foodya_backend.restaurant.service.RestaurantCommandService;
+import com.foodya.foodya_backend.restaurant.service.RestaurantQueryService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
@@ -37,77 +38,68 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantRestaurantController {
 
-  private final RestaurantService restaurantService;
-  private final UserRepository userRepository;
+    private final RestaurantQueryService restaurantQueryService;
+    private final RestaurantCommandService restaurantCommandService;
+    private final UserRepository userRepository;
 
-  private User getCurrentUser() {
-    String username = SecurityContextHolder.getContext().getAuthentication().getName();
-    return userRepository.findByUsername(username)
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
-  }
+    private User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+    }
 
-  private boolean isAdmin() {
-    User user = getCurrentUser();
-    return user.getRole() == Role.ADMIN;
-  }
+    private boolean isAdmin() {
+        return getCurrentUser().getRole() == Role.ADMIN;
+    }
 
-  @Operation(summary = "Get my restaurants", description = "Get all restaurants owned by current merchant")
-  @ApiResponses(value = {
-      @ApiResponse(
-          responseCode = "200",
-          description = "Restaurants retrieved successfully"
-      )
-  })
-  @GetMapping("/me")
-  public ResponseEntity<List<RestaurantResponse>> getMyRestaurants() {
-    User currentUser = getCurrentUser();
-    List<RestaurantResponse> restaurants = restaurantService.getRestaurantsByOwner(currentUser.getId());
-    return ResponseEntity.ok(restaurants);
-  }
+    @Operation(summary = "Get my restaurants", description = "Get all restaurants owned by current merchant")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurants retrieved successfully")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<List<RestaurantResponse>> getMyRestaurants() {
+        User currentUser = getCurrentUser();
+        return ResponseEntity.ok(restaurantQueryService.getRestaurantsByOwner(currentUser.getId()));
+    }
 
-  @Operation(summary = "Create new restaurant", description = "Merchant creates a new restaurant")
-  @ApiResponses(value = {
-      @ApiResponse(
-          responseCode = "201",
-          description = "Restaurant created successfully. Phone number auto-normalized to +84...",
-          content = @Content(schema = @Schema(implementation = RestaurantResponse.class))
-      )
-  })
-  @PostMapping
-  public ResponseEntity<RestaurantResponse> createRestaurant(
-      @Valid @RequestBody RestaurantRequest request) {
+    @Operation(summary = "Create new restaurant", description = "Merchant creates a new restaurant")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Restaurant created successfully. Phone number auto-normalized to +84...",
+            content = @Content(schema = @Schema(implementation = RestaurantResponse.class))
+        )
+    })
+    @PostMapping
+    public ResponseEntity<RestaurantResponse> createRestaurant(@Valid @RequestBody RestaurantRequest request) {
+        User currentUser = getCurrentUser();
+        RestaurantResponse response = restaurantCommandService.createRestaurant(request, currentUser.getId());
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
 
-    User currentUser = getCurrentUser();
-    RestaurantResponse response = restaurantService.createRestaurant(request, currentUser.getId());
-    return new ResponseEntity<>(response, HttpStatus.CREATED);
-  }
+    @Operation(summary = "Update restaurant", description = "Update restaurant information (owner only)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurant updated successfully")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<RestaurantResponse> updateRestaurant(
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id,
+            @Valid @RequestBody RestaurantRequest request) {
 
-  @Operation(summary = "Update restaurant", description = "Update restaurant information (owner only)")
-  @ApiResponses(value = {
-      @ApiResponse(
-          responseCode = "200",
-          description = "Restaurant updated successfully"
-      )
-  })
-  @PutMapping("/{id}")
-  public ResponseEntity<RestaurantResponse> updateRestaurant(
-      @Parameter(description = "Restaurant ID") @PathVariable UUID id,
-      @Valid @RequestBody RestaurantRequest request) {
+        User currentUser = getCurrentUser();
+        RestaurantResponse response = restaurantCommandService.updateRestaurant(
+                id, request, currentUser.getId(), isAdmin());
+        return ResponseEntity.ok(response);
+    }
 
-    User currentUser = getCurrentUser();
-    RestaurantResponse response = restaurantService.updateRestaurant(
-        id, request, currentUser.getId(), isAdmin());
-    return ResponseEntity.ok(response);
-  }
+    @Operation(summary = "Toggle restaurant open/close", description = "Open or close restaurant for orders")
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<RestaurantResponse> toggleRestaurantStatus(
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
 
-  @Operation(summary = "Toggle restaurant open/close", description = "Open or close restaurant for orders")
-  @PatchMapping("/{id}/toggle-status")
-  public ResponseEntity<RestaurantResponse> toggleRestaurantStatus(
-      @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
-
-    User currentUser = getCurrentUser();
-    RestaurantResponse response = restaurantService.toggleRestaurantStatus(
-        id, currentUser.getId(), isAdmin());
-    return ResponseEntity.ok(response);
-  }
+        User currentUser = getCurrentUser();
+        RestaurantResponse response = restaurantCommandService.toggleRestaurantStatus(
+                id, currentUser.getId(), isAdmin());
+        return ResponseEntity.ok(response);
+    }
 }

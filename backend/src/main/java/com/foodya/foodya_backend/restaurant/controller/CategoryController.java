@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.controller;
 
 import com.foodya.foodya_backend.restaurant.dto.CategoryResponse;
-import com.foodya.foodya_backend.restaurant.service.CategoryService;
+import com.foodya.foodya_backend.restaurant.service.CategoryQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,30 +22,23 @@ import java.util.UUID;
 @Tag(name = "Category", description = "Public Category APIs for mobile app")
 public class CategoryController {
 
-    private final CategoryService categoryService;
+    private final CategoryQueryService categoryQueryService;
 
     @Operation(
-            summary = "Get public categories by restaurant",
-            description = "Retrieve all categories for a specific restaurant. " +
-                    "Results are sorted by name."
+        summary = "Get public categories by restaurant",
+        description = "Retrieve all categories for a specific restaurant. Results are sorted by name."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Categories retrieved successfully",
-                    content = @Content(schema = @Schema(implementation = CategoryResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Restaurant not found"
-            )
+        @ApiResponse(
+            responseCode = "200",
+            description = "Categories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CategoryResponse.class))
+        ),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
     })
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getPublicCategories(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId) {
-        List<CategoryResponse> categories = categoryService.getPublicCategoriesByRestaurant(restaurantId);
-        return ResponseEntity.ok(categories);
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
+        return ResponseEntity.ok(categoryQueryService.getPublicCategoriesByRestaurant(restaurantId));
     }
 }
-
