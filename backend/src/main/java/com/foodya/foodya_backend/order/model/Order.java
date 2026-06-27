@@ -1,8 +1,8 @@
 package com.foodya.foodya_backend.order.model;
 
 import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.common.exception.AppException;
-import com.foodya.foodya_backend.common.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AppException;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -16,6 +16,7 @@ import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,8 +57,32 @@ public class Order {
 
     // ========== ORDER SUMMARY ==========
 
-    @Column(nullable = false)
+    // Shipper assigned at UC-S03; null until then (BR-13: version guards concurrent assignment)
+    @Column(name = "shipper_id")
+    private UUID shipperId;
+
+    // Snapshot of delivery address string, kept for legacy rows pre-dating V7 migration
+    // V7 migration renamed column delivery_address → delivery_address_snapshot
+    @Column(name = "delivery_address_snapshot", length = 500)
+    private String deliveryAddress;
+
+    // FK to addresses table added in V7 migration (nullable for pre-migration rows)
+    @Column(name = "delivery_address_id")
+    private UUID deliveryAddressId;
+
+    // V7 migration renamed column total_price → total
+    @Column(name = "total", nullable = false)
     private Long totalPrice;
+
+    // V7 migration renamed column delivery_fee → shipping_fee (BR-07)
+    @Column(name = "shipping_fee", nullable = false)
+    @Builder.Default
+    private Long deliveryFee = 0L;
+
+    // Item-only sum before shipping fee (SRS §6.1); back-filled by V7 migration
+    @Column(name = "subtotal", nullable = false)
+    @Builder.Default
+    private Long subtotal = 0L;
 
     @Column(nullable = false)
     private Integer totalItems;
@@ -70,18 +95,38 @@ public class Order {
     @Column(nullable = false)
     private Instant orderDate;
 
-    @Column(nullable = false, length = 500)
-    private String deliveryAddress;
-
     @Column(length = 500)
     private String cancelReason;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Long deliveryFee = 0L;
-
     @Column(length = 1000)
     private String orderNotes;
+
+    // BR-19: road distance fetched once at checkout and stored; source flags FALLBACK if provider failed
+    @Column(name = "distance_km", precision = 10, scale = 2)
+    private BigDecimal distanceKm;
+
+    @Column(name = "distance_source", length = 10)
+    private String distanceSource;
+
+    // BR-13: optimistic lock prevents concurrent shipper assignment racing
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Integer version = 0;
+
+    // ========== STATUS TIMESTAMPS ==========
+
+    @Column(name = "confirmed_at")
+    private Instant confirmedAt;
+
+    @Column(name = "picked_up_at")
+    private Instant pickedUpAt;
+
+    @Column(name = "delivered_at")
+    private Instant deliveredAt;
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
@@ -124,9 +169,10 @@ public class Order {
     }
 
     public void recalculateTotals() {
-        this.totalPrice = orderItems.stream()
+        this.subtotal = orderItems.stream()
                 .mapToLong(OrderItem::getSubtotal)
-                .sum() + (this.deliveryFee != null ? this.deliveryFee : 0L);
+                .sum();
+        this.totalPrice = this.subtotal + (this.deliveryFee != null ? this.deliveryFee : 0L);
 
         this.totalItems = orderItems.stream()
                 .mapToInt(OrderItem::getQuantity)
