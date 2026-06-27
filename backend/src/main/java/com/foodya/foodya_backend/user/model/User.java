@@ -32,13 +32,16 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    // V4 migration renamed this column to password_hash; field name stays "password"
+    // so Spring Security's UserDetails.getPassword() contract is preserved.
+    @Column(name = "password_hash", nullable = false)
     private String password;
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Column(name = "phone_number", unique = true)
+    // V4 migration renamed column phone_number → phone
+    @Column(name = "phone", unique = true)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
