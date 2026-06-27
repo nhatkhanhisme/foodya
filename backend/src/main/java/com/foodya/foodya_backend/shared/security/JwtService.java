@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.security;
+package com.foodya.foodya_backend.shared.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;

@@ -1,6 +1,5 @@
-package com.foodya.foodya_backend.common.security;
+package com.foodya.foodya_backend.shared.security;
 
-import com.foodya.foodya_backend.user.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +18,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.foodya.foodya_backend.auth.service.CustomUserDetailsService;
 
 import java.io.IOException;
 

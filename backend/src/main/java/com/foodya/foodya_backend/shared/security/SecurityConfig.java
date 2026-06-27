@@ -1,6 +1,6 @@
-package com.foodya.foodya_backend.common.security;
+package com.foodya.foodya_backend.shared.security;
 
-import com.foodya.foodya_backend.common.filter.TraceIdFilter;
+import com.foodya.foodya_backend.shared.filter.TraceIdFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.utils;
+package com.foodya.foodya_backend.shared.utils;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

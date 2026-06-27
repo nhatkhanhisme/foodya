@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.filter;
+package com.foodya.foodya_backend.shared.filter;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -8,7 +8,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.foodya.foodya_backend.common.utils.TraceIdUtil;
+import com.foodya.foodya_backend.shared.utils.TraceIdUtil;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

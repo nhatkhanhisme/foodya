@@ -1,7 +1,7 @@
-package com.foodya.foodya_backend.common.exception;
+package com.foodya.foodya_backend.shared.exception;
 
-import com.foodya.foodya_backend.common.dto.ApiResponse;
-import com.foodya.foodya_backend.common.dto.ValidationError;
+import com.foodya.foodya_backend.shared.response.ApiResponse;
+import com.foodya.foodya_backend.shared.response.ValidationError;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

@@ -1,11 +1,11 @@
-package com.foodya.foodya_backend.common.dto;
+package com.foodya.foodya_backend.shared.response;
 
 import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.foodya.foodya_backend.common.exception.ErrorCode;
-import com.foodya.foodya_backend.common.utils.TraceIdUtil;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.utils.TraceIdUtil;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

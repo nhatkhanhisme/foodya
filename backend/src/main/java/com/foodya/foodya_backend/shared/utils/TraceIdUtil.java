@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.utils;
+package com.foodya.foodya_backend.shared.utils;
 
 import java.util.UUID;
 

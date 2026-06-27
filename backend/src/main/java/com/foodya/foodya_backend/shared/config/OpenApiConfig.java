@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.config;
+package com.foodya.foodya_backend.shared.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;

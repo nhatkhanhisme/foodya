@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.dto;
+package com.foodya.foodya_backend.shared.response;
 
 import org.springframework.data.domain.Page;
 

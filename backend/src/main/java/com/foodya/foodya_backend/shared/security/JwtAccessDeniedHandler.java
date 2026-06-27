@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.common.security;
+package com.foodya.foodya_backend.shared.security;
 
 import java.io.IOException;
 
@@ -9,8 +9,8 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.foodya.foodya_backend.common.dto.ApiResponse;
-import com.foodya.foodya_backend.common.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.response.ApiResponse;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
