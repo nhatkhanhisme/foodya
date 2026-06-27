@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.user.service;
+package com.foodya.foodya_backend.auth.service;
 
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;

@@ -1,8 +1,8 @@
 package com.foodya.foodya_backend.auth.service;
 import java.time.Instant;
 
-import com.foodya.foodya_backend.common.exception.AppException;
-import com.foodya.foodya_backend.common.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AppException;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
 
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,17 +17,16 @@ import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
-import com.foodya.foodya_backend.common.security.JwtService;
+import com.foodya.foodya_backend.shared.security.JwtService;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
 import com.foodya.foodya_backend.user.repository.UserRepository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class AuthService {
-  private static final Logger log = LoggerFactory.getLogger(AuthService.class);
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
@@ -55,7 +54,7 @@ public class AuthService {
     String normalizedPhone = null;
     if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isBlank()) {
       try {
-        normalizedPhone = com.foodya.foodya_backend.common.utils.phone.PhoneNumberUtil.normalize(
+        normalizedPhone = com.foodya.foodya_backend.shared.utils.phone.PhoneNumberUtil.normalize(
             registerRequest.getPhoneNumber(), "VN");
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
@@ -152,14 +151,10 @@ public class AuthService {
     String refreshToken = jwtService.generateRefreshToken(authentication);
     Long expiresIn = getExpireIn(accessToken);
     Long refreshTokenExpiresIn = getRefreshTokenExpireIn(refreshToken);
-    String userId = userRepository.findByUsername(authentication.getName())
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"))
-        .getId()
-        .toString();
-    String username = authentication.getName();
-    Role role = userRepository.findByUsername(username)
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"))
-        .getRole();
+    com.foodya.foodya_backend.user.model.User user = userRepository.findByUsername(authentication.getName())
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+    String userId = user.getId().toString();
+    com.foodya.foodya_backend.user.model.Role role = user.getRole();
 
     return JwtAuthResponse.builder()
         .accessToken(accessToken)
@@ -168,7 +163,6 @@ public class AuthService {
         .expiresIn(expiresIn)
         .refreshTokenExpiresIn(refreshTokenExpiresIn)
         .userId(userId)
-        .username(username)
         .role(role)
         .build();
   }
