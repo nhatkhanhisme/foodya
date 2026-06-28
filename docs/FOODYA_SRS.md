@@ -61,12 +61,12 @@ Covers backend system behavior, domain model, API contracts, and quality attribu
 
 ### 1.5 Architecture Decision: Modular Monolith
 
-**Decision:** Foodya is built as a **package-by-feature modular monolith** — a single deployable Spring Boot application internally organized into loosely-coupled feature modules, rather than a Hexagonal/Clean Architecture split or a microservices decomposition.
+**Decision:** Foodya is built as a **package-by-feature modular monolith** — a single deployable Spring Boot application internally organized into loosely-coupled feature modules, rather than a microservices decomposition.
 
 **Rationale:**
-- Foodya's domain logic, while non-trivial, does not yet justify the indirection cost (ports/adapters, multiple mapping layers) that a full Hexagonal/Clean split introduces — that cost pays off at higher team size or when infrastructure swapping is a real, near-term need.
+- Each feature module owns its own `controller/`, `service/`, `repository/`, `model/`, `mapper/`, and `dto/` — all code for a feature lives together, not scattered across technical layers.
 - A single deployable Spring Boot application is faster to build, easier to debug end-to-end, and sufficient for the current scale target (§11.4).
-- Feature-based packages (`order/`, `restaurant/`, `delivery/`...) keep code organized without forcing a full ports-and-adapters split inside every feature.
+- Feature modules stay loosely coupled through a simple rule: call another module's `*Service`, never its `*Repository` or `*Model` directly.
 - The module boundaries are still respected at the *package* level, so extraction into separate services later (if Foodya ever needs to scale that way) remains possible without a full rewrite — see §3.4.
 
 ---
@@ -126,36 +126,43 @@ Request → Controller (REST, validation)
 ### 3.2 Package Structure
 
 ```
-com.foodya
-├── config/                 # Security, JWT filter, CORS, Swagger, exception handler
-├── common/
-│   ├── exception/           # Custom exceptions + ApiError DTO
-│   ├── dto/                 # Shared base DTOs (PageResponse, ApiResponse)
-│   └── util/
+com.foodya.foodya_backend
+├── shared/
+│   ├── config/              # OpenAPI/Swagger config
+│   ├── exception/           # AppException, ErrorCode, GlobalExceptionHandler
+│   ├── filter/              # TraceIdFilter (OncePerRequestFilter)
+│   ├── interceptor/
+│   ├── response/            # ApiResponse, PaginationMeta, ValidationError
+│   ├── security/            # JwtService, JwtAuthenticationFilter, SecurityConfig, entry-point handlers
+│   ├── service/
+│   └── utils/               # IpUtil, TraceIdUtil, phone/PhoneNumberUtil
 ├── auth/
-│   ├── controller/  service/  repository/  entity/  dto/
-├── user/                    # User profile, addresses
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
+├── user/                    # User profile
+│   ├── controller/  service/  repository/  model/  dto/      (no mapper)
+├── merchant/                # Merchant-facing views (delegates to restaurant/order services)
+│   ├── controller/  service/  model/  mapper/  dto/          (no repository)
 ├── restaurant/              # Restaurant profile, categories, menu items
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 ├── cart/
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 ├── order/                   # Order, OrderItem, state machine logic
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 ├── payment/                 # Payment entity, webhook handling
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 │   └── provider/            # PaymentProvider interface + VNPayPaymentProvider, MomoPaymentProvider adapters
 ├── delivery/                # Shipper assignment, location tracking
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 ├── review/
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 ├── notification/
-│   ├── controller/  service/  repository/  entity/  dto/
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 ├── admin/                   # Approval & moderation endpoints (composes other services)
+│   ├── controller/  service/  repository/  model/  mapper/  dto/
 └── FoodyaApplication.java
 ```
 
-**Rule:** a module may call another module's `*Service` interface, but never another module's `*Repository` or `*Entity` directly. This is the one discipline carried over from Hexagonal thinking — it's cheap to enforce and is what makes future extraction possible. The same discipline applies one level deeper for external integrations: `order/` and `payment/` never call VNPay/Momo/Goong Maps SDKs directly — only through the `PaymentProvider` / mapping-provider interface, so swapping or adding a provider touches one adapter class, not business logic.
+**Rule:** a module may call another module's `*Service` directly, but never another module's `*Repository` or `*Model` directly. This keeps modules loosely coupled and is what makes future extraction possible. The same rule applies to external integrations: `order/` and `payment/` never call VNPay/Momo/Goong Maps SDKs directly — only through the `PaymentProvider` / mapping-provider interface, so swapping or adding a provider touches one adapter class, not business logic.
 
 ### 3.3 Request Flow (Place Order example)
 
@@ -483,7 +490,7 @@ erDiagram
 - Base path: `/api/v1`
 - Auth: `Authorization: Bearer <access_token>` on all endpoints except `/auth/register`, `/auth/login`, public restaurant browsing.
 - Request bodies are plain JSON (not wrapped) — the envelope below applies to **responses** only.
-- **Response envelope** — every client-facing response, success or error, is wrapped in one `ApiResponse` shape (`common/dto/ApiResponse`, `@JsonInclude(NON_NULL)` so absent fields are omitted entirely, not sent as `null`):
+- **Response envelope** — every client-facing response, success or error, is wrapped in one `ApiResponse` shape (`shared/response/ApiResponse`, `@JsonInclude(NON_NULL)` so absent fields are omitted entirely, not sent as `null`):
 ```json
 {
   "success": true,
