@@ -13,7 +13,7 @@ import lombok.ToString;
 import java.util.UUID;
 
 @Entity
-@Table(name = "category")
+@Table(name = "categories")
 @Getter
 @Setter
 @EqualsAndHashCode(of = "id")

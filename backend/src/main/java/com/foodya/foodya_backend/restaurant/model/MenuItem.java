@@ -44,7 +44,7 @@ public class MenuItem {
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "category_id", nullable = false)
     @JsonIgnore
     private Category category;
 
@@ -56,7 +56,6 @@ public class MenuItem {
     @Builder.Default
     private Boolean isActive = true;
 
-    // Soft delete flag (BR-10: never hard-delete items referenced by order history)
     @Column(nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
@@ -83,7 +82,7 @@ public class MenuItem {
 
     // Relationship with Restaurant
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurant_id")
+    @JoinColumn(name = "restaurant_id", nullable = false)
     @JsonIgnore
     private Restaurant restaurant;
 

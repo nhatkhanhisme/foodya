@@ -5,6 +5,7 @@ import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.model.User;
+import com.foodya.foodya_backend.user.model.UserStatus;
 import com.foodya.foodya_backend.user.repository.UserRepository;
 
 import lombok.NonNull;
@@ -35,7 +36,7 @@ public class UserCommandService {
     public UserProfileResponse toggleUserActiveStatus(@NonNull UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId));
-        user.setIsActive(!user.getIsActive());
+        user.setStatus(user.getStatus() == UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE);
         userRepository.save(user);
         return UserProfileResponse.fromEntity(user);
     }
@@ -65,11 +66,6 @@ public class UserCommandService {
 
         if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
             String newPhone = request.getPhoneNumber().trim();
-            try {
-                newPhone = com.foodya.foodya_backend.shared.utils.phone.PhoneNumberUtil.normalize(newPhone, "VN");
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
-            }
             if (!newPhone.equals(user.getPhoneNumber())) {
                 if (userRepository.existsByPhoneNumber(newPhone)) {
                     throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");

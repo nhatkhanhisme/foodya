@@ -32,15 +32,12 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    // V4 migration renamed this column to password_hash; field name stays "password"
-    // so Spring Security's UserDetails.getPassword() contract is preserved.
     @Column(name = "password_hash", nullable = false)
     private String password;
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    // V4 migration renamed column phone_number → phone
     @Column(name = "phone", unique = true)
     private String phoneNumber;
 
@@ -54,9 +51,10 @@ public class User implements UserDetails {
 
     // ========== STATUS FIELDS ==========
 
-    @Column(name = "is_active")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     @Builder.Default
-    private Boolean isActive = true;
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(name = "is_email_verified")
     @Builder.Default
@@ -65,10 +63,6 @@ public class User implements UserDetails {
     @Column(name = "is_phone_number_verified")
     @Builder.Default
     private Boolean isPhoneNumberVerified = false;
-
-    @Column(name = "account_locked")
-    @Builder.Default
-    private Boolean accountLocked = false;
 
     // ========== TIMESTAMPS ==========
 
@@ -100,7 +94,7 @@ public class User implements UserDetails {
     @Override
     @Transient
     public boolean isAccountNonLocked() {
-        return !accountLocked;
+        return status != UserStatus.BANNED;
     }
 
     @Override
@@ -112,6 +106,6 @@ public class User implements UserDetails {
     @Override
     @Transient
     public boolean isEnabled() {
-        return isActive;
+        return status == UserStatus.ACTIVE;
     }
 }

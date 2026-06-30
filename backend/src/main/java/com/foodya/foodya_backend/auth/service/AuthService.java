@@ -1,9 +1,10 @@
 package com.foodya.foodya_backend.auth.service;
+
 import java.time.Instant;
+import java.util.Set;
 
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
-
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -11,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.foodya.foodya_backend.auth.dto.ChangePasswordRequest;
 import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
@@ -18,8 +20,10 @@ import com.foodya.foodya_backend.auth.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.dto.RegisterRequest;
 import com.foodya.foodya_backend.shared.security.JwtService;
+import com.foodya.foodya_backend.shared.security.TokenType;
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
+import com.foodya.foodya_backend.user.model.UserStatus;
 import com.foodya.foodya_backend.user.repository.UserRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,22 +31,27 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class AuthService {
+
+  private static final Set<String> SELF_REGISTERABLE_ROLES = Set.of("CUSTOMER", "SHIPPER");
+
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final JwtService jwtService;
+  private final TokenBlacklistService tokenBlacklistService;
 
   public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-      AuthenticationManager authenticationManager, JwtService jwtService) {
+      AuthenticationManager authenticationManager, JwtService jwtService,
+      TokenBlacklistService tokenBlacklistService) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.jwtService = jwtService;
+    this.tokenBlacklistService = tokenBlacklistService;
   }
 
   @Transactional
   public JwtAuthResponse registerUser(RegisterRequest registerRequest) {
-    // Validate unique constraints
     if (userRepository.existsByUsername(registerRequest.getUsername())) {
       throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Username already exists");
     }
@@ -50,36 +59,31 @@ public class AuthService {
       throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
     }
 
-    // Normalize phone number if provided
     String normalizedPhone = null;
     if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isBlank()) {
-      try {
-        normalizedPhone = com.foodya.foodya_backend.shared.utils.phone.PhoneNumberUtil.normalize(
-            registerRequest.getPhoneNumber(), "VN");
-      } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
-      }
-
-      // Check if normalized phone already exists
+      normalizedPhone = registerRequest.getPhoneNumber().trim();
       if (userRepository.existsByPhoneNumber(normalizedPhone)) {
         throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
       }
     }
 
-    // Create new user
+    String requestedRole = registerRequest.getRole() != null
+        ? registerRequest.getRole().toUpperCase() : "CUSTOMER";
+    if (!SELF_REGISTERABLE_ROLES.contains(requestedRole)) {
+      throw new AppException(ErrorCode.FORBIDDEN, "Role " + requestedRole + " cannot be self-assigned");
+    }
+
     User user = new User();
     user.setUsername(registerRequest.getUsername());
     user.setEmail(registerRequest.getEmail());
     user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
     user.setFullName(registerRequest.getFullName());
     user.setPhoneNumber(normalizedPhone);
-    user.setRole(Role.valueOf(registerRequest.getRole().toUpperCase()));
-    user.setIsActive(true);
+    user.setRole(Role.valueOf(requestedRole));
+    user.setStatus(UserStatus.ACTIVE);
     user.setIsEmailVerified(false);
-
     userRepository.save(user);
 
-    // Authenticate and generate tokens
     Authentication authentication = authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(
             registerRequest.getUsername(),
@@ -89,13 +93,11 @@ public class AuthService {
   }
 
   public JwtAuthResponse login(LoginRequest loginRequest) {
-    // Authenticate user
     Authentication authentication = authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(
             loginRequest.getUsername(),
             loginRequest.getPassword()));
 
-    // Update last login time
     User user = userRepository.findByUsername(loginRequest.getUsername())
         .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
     user.setLastLoginAt(Instant.now());
@@ -107,110 +109,93 @@ public class AuthService {
   public JwtAuthResponse refreshToken(RefreshTokenRequest request) {
     String refreshToken = request.getRefreshToken();
 
-    // Validate refresh token
     if (!jwtService.validateToken(refreshToken)) {
       throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Invalid refresh token");
     }
 
-    // Extract username from refresh token
+    if (!jwtService.isTokenType(refreshToken, TokenType.REFRESH)) {
+      throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Token is not a refresh token");
+    }
+
+    if (tokenBlacklistService.isRevoked(refreshToken)) {
+      throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Refresh token has been revoked");
+    }
+
     String username = jwtService.extractUsername(refreshToken);
 
-    // Load user
     User user = userRepository.findByUsername(username)
         .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
 
-    // Check if account is active
-    if (!user.getIsActive()) {
+    if (user.getStatus() == UserStatus.BANNED) {
       throw new AppException(ErrorCode.AUTH_ACCOUNT_BANNED, "Account is deactivated");
     }
 
-    // Create new authentication
-    Authentication authentication = new UsernamePasswordAuthenticationToken(
-        username, null, null);
-
-    // Generate new access token (keep the same refresh token)
+    Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, null);
     String newAccessToken = jwtService.generateToken(authentication);
-    Long expireIn = getExpireIn(newAccessToken);
-    Long refreshExpiresIn = getRefreshTokenExpireIn(refreshToken);
-    String userId = user.getId().toString();
 
     return JwtAuthResponse.builder()
         .accessToken(newAccessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")
-        .expiresIn(expireIn)
-        .refreshTokenExpiresIn(refreshExpiresIn)
-        .userId(userId)
+        .expiresIn(getExpireIn(newAccessToken))
+        .refreshTokenExpiresIn(getExpireIn(refreshToken))
+        .userId(user.getId().toString())
         .username(username)
         .build();
   }
 
-  // Helper method to generate token response
   private JwtAuthResponse generateTokenResponse(Authentication authentication) {
     String accessToken = jwtService.generateToken(authentication);
     String refreshToken = jwtService.generateRefreshToken(authentication);
-    Long expiresIn = getExpireIn(accessToken);
-    Long refreshTokenExpiresIn = getRefreshTokenExpireIn(refreshToken);
-    com.foodya.foodya_backend.user.model.User user = userRepository.findByUsername(authentication.getName())
+    User user = userRepository.findByUsername(authentication.getName())
         .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
-    String userId = user.getId().toString();
-    com.foodya.foodya_backend.user.model.Role role = user.getRole();
 
     return JwtAuthResponse.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .tokenType("Bearer")
-        .expiresIn(expiresIn)
-        .refreshTokenExpiresIn(refreshTokenExpiresIn)
-        .userId(userId)
-        .role(role)
+        .expiresIn(getExpireIn(accessToken))
+        .refreshTokenExpiresIn(getExpireIn(refreshToken))
+        .userId(user.getId().toString())
+        .role(user.getRole())
         .build();
+  }
+
+  public void logout(String accessToken, String refreshToken) {
+    if (StringUtils.hasText(accessToken) && jwtService.validateToken(accessToken)) {
+      tokenBlacklistService.revoke(accessToken);
+    }
+    if (StringUtils.hasText(refreshToken) && jwtService.validateToken(refreshToken)) {
+      tokenBlacklistService.revoke(refreshToken);
+    }
+    log.info("Tokens revoked on logout");
   }
 
   public Long getExpireIn(String token) {
     return jwtService.extractExpirationTime(token) - System.currentTimeMillis();
   }
 
-  public Long getRefreshTokenExpireIn(String refreshToken) {
-    return jwtService.extractExpirationTime(refreshToken) - System.currentTimeMillis();
-  }
-
-  /**
-   * Change password for authenticated user
-   */
   @Transactional
   public void changePassword(String username, ChangePasswordRequest request) {
-    log.info("User {} is changing password", username);
+    log.info("Changing password for user: {}", username);
 
-    // Validate new password matches confirm password
     if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-      log.warn("Password confirmation mismatch for user:  {}", username);
-      throw new IllegalArgumentException("New password and confirm password do not match");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "New password and confirm password do not match");
     }
 
-    // Find user
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> {
-          log.error("User not found:  {}", username);
-          return new RuntimeException("User not found");
-        });
+        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
 
-    // Verify current password
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-      log.warn("Incorrect current password for user: {}", username);
-      throw new IllegalArgumentException("Current password is incorrect");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "Current password is incorrect");
     }
 
-    // Check new password is different from current
     if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-      log.warn("New password same as old password for user: {}", username);
-      throw new IllegalArgumentException("New password must be different from current password");
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "New password must be different from current password");
     }
 
-    // Update password
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     userRepository.save(user);
-
-    log.info("Password changed successfully for user: {}", username);
+    log.info("Password changed for user: {}", username);
   }
 }
