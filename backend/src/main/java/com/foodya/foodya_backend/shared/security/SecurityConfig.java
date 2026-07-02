@@ -1,5 +1,6 @@
 package com.foodya.foodya_backend.shared.security;
 
+import com.foodya.foodya_backend.shared.filter.RateLimitFilter;
 import com.foodya.foodya_backend.shared.filter.TraceIdFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,7 @@ public class SecurityConfig {
   private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
   private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
   private final TraceIdFilter traceIdFilter;
+  private final RateLimitFilter rateLimitFilter;
   private final UserDetailsService userDetailsService;
 
   @Bean
@@ -66,8 +68,9 @@ public class SecurityConfig {
             .authenticationEntryPoint(jwtAuthenticationEntryPoint)
             .accessDeniedHandler(jwtAccessDeniedHandler))
         .authenticationProvider(authenticationProvider())
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(traceIdFilter, JwtAuthenticationFilter.class)
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
 
     return http.build();
   }
