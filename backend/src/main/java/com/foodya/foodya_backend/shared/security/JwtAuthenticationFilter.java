@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.foodya.foodya_backend.auth.service.CustomUserDetailsService;
+import com.foodya.foodya_backend.auth.service.TokenBlacklistService;
 
 import java.io.IOException;
 
@@ -33,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtService jwtService;
   private final CustomUserDetailsService customUserDetailsService;
   private final JwtAuthenticationEntryPoint entryPoint;
+  private final TokenBlacklistService tokenBlacklistService;
 
   @Override
   protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -50,6 +52,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     try {
       if (!jwtService.validateToken(token)) {
         rejectWithUnauthorized(request, response, new BadCredentialsException("Invalid or expired token"));
+        return;
+      }
+
+      if (tokenBlacklistService.isRevoked(token)) {
+        rejectWithUnauthorized(request, response, new BadCredentialsException("Token has been revoked"));
         return;
       }
 

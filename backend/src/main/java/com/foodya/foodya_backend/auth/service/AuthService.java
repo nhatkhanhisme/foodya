@@ -61,7 +61,7 @@ public class AuthService {
 
     String normalizedPhone = null;
     if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isBlank()) {
-      normalizedPhone = registerRequest.getPhoneNumber().trim();
+      normalizedPhone = normalizePhoneNumber(registerRequest.getPhoneNumber().trim());
       if (userRepository.existsByPhoneNumber(normalizedPhone)) {
         throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
       }
@@ -90,6 +90,13 @@ public class AuthService {
             registerRequest.getPassword()));
 
     return generateTokenResponse(authentication);
+  }
+
+  private String normalizePhoneNumber(String phoneNumber) {
+    if (phoneNumber.startsWith("0")) {
+      return "+84" + phoneNumber.substring(1);
+    }
+    return phoneNumber.startsWith("+") ? phoneNumber : "+" + phoneNumber;
   }
 
   public JwtAuthResponse login(LoginRequest loginRequest) {
