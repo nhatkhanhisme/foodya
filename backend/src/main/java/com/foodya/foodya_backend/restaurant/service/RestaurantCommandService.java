@@ -11,6 +11,8 @@ import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +75,10 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "restaurant", key = "#id"),
+            @CacheEvict(value = "popular-restaurants", allEntries = true)
+    })
     @Transactional
     public RestaurantResponse updateRestaurant(@NonNull UUID id, RestaurantRequest request,
             UUID currentUserId, boolean isAdmin) {
@@ -114,6 +120,10 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "restaurant", key = "#id"),
+            @CacheEvict(value = "popular-restaurants", allEntries = true)
+    })
     @Transactional
     public void deleteRestaurantById(@NonNull UUID id) {
         log.info("Deleting restaurant with id: {}", id);
@@ -123,6 +133,10 @@ public class RestaurantCommandService {
         restaurantRepository.deleteById(id);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "restaurant", key = "#id"),
+            @CacheEvict(value = "popular-restaurants", allEntries = true)
+    })
     @Transactional
     public RestaurantResponse toggleRestaurantStatus(@NonNull UUID id, UUID currentUserId, boolean isAdmin) {
         log.info("Toggling status for restaurant ID: {}", id);
@@ -135,6 +149,10 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "restaurant", key = "#id"),
+            @CacheEvict(value = "popular-restaurants", allEntries = true)
+    })
     @Transactional
     public RestaurantResponse approveRestaurant(@NonNull UUID id) {
         Restaurant restaurant = findById(id);
@@ -143,6 +161,10 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "restaurant", key = "#id"),
+            @CacheEvict(value = "popular-restaurants", allEntries = true)
+    })
     @Transactional
     public RestaurantResponse rejectRestaurant(@NonNull UUID id) {
         Restaurant restaurant = findById(id);
@@ -151,6 +173,10 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "restaurant", key = "#id"),
+            @CacheEvict(value = "popular-restaurants", allEntries = true)
+    })
     @Transactional
     public RestaurantResponse suspendRestaurant(@NonNull UUID id) {
         Restaurant restaurant = findById(id);
@@ -161,10 +187,6 @@ public class RestaurantCommandService {
 
     private String normalizePhone(String phone) {
         if (phone == null || phone.isBlank()) return null;
-        try {
-            return com.foodya.foodya_backend.shared.utils.phone.PhoneNumberUtil.normalize(phone, "VN");
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid phone number format: " + e.getMessage());
-        }
+        return phone.trim();
     }
 }

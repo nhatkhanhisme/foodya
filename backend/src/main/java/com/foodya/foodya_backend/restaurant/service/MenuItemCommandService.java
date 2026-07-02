@@ -15,6 +15,8 @@ import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,7 @@ public class MenuItemCommandService {
                         "Menu item not found with id: " + menuItemId));
     }
 
+    @CacheEvict(value = "menu-items-active", key = "#restaurantId")
     @Transactional
     public MenuItemResponse createMenuItem(@NonNull UUID restaurantId, MenuItemRequest request) {
         log.info("Creating menu item '{}' for restaurant ID: {}", request.getName(), restaurantId);
@@ -67,6 +70,10 @@ public class MenuItemCommandService {
         return menuItemMapper.toMenuItemResponse(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "menu-item", key = "#menuItemId"),
+            @CacheEvict(value = "menu-items-active", allEntries = true)
+    })
     @Transactional
     public MenuItemResponse updateMenuItem(@NonNull UUID menuItemId, MenuItemRequest request) {
         log.info("Updating menu item with ID: {}", menuItemId);
@@ -93,6 +100,10 @@ public class MenuItemCommandService {
         return menuItemMapper.toMenuItemResponse(menuItemRepository.save(menuItem));
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "menu-item", key = "#menuItemId"),
+            @CacheEvict(value = "menu-items-active", allEntries = true)
+    })
     @Transactional
     public void softDeleteMenuItem(@NonNull UUID menuItemId) {
         log.info("Soft deleting menu item with ID: {}", menuItemId);
@@ -104,6 +115,10 @@ public class MenuItemCommandService {
         log.info("Menu item soft deleted: {}", menuItemId);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "menu-item", key = "#menuItemId"),
+            @CacheEvict(value = "menu-items-active", allEntries = true)
+    })
     @Transactional
     public void hardDeleteMenuItem(@NonNull UUID menuItemId) {
         log.info("Hard deleting menu item with ID: {}", menuItemId);
@@ -114,6 +129,10 @@ public class MenuItemCommandService {
         log.info("Menu item hard deleted: {}", menuItemId);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "menu-item", key = "#menuItemId"),
+            @CacheEvict(value = "menu-items-active", allEntries = true)
+    })
     @Transactional
     public MenuItemResponse toggleAvailability(@NonNull UUID menuItemId) {
         log.info("Toggling availability for menu item ID: {}", menuItemId);

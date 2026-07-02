@@ -11,6 +11,7 @@ import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +32,7 @@ public class MenuItemQueryService {
     private final RestaurantRepository restaurantRepository;
     private final MenuItemMapper menuItemMapper;
 
+    @Cacheable(value = "menu-item", key = "#menuItemId")
     @Transactional(readOnly = true)
     public MenuItemResponse getMenuItemById(@NonNull UUID menuItemId) {
         log.info("Fetching menu item with ID: {}", menuItemId);
@@ -66,6 +68,7 @@ public class MenuItemQueryService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "menu-items-active", key = "#restaurantId")
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getActiveMenuItemsByRestaurant(@NonNull UUID restaurantId) {
         log.info("Fetching active menu items for restaurant ID: {}", restaurantId);

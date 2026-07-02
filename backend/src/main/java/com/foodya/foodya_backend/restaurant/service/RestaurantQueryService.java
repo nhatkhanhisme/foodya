@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,7 @@ public class RestaurantQueryService {
         return restaurants.map(RestaurantResponse::fromEntity);
     }
 
+    @Cacheable(value = "restaurant", key = "#id")
     @Transactional(readOnly = true)
     public RestaurantResponse getRestaurantById(@NonNull UUID id) {
         log.info("Fetching restaurant with id: {}", id);
@@ -66,6 +68,7 @@ public class RestaurantQueryService {
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
     }
 
+    @Cacheable(value = "popular-restaurants", key = "#limit")
     @Transactional(readOnly = true)
     public List<RestaurantResponse> getPopularRestaurants(int limit) {
         log.info("Fetching top {} popular restaurants", limit);
