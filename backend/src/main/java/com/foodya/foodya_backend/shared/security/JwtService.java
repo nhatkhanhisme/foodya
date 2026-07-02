@@ -3,8 +3,7 @@ package com.foodya.foodya_backend.shared.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -14,10 +13,10 @@ import java.util.Date;
 import java.util.function.Function;
 
 @Service
+@Slf4j
 public class JwtService {
-  // Logger instance
-  // for debugging purposes
-  private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
+
+  private static final String CLAIM_TYPE = "typ";
 
   @Value("${app.jwt.secret}")
   private String jwtSecret;
@@ -28,81 +27,71 @@ public class JwtService {
   @Value("${app.jwt.refresh-expiration-time}")
   private Long refreshExpirationTime;
 
-  // Get signing key
   private Key key() {
     return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
   }
 
-  // Generate token
   public String generateToken(Authentication authentication) {
-    String username = authentication.getName();
     Date now = new Date();
-    Date expirationDate = new Date(now.getTime() + jwtExpirationTime);
-
     return Jwts.builder()
-        .setSubject(username) //
+        .setSubject(authentication.getName())
+        .claim(CLAIM_TYPE, TokenType.ACCESS.getValue())
         .setIssuedAt(now)
-        .setExpiration(expirationDate)
+        .setExpiration(new Date(now.getTime() + jwtExpirationTime))
         .signWith(key(), SignatureAlgorithm.HS256)
-        .compact(); // Tra ve token dang String
+        .compact();
   }
 
-  // Generate refresh token
   public String generateRefreshToken(Authentication authentication) {
-    String username = authentication.getName();
     Date now = new Date();
-    Date expirationDate = new Date(now.getTime() + refreshExpirationTime);
-
     return Jwts.builder()
-        .setSubject(username) //
+        .setSubject(authentication.getName())
+        .claim(CLAIM_TYPE, TokenType.REFRESH.getValue())
         .setIssuedAt(now)
-        .setExpiration(expirationDate)
+        .setExpiration(new Date(now.getTime() + refreshExpirationTime))
         .signWith(key(), SignatureAlgorithm.HS256)
-        .compact(); // Tra ve token dang String
+        .compact();
   }
-  // Reuseable method to extract claims
+
   private <T> T extractClaims(String token, Function<Claims, T> claimsResolver) {
-    final Claims claims = Jwts
-        .parserBuilder()
+    Claims claims = Jwts.parserBuilder()
         .setSigningKey(key())
         .build()
-        .parseClaimsJws(token) // Validate signature and parse token
-        .getBody(); // return claims and get data in body
+        .parseClaimsJws(token)
+        .getBody();
     return claimsResolver.apply(claims);
-
   }
 
-  // Validate token
   public boolean validateToken(String token) {
     try {
-      Jwts.parserBuilder()
-          .setSigningKey(key()) // secret key
-          .build()
-          .parseClaimsJws(token); // if parse is successful, token is valid
-                                  // if signature is invalid, exception will be thrown
+      Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(token);
       return true;
     } catch (ExpiredJwtException ex) {
-      logger.warn("JWT token is expired: {}", ex.getMessage());
+      log.warn("JWT expired: {}", ex.getMessage());
     } catch (UnsupportedJwtException ex) {
-      logger.error("JWT unsupported: {}", ex.getMessage());
+      log.error("JWT unsupported: {}", ex.getMessage());
     } catch (MalformedJwtException ex) {
-      logger.error("JWT malformed: {}", ex.getMessage());
-    }
-    catch (SecurityException ex) {
-      logger.error("JWT security validation failed: {}", ex.getMessage());}
-     catch (IllegalArgumentException ex) {
-      logger.error("JWT claims string is empty: {}", ex.getMessage());
+      log.error("JWT malformed: {}", ex.getMessage());
+    } catch (SecurityException ex) {
+      log.error("JWT signature invalid: {}", ex.getMessage());
+    } catch (IllegalArgumentException ex) {
+      log.error("JWT claims empty: {}", ex.getMessage());
     }
     return false;
   }
-    // Get username from token
+
+  public boolean isTokenType(String token, TokenType type) {
+    try {
+      return type.getValue().equals(extractClaims(token, claims -> claims.get(CLAIM_TYPE, String.class)));
+    } catch (Exception ex) {
+      return false;
+    }
+  }
+
   public String extractUsername(String token) {
     return extractClaims(token, Claims::getSubject);
   }
-  //
-  public String extractRole(String token) {
-    return extractClaims(token, claims -> claims.get("role", String.class));
-  }
+
   public Long extractExpirationTime(String token) {
     return extractClaims(token, claims -> claims.getExpiration().getTime());
   }
