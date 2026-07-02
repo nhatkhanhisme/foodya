@@ -59,7 +59,7 @@ public class Restaurant {
   private String imageUrl;
 
   @Column(length = 500)
-  private String coverImageUrl; // ← THÊM MỚI - Ảnh bìa lớn
+  private String coverImageUrl;
 
   // ========== RATING & REVIEWS ==========
 
@@ -81,7 +81,7 @@ public class Restaurant {
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean isOpen = true; // Merchant toggle: đang mở cửa hay đóng cửa
+  private Boolean isOpen = true;
 
   @Column(nullable = false)
   @Builder.Default
@@ -96,7 +96,7 @@ public class Restaurant {
   private String closingTime; // Format: "HH: mm" - e.g., "22:00"
 
   @Column(length = 200)
-  private String openingHours; // ← THÊM MỚI - "Mon-Fri: 09:00-22:00, Sat-Sun: 08:00-23:00"
+  private String openingHours; // e.g. "Mon-Fri: 09:00-22:00, Sat-Sun: 08:00-23:00"
 
   // ========== DELIVERY INFORMATION ==========
 
@@ -131,7 +131,7 @@ public class Restaurant {
 
   @Column(nullable = false)
   @Builder.Default
-  private Integer orderCount = 0; // ← THÊM MỚI - Số đơn (dùng cho sort popular)
+  private Integer orderCount = 0; // used for popularity sort
 
   @Column(nullable = false)
   @Builder.Default
@@ -140,19 +140,19 @@ public class Restaurant {
   // ========== PROMO & FEATURES ==========
 
   @Column(length = 200)
-  private String promotionText; // ← THÊM MỚI - "Giảm 20% cho đơn đầu tiên"
+  private String promotionText;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean hasPromotion = false; // ← THÊM MỚI - Đang có khuyến mãi
+  private Boolean hasPromotion = false;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean acceptsCash = true; // ← THÊM MỚI - Nhận COD
+  private Boolean acceptsCash = true;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean acceptsCard = true; // ← THÊM MỚI - Nhận thẻ/online payment
+  private Boolean acceptsCard = true;
 
   // ========== TIMESTAMPS ==========
 
@@ -164,25 +164,16 @@ public class Restaurant {
   @Column(nullable = false)
   private Instant updatedAt;
 
-  private Instant deletedAt; // ← THÊM MỚI - Soft delete
+  private Instant deletedAt;
 
   // ========== RELATIONSHIPS ==========
 
-  // Relationship with MenuItem
   @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<MenuItem> menuItems = new ArrayList<>();
 
-  // Relationship with User (owner)
   @Column(columnDefinition = "UUID", nullable = false)
   private UUID ownerId;
-
-  // Future relationships (comment for now)
-  // @OneToMany(mappedBy = "restaurant")
-  // private List<Order> orders;
-
-  // @OneToMany(mappedBy = "restaurant")
-  // private List<Review> reviews;
 
   // ========== HELPER METHODS ==========
 
@@ -212,23 +203,14 @@ public class Restaurant {
     }
   }
 
-  /**
-   * Check if restaurant is currently open based on current time
-   */
   public boolean isCurrentlyOpen() {
     return this.status == RestaurantStatus.APPROVED && Boolean.TRUE.equals(this.isOpen);
   }
 
-  /**
-   * Check if delivery is free for given order value
-   */
   public boolean isFreeDelivery(Long orderValue) {
     return orderValue >= this.freeDeliveryThreshold;
   }
 
-  /**
-   * Calculate delivery fee for given order value
-   */
   public Long calculateDeliveryFee(Long orderValue) {
     if (isFreeDelivery(orderValue)) {
       return 0L;

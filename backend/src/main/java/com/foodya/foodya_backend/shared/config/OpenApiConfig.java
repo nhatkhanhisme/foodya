@@ -10,26 +10,23 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @OpenAPIDefinition(
-    // 1. Thông tin chung của API (Metadata)
     info = @Info(
         title = "Foodya API",
-        description = "API cho dự án app đặt món ăn Foodya.",
+        description = "API for Foodya food delivery application.",
         version = "v1.0",
         contact = @Contact(
             name = "Ho Nhat Khanh & Nguyen Quoc Hai",
             email = "hnk.uit.k18@gmail.com"
         )
     ),
-    // 2. Yêu cầu Bảo mật mặc định cho TẤT CẢ endpoint
     security = @SecurityRequirement(name = "bearerAuth")
 )
 @SecurityScheme(
-    // 3. Định nghĩa cơ chế Bảo mật JWT/Bearer
-    name = "bearerAuth", // Phải trùng với name trong @SecurityRequirement
+    name = "bearerAuth",
     type = SecuritySchemeType.HTTP,
     scheme = "bearer",
     bearerFormat = "JWT",
-    description = "JWT Authorization header sử dụng Bearer scheme."
+    description = "JWT Authorization header using Bearer scheme."
 )
 public class OpenApiConfig {
 }

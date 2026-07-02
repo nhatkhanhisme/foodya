@@ -45,9 +45,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails buildUserDetails(User user) {
-        // Return User entity directly since it implements UserDetails
-        // This ensures that isEnabled(), isAccountNonLocked(), etc. methods
-        // from the User entity are correctly utilized by Spring Security
+        // User implements UserDetails — returning entity directly ensures isEnabled/isAccountNonLocked reflect live DB state
         return user;
     }
 }

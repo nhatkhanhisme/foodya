@@ -8,11 +8,8 @@ import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.shared.utils.TraceIdUtil;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
 @Builder

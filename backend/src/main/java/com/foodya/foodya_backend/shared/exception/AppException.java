@@ -1,7 +1,5 @@
 package com.foodya.foodya_backend.shared.exception;
 
-import org.springframework.http.HttpStatus;
-
 import lombok.Getter;
 
 @Getter

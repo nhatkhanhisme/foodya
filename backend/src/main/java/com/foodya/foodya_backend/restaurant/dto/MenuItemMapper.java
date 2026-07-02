@@ -54,7 +54,7 @@ public class MenuItemMapper {
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .imageUrl(request.getImageUrl())
-                // category được set bởi service sau khi resolve từ categoryId
+                // category is resolved from categoryId and set by the calling service
                 .isAvailable(request.getIsAvailable())
                 .preparationTime(request.getPreparationTime())
                 .calories(request.getCalories())
@@ -74,7 +74,7 @@ public class MenuItemMapper {
         menuItem.setDescription(request.getDescription());
         menuItem.setPrice(request.getPrice());
         menuItem.setImageUrl(request.getImageUrl());
-        // category được update bởi service nếu categoryId thay đổi
+        // category is updated by the calling service if categoryId changed
         menuItem.setIsAvailable(request.getIsAvailable());
         menuItem.setPreparationTime(request.getPreparationTime());
         menuItem.setCalories(request.getCalories());
