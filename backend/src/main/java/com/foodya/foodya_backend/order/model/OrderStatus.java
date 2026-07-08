@@ -2,8 +2,11 @@ package com.foodya.foodya_backend.order.model;
 
 public enum OrderStatus {
   PENDING,
-  PREPARING,
-  SHIPPING,
+  AWAITING_PAYMENT,
+  CONFIRMED,
+  REJECTED,
+  READY_FOR_PICKUP,
+  PICKED_UP,
   DELIVERED,
   CANCELLED
 }

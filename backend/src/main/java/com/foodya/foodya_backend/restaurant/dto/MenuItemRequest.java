@@ -2,6 +2,8 @@ package com.foodya.foodya_backend.restaurant.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
+
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,18 +26,17 @@ public class MenuItemRequest {
     private String description;
 
     @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
-    @DecimalMax(value = "99999.99", message = "Price must be less than 100000")
-    @Schema(description = "Price of the menu item", example = "12.99")
-    private Double price;
+    @Min(value = 1, message = "Price must be at least 1 VND")
+    @Max(value = 99_999_999, message = "Price must be less than 100,000,000 VND")
+    @Schema(description = "Price of the menu item in VND", example = "45000")
+    private Long price;
 
     @Schema(description = "Image URL of the menu item", example = "https://example.com/pizza.jpg")
     private String imageUrl;
 
-    @NotBlank(message = "Category is required")
-    @Schema(description = "Category of the menu item", example = "Main Course",
-            allowableValues = {"Appetizer", "Main Course", "Dessert", "Beverage", "Side Dish"})
-    private String category;
+    @NotNull(message = "Category is required")
+    @Schema(description = "Category ID the menu item belongs to")
+    private UUID categoryId;
 
     @Schema(description = "Preparation time in minutes", example = "15")
     @Min(value = 1, message = "Preparation time must be at least 1 minute")

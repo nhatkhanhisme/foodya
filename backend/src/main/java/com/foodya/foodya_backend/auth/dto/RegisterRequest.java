@@ -40,12 +40,12 @@ public class RegisterRequest {
   private String fullName;
 
   @NotBlank(message = "Phone number is required")
-  @Pattern(regexp = "^\\+?[1-9]\\d{1,14}$", message = "Phone number must be valid")
-  @Schema(description = "User's phone number in international format", example = "+84987654321")
+  @Pattern(regexp = "^(0\\d{8,10}|\\+?[1-9]\\d{7,14})$", message = "Phone number must be valid")
+  @Schema(description = "User's phone number; local format (e.g. 0987654321) or international (+84987654321)", example = "0987654321")
   private String phoneNumber;
 
   @Schema(description = "User role (default: CUSTOMER)", example = "CUSTOMER", allowableValues = { "CUSTOMER",
-      "MERCHANT", "DELIVERY", "ADMIN" })
+      "RESTAURANT_OWNER", "SHIPPER", "ADMIN" })
   @Builder.Default
   private String role = "CUSTOMER";
 

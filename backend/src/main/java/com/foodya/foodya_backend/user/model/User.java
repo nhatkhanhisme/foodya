@@ -8,7 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -32,13 +32,13 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String password;
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
-    @Column(name = "phone_number", unique = true)
+    @Column(name = "phone", unique = true)
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
@@ -51,9 +51,10 @@ public class User implements UserDetails {
 
     // ========== STATUS FIELDS ==========
 
-    @Column(name = "is_active")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     @Builder.Default
-    private Boolean isActive = true;
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(name = "is_email_verified")
     @Builder.Default
@@ -63,22 +64,18 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean isPhoneNumberVerified = false;
 
-    @Column(name = "account_locked")
-    @Builder.Default
-    private Boolean accountLocked = false;
-
     // ========== TIMESTAMPS ==========
 
     @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
+    private Instant lastLoginAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // ========== UserDetails Implementation ==========
 
@@ -97,7 +94,7 @@ public class User implements UserDetails {
     @Override
     @Transient
     public boolean isAccountNonLocked() {
-        return !accountLocked;
+        return status != UserStatus.BANNED;
     }
 
     @Override
@@ -109,6 +106,6 @@ public class User implements UserDetails {
     @Override
     @Transient
     public boolean isEnabled() {
-        return isActive;
+        return status == UserStatus.ACTIVE;
     }
 }

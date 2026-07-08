@@ -4,14 +4,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.UUID;
 
 @Entity
-@Table(name = "category")
-@Data
+@Table(name = "categories")
+@Getter
+@Setter
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "restaurant")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,6 +30,10 @@ public class Category {
 
   @Column(nullable = false, length = 100)
   private String name;
+
+  @Column(name = "display_order", nullable = false)
+  @Builder.Default
+  private Integer displayOrder = 0;
 
   /**
    * Many-to-One relationship with Restaurant

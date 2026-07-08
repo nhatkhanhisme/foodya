@@ -70,7 +70,7 @@ public class RestaurantRequest {
 
   @Min(value = 0, message = "Minimum order must be non-negative")
   @Schema(description = "Minimum order value in VND", example = "50000")
-  private Double minimumOrder;
+  private Long minimumOrder;
 
   @Min(value = 0, message = "Max delivery distance must be non-negative")
   @Max(value = 100, message = "Max delivery distance must not exceed 100 km")

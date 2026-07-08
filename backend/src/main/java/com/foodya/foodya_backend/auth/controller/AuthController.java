@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -97,6 +98,19 @@ public class AuthController {
   public ResponseEntity<JwtAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
     JwtAuthResponse response = authService.refreshToken(request);
     return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "Logout", description = "Revoke access and refresh tokens. Both tokens will be blacklisted immediately.")
+  @PreAuthorize("isAuthenticated()")
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(
+      @RequestHeader("Authorization") String authHeader,
+      @RequestBody(required = false) RefreshTokenRequest request) {
+
+    String accessToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+    String refreshToken = request != null ? request.getRefreshToken() : null;
+    authService.logout(accessToken, refreshToken);
+    return ResponseEntity.noContent().build();
   }
 
   @Operation(
