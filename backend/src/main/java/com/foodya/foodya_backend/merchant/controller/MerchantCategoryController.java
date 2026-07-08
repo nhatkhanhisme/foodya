@@ -2,7 +2,8 @@ package com.foodya.foodya_backend.merchant.controller;
 
 import com.foodya.foodya_backend.restaurant.dto.CategoryRequest;
 import com.foodya.foodya_backend.restaurant.dto.CategoryResponse;
-import com.foodya.foodya_backend.restaurant.service.CategoryService;
+import com.foodya.foodya_backend.restaurant.service.CategoryCommandService;
+import com.foodya.foodya_backend.restaurant.service.CategoryQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,86 +27,78 @@ import java.util.UUID;
 @RequestMapping("/api/v1/merchant/restaurants/{restaurantId}/categories")
 @RequiredArgsConstructor
 @Slf4j
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANT_OWNER', 'ADMIN')")
 @Tag(name = "Merchant - Category Management", description = "Category management APIs for restaurant owners and admins")
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantCategoryController {
 
-    private final CategoryService categoryService;
+    private final CategoryQueryService categoryQueryService;
+    private final CategoryCommandService categoryCommandService;
 
     @Operation(
-            summary = "Create category",
-            description = "Create a new category for a restaurant. Only restaurant owner can create categories. " +
-                    "Business Rule: Category name must be unique within the restaurant."
+        summary = "Create category",
+        description = "Create a new category for a restaurant. Business Rule: Category name must be unique within the restaurant."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Category created successfully", content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Bad request - Validation failed or duplicate category name"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing authentication token"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
-            @ApiResponse(responseCode = "404", description = "Restaurant not found")
+        @ApiResponse(responseCode = "201", description = "Category created successfully",
+            content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Bad request - Validation failed or duplicate category name"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
     })
     @PostMapping
     public ResponseEntity<CategoryResponse> createCategory(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Valid @RequestBody CategoryRequest request) {
-        CategoryResponse response = categoryService.createCategory(restaurantId, request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(categoryCommandService.createCategory(restaurantId, request), HttpStatus.CREATED);
     }
 
     @Operation(
-            summary = "Get all categories (Owner View)",
-            description = "Get all categories for a restaurant. This is for management purposes."
+        summary = "Get all categories (Owner View)",
+        description = "Get all categories for a restaurant. This is for management purposes."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved categories", content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
-            @ApiResponse(responseCode = "404", description = "Restaurant not found")
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved categories",
+            content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
     })
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
-        List<CategoryResponse> categories = categoryService.getAllCategoriesByRestaurant(restaurantId);
-        return ResponseEntity.ok(categories);
+        return ResponseEntity.ok(categoryQueryService.getAllCategoriesByRestaurant(restaurantId));
     }
 
     @Operation(
-            summary = "Update category",
-            description = "Update category name. " +
-                    "Business Rule: New name must be unique within the restaurant."
+        summary = "Update category",
+        description = "Update category name. Business Rule: New name must be unique within the restaurant."
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Category updated successfully", content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Bad request - Validation failed or duplicate category name"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing authentication token"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
-            @ApiResponse(responseCode = "404", description = "Category or restaurant not found")
+        @ApiResponse(responseCode = "200", description = "Category updated successfully",
+            content = @Content(schema = @Schema(implementation = CategoryResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Bad request - Validation failed or duplicate category name"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
+        @ApiResponse(responseCode = "404", description = "Category or restaurant not found")
     })
     @PutMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> updateCategory(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Parameter(description = "Category ID") @PathVariable UUID categoryId,
             @Valid @RequestBody CategoryRequest request) {
-        CategoryResponse response = categoryService.updateCategory(categoryId, restaurantId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(categoryCommandService.updateCategory(categoryId, restaurantId, request));
     }
 
-    @Operation(
-            summary = "Delete category",
-            description = "Delete a category permanently."
-    )
+    @Operation(summary = "Delete category", description = "Delete a category permanently.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Category deleted successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing authentication token"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
-            @ApiResponse(responseCode = "404", description = "Category or restaurant not found")
+        @ApiResponse(responseCode = "204", description = "Category deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Not restaurant owner"),
+        @ApiResponse(responseCode = "404", description = "Category or restaurant not found")
     })
     @DeleteMapping("/{categoryId}")
     public ResponseEntity<Void> deleteCategory(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Parameter(description = "Category ID") @PathVariable UUID categoryId) {
-        categoryService.deleteCategory(categoryId, restaurantId);
+        categoryCommandService.deleteCategory(categoryId, restaurantId);
         return ResponseEntity.noContent().build();
     }
 }
-

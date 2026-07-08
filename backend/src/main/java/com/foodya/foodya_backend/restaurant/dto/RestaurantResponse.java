@@ -1,12 +1,13 @@
 package com.foodya.foodya_backend.restaurant.dto;
 
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
+import com.foodya.foodya_backend.restaurant.model.RestaurantStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -33,9 +34,8 @@ public class RestaurantResponse {
     private Integer totalReviews;
 
     // Status
+    private RestaurantStatus status;
     private Boolean isOpen;
-    private Boolean isActive;
-    private Boolean isVerified;
     private Boolean isFeatured;
 
     // Operating Hours
@@ -44,9 +44,9 @@ public class RestaurantResponse {
     private String openingHours;
 
     // Delivery Information
-    private Double deliveryFee;
-    private Double minimumOrder;
-    private Double freeDeliveryThreshold;
+    private Long deliveryFee;
+    private Long minimumOrder;
+    private Long freeDeliveryThreshold;
     private Integer estimatedDeliveryTime;
     private Double maxDeliveryDistance;
 
@@ -57,7 +57,7 @@ public class RestaurantResponse {
     // Statistics
     private Integer totalOrders;
     private Integer orderCount;
-    private Double averageOrderValue;
+    private Long averageOrderValue;
 
     // Promo & Features
     private String promotionText;
@@ -67,8 +67,8 @@ public class RestaurantResponse {
 
     // Metadata
     private UUID ownerId;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     // Computed fields
     private Integer menuItemsCount;
@@ -97,9 +97,8 @@ public class RestaurantResponse {
                 .totalReviews(restaurant.getTotalReviews())
 
                 // Status
-                . isOpen(restaurant.getIsOpen())
-                .isActive(restaurant.getIsActive())
-                .isVerified(restaurant. getIsVerified())
+                .status(restaurant.getStatus())
+                .isOpen(restaurant.getIsOpen())
                 .isFeatured(restaurant.getIsFeatured())
 
                 // Operating Hours

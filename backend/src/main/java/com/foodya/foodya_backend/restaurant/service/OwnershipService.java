@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.service;
 
-import com.foodya.foodya_backend.common.exception.AppException;
-import com.foodya.foodya_backend.common.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AppException;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;

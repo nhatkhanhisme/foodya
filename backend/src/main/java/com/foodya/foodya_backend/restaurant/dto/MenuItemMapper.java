@@ -22,7 +22,8 @@ public class MenuItemMapper {
                 .description(menuItem.getDescription())
                 .price(menuItem.getPrice())
                 .imageUrl(menuItem.getImageUrl())
-                .category(menuItem.getCategory())
+                .categoryId(menuItem.getCategory() != null ? menuItem.getCategory().getId() : null)
+                .categoryName(menuItem.getCategory() != null ? menuItem.getCategory().getName() : null)
                 .isAvailable(menuItem.getIsAvailable())
                 .isActive(menuItem.getIsActive())
                 .preparationTime(menuItem.getPreparationTime())
@@ -53,7 +54,7 @@ public class MenuItemMapper {
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .imageUrl(request.getImageUrl())
-                .category(request.getCategory())
+                // category is resolved from categoryId and set by the calling service
                 .isAvailable(request.getIsAvailable())
                 .preparationTime(request.getPreparationTime())
                 .calories(request.getCalories())
@@ -73,7 +74,7 @@ public class MenuItemMapper {
         menuItem.setDescription(request.getDescription());
         menuItem.setPrice(request.getPrice());
         menuItem.setImageUrl(request.getImageUrl());
-        menuItem.setCategory(request.getCategory());
+        // category is updated by the calling service if categoryId changed
         menuItem.setIsAvailable(request.getIsAvailable());
         menuItem.setPreparationTime(request.getPreparationTime());
         menuItem.setCalories(request.getCalories());

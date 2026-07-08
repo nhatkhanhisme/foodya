@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,8 +69,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("status") OrderStatus status,
       @Param("restaurantId") UUID restaurantId,
       @Param("customerId") UUID customerId,
-      @Param("startDate") LocalDateTime startDate,
-      @Param("endDate") LocalDateTime endDate);
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
 
   @Query("""
         SELECT COALESCE(SUM(o.totalPrice), 0)
@@ -79,8 +79,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
           AND o.status = 'DELIVERED'
           AND o.orderDate BETWEEN :startDate AND :endDate
       """)
-  Double sumRevenueByRestaurantIdAndDateRange(
+  Long sumRevenueByRestaurantIdAndDateRange(
       @Param("restaurantId") UUID restaurantId,
-      @Param("startDate") LocalDateTime startDate,
-      @Param("endDate") LocalDateTime endDate);
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
 }

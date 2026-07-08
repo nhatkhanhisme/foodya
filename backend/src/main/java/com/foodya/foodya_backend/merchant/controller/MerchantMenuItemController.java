@@ -2,7 +2,8 @@ package com.foodya.foodya_backend.merchant.controller;
 
 import com.foodya.foodya_backend.restaurant.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.dto.MenuItemResponse;
-import com.foodya.foodya_backend.restaurant.service.MenuItemService;
+import com.foodya.foodya_backend.restaurant.service.MenuItemCommandService;
+import com.foodya.foodya_backend.restaurant.service.MenuItemQueryService;
 import com.foodya.foodya_backend.restaurant.service.OwnershipService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,15 +27,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/merchant/restaurants/{restaurantId}/menu-items")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('MERCHANT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('RESTAURANT_OWNER', 'ADMIN')")
 @Tag(name = "Merchant - Menu Items", description = "⚠️ Restaurant owner only - Menu management")
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantMenuItemController {
 
-    private final MenuItemService menuItemService;
+    private final MenuItemQueryService menuItemQueryService;
+    private final MenuItemCommandService menuItemCommandService;
     private final OwnershipService ownershipService;
-
-    // ========== GET ALL MENU ITEMS (INCLUDING INACTIVE) ==========
 
     @Operation(
         summary = "Get all menu items",
@@ -45,22 +45,15 @@ public class MerchantMenuItemController {
         @ApiResponse(responseCode = "403", description = "Forbidden - You don't own this restaurant"),
         @ApiResponse(responseCode = "404", description = "Restaurant not found")
     })
-    @GetMapping  // ← SỬA:  Không cần thêm path
+    @GetMapping
     public ResponseEntity<List<MenuItemResponse>> getAllMenuItems(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId) {
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
 
-        // Check ownership
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-
-        // Get all menu items (including inactive)
-        List<MenuItemResponse> menuItems = menuItemService.getAllMenuItemsByRestaurant(restaurantId);
-        return ResponseEntity.ok(menuItems);
+        return ResponseEntity.ok(menuItemQueryService.getAllMenuItemsByRestaurant(restaurantId));
     }
-
-    // ========== GET ACTIVE MENU ITEMS ONLY ==========
 
     @Operation(
         summary = "Get active menu items",
@@ -73,20 +66,13 @@ public class MerchantMenuItemController {
     })
     @GetMapping("/active")
     public ResponseEntity<List<MenuItemResponse>> getActiveMenuItems(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId) {
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
 
-        // Check ownership
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-
-        // Get only active menu items
-        List<MenuItemResponse> menuItems = menuItemService.getActiveMenuItemsByRestaurant(restaurantId);
-        return ResponseEntity.ok(menuItems);
+        return ResponseEntity.ok(menuItemQueryService.getActiveMenuItemsByRestaurant(restaurantId));
     }
-
-    // ========== CREATE MENU ITEM ==========
 
     @Operation(
         summary = "Create menu item",
@@ -104,20 +90,15 @@ public class MerchantMenuItemController {
     })
     @PostMapping
     public ResponseEntity<MenuItemResponse> createMenuItem(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId,
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Valid @RequestBody MenuItemRequest request) {
 
-        // Check ownership
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-
-        MenuItemResponse response = menuItemService.createMenuItem(restaurantId, request);
+        MenuItemResponse response = menuItemCommandService.createMenuItem(restaurantId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-
-    // ========== UPDATE MENU ITEM ==========
 
     @Operation(
         summary = "Update menu item",
@@ -131,22 +112,15 @@ public class MerchantMenuItemController {
     })
     @PutMapping("/{menuItemId}")
     public ResponseEntity<MenuItemResponse> updateMenuItem(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId,
-            @Parameter(description = "Menu item ID")
-            @PathVariable UUID menuItemId,
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
+            @Parameter(description = "Menu item ID") @PathVariable UUID menuItemId,
             @Valid @RequestBody MenuItemRequest request) {
 
-        // Check ownership
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-
-        MenuItemResponse response = menuItemService.updateMenuItem(menuItemId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(menuItemCommandService.updateMenuItem(menuItemId, request));
     }
-
-    // ========== DELETE MENU ITEM ==========
 
     @Operation(
         summary = "Delete menu item",
@@ -159,21 +133,15 @@ public class MerchantMenuItemController {
     })
     @DeleteMapping("/{menuItemId}")
     public ResponseEntity<Void> deleteMenuItem(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId,
-            @Parameter(description = "Menu item ID")
-            @PathVariable UUID menuItemId) {
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
+            @Parameter(description = "Menu item ID") @PathVariable UUID menuItemId) {
 
-        // Check ownership
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-
-        menuItemService.softDeleteMenuItem(menuItemId);
+        menuItemCommandService.softDeleteMenuItem(menuItemId);
         return ResponseEntity.noContent().build();
     }
-
-    // ========== TOGGLE AVAILABILITY ==========
 
     @Operation(
         summary = "Toggle menu item availability",
@@ -186,17 +154,12 @@ public class MerchantMenuItemController {
     })
     @PatchMapping("/{menuItemId}/toggle-availability")
     public ResponseEntity<MenuItemResponse> toggleAvailability(
-            @Parameter(description = "Restaurant ID")
-            @PathVariable UUID restaurantId,
-            @Parameter(description = "Menu item ID")
-            @PathVariable UUID menuItemId) {
+            @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
+            @Parameter(description = "Menu item ID") @PathVariable UUID menuItemId) {
 
-        // Check ownership
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-
-        MenuItemResponse response = menuItemService.toggleAvailability(menuItemId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(menuItemCommandService.toggleAvailability(menuItemId));
     }
 }

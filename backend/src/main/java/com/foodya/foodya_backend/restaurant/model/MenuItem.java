@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.restaurant.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -39,12 +39,14 @@ public class MenuItem {
     private String description;
 
     @Column(nullable = false)
-    private Double price;
+    private Long price;
 
     private String imageUrl;
 
-    @Column(nullable = false)
-    private String category; // Appetizer, Main Course, Dessert, Beverage, etc.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    @JsonIgnore
+    private Category category;
 
     @Column(nullable = false)
     @Builder.Default
@@ -53,6 +55,10 @@ public class MenuItem {
     @Column(nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     private Integer preparationTime; // in minutes
 
@@ -69,14 +75,14 @@ public class MenuItem {
 
     @CreationTimestamp
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // Relationship with Restaurant
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "restaurant_id")
+    @JoinColumn(name = "restaurant_id", nullable = false)
     @JsonIgnore
     private Restaurant restaurant;
 

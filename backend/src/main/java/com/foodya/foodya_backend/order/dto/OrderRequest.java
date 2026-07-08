@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,13 +38,13 @@ public class OrderRequest {
 
   @DecimalMin(value = "0.0", message = "Delivery fee must be non-negative")
   @Schema(description = "Delivery fee", example = "15000.0")
-  private Double deliveryFee;
+  private Long deliveryFee;
 
   @Size(max = 1000, message = "Order notes must not exceed 1000 characters")
   @Schema(description = "Special notes for the order", example = "Giao trước 12h")
   private String orderNotes;
 
   @Schema(description = "Order date (optional, defaults to current time)")
-  private LocalDateTime orderDate;
+  private Instant orderDate;
 
 }

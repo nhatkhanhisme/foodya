@@ -1,10 +1,11 @@
 package com.foodya.foodya_backend. user.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java. util.UUID;
 
 import com.foodya.foodya_backend.user.model.Role;
 import com.foodya.foodya_backend.user.model.User;
+import com.foodya.foodya_backend.user.model.UserStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +26,8 @@ public class UserProfileResponse {
     @Builder.Default
     private Role role = Role.CUSTOMER;
 
-    private Boolean isActive;
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
     private Boolean isEmailVerified;
     private Boolean isPhoneNumberVerified;
 
@@ -33,9 +35,9 @@ public class UserProfileResponse {
     private String profileImageUrl;
 
     // Timestamps
-    private LocalDateTime lastLoginAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant lastLoginAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     /**
      * Convert User entity to UserProfileResponse DTO
@@ -48,7 +50,7 @@ public class UserProfileResponse {
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
-                .isActive(user.getIsActive())
+                .status(user.getStatus())
                 .isEmailVerified(user.getIsEmailVerified())
                 .isPhoneNumberVerified(user.getIsPhoneNumberVerified())
                 .profileImageUrl(user.getProfileImageUrl())

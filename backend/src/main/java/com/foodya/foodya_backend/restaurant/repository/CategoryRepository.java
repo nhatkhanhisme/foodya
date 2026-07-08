@@ -17,14 +17,14 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
      * Lấy tất cả categories của restaurant (Owner View)
      * Bao gồm tất cả categories để quản lý
      */
-    @Query("SELECT c FROM Category c WHERE c.restaurant.id = :restaurantId ORDER BY c.name ASC")
+    @Query("SELECT c FROM Category c WHERE c.restaurant.id = :restaurantId ORDER BY c.displayOrder ASC, c.name ASC")
     List<Category> findAllByRestaurantId(@Param("restaurantId") UUID restaurantId);
 
     /**
      * Lấy categories public của restaurant (Customer View)
      * Chỉ lấy categories active (nếu có field is_active trong tương lai)
      */
-    @Query("SELECT c FROM Category c WHERE c.restaurant.id = :restaurantId ORDER BY c.name ASC")
+    @Query("SELECT c FROM Category c WHERE c.restaurant.id = :restaurantId ORDER BY c.displayOrder ASC, c.name ASC")
     List<Category> findPublicCategoriesByRestaurantId(@Param("restaurantId") UUID restaurantId);
 
     /**

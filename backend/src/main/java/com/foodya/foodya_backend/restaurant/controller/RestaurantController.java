@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.controller;
 
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
-import com.foodya.foodya_backend.restaurant.service.RestaurantService;
+import com.foodya.foodya_backend.restaurant.service.RestaurantQueryService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,7 +24,7 @@ import java.util.UUID;
 @Tag(name = "Restaurant", description = "Restaurant APIs for mobile app")
 public class RestaurantController {
 
-  private final RestaurantService restaurantService;
+  private final RestaurantQueryService restaurantService;
 
   @Operation(summary = "Get restaurants with filters", description = "Search and filter restaurants by keyword, cuisine, rating with pagination and sorting")
   @ApiResponses(value = {

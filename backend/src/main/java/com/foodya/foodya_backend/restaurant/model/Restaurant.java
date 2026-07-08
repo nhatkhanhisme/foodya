@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.restaurant.model;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +41,8 @@ public class Restaurant {
   @Column(nullable = false, length = 500)
   private String address;
 
-  @Column(nullable = false, unique = true, length = 20)
+  // V5 migration renamed column phone_number → phone
+  @Column(name = "phone", nullable = false, unique = true, length = 20)
   private String phoneNumber;
 
   @Column(length = 100)
@@ -58,11 +59,12 @@ public class Restaurant {
   private String imageUrl;
 
   @Column(length = 500)
-  private String coverImageUrl; // ← THÊM MỚI - Ảnh bìa lớn
+  private String coverImageUrl;
 
   // ========== RATING & REVIEWS ==========
 
-  @Column(nullable = false)
+  // V5 migration renamed column rating → rating_avg (BR-16: simple arithmetic mean)
+  @Column(name = "rating_avg", nullable = false)
   @Builder.Default
   private Double rating = 0.0;
 
@@ -72,17 +74,14 @@ public class Restaurant {
 
   // ========== STATUS ==========
 
-  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
   @Builder.Default
-  private Boolean isOpen = true; // Đang mở cửa hay đóng cửa
+  private RestaurantStatus status = RestaurantStatus.PENDING;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean isActive = true; // Admin có thể deactivate
-
-  @Column(nullable = false)
-  @Builder.Default
-  private Boolean isVerified = false;
+  private Boolean isOpen = true;
 
   @Column(nullable = false)
   @Builder.Default
@@ -97,21 +96,21 @@ public class Restaurant {
   private String closingTime; // Format: "HH: mm" - e.g., "22:00"
 
   @Column(length = 200)
-  private String openingHours; // ← THÊM MỚI - "Mon-Fri: 09:00-22:00, Sat-Sun: 08:00-23:00"
+  private String openingHours; // e.g. "Mon-Fri: 09:00-22:00, Sat-Sun: 08:00-23:00"
 
   // ========== DELIVERY INFORMATION ==========
 
   @Column(nullable = false)
   @Builder.Default
-  private Double deliveryFee = 0.0;
+  private Long deliveryFee = 0L;
 
   @Column(nullable = false)
   @Builder.Default
-  private Double minimumOrder = 0.0;
+  private Long minimumOrder = 0L;
 
   @Column(nullable = false)
   @Builder.Default
-  private Double freeDeliveryThreshold = 0.0;
+  private Long freeDeliveryThreshold = 0L;
 
   private Integer estimatedDeliveryTime;
 
@@ -132,58 +131,49 @@ public class Restaurant {
 
   @Column(nullable = false)
   @Builder.Default
-  private Integer orderCount = 0; // ← THÊM MỚI - Số đơn (dùng cho sort popular)
+  private Integer orderCount = 0; // used for popularity sort
 
   @Column(nullable = false)
   @Builder.Default
-  private Double averageOrderValue = 0.0;
+  private Long averageOrderValue = 0L;
 
   // ========== PROMO & FEATURES ==========
 
   @Column(length = 200)
-  private String promotionText; // ← THÊM MỚI - "Giảm 20% cho đơn đầu tiên"
+  private String promotionText;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean hasPromotion = false; // ← THÊM MỚI - Đang có khuyến mãi
+  private Boolean hasPromotion = false;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean acceptsCash = true; // ← THÊM MỚI - Nhận COD
+  private Boolean acceptsCash = true;
 
   @Column(nullable = false)
   @Builder.Default
-  private Boolean acceptsCard = true; // ← THÊM MỚI - Nhận thẻ/online payment
+  private Boolean acceptsCard = true;
 
   // ========== TIMESTAMPS ==========
 
   @CreationTimestamp
   @Column(updatable = false, nullable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
   @UpdateTimestamp
   @Column(nullable = false)
-  private LocalDateTime updatedAt;
+  private Instant updatedAt;
 
-  private LocalDateTime deletedAt; // ← THÊM MỚI - Soft delete
+  private Instant deletedAt;
 
   // ========== RELATIONSHIPS ==========
 
-  // Relationship with MenuItem
   @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<MenuItem> menuItems = new ArrayList<>();
 
-  // Relationship with User (owner)
   @Column(columnDefinition = "UUID", nullable = false)
   private UUID ownerId;
-
-  // Future relationships (comment for now)
-  // @OneToMany(mappedBy = "restaurant")
-  // private List<Order> orders;
-
-  // @OneToMany(mappedBy = "restaurant")
-  // private List<Review> reviews;
 
   // ========== HELPER METHODS ==========
 
@@ -207,36 +197,23 @@ public class Restaurant {
     this.orderCount++;
   }
 
-  public void updateAverageOrderValue(Double totalRevenue) {
+  public void updateAverageOrderValue(Long totalRevenue) {
     if (this.totalOrders > 0) {
       this.averageOrderValue = totalRevenue / this.totalOrders;
     }
   }
 
-  /**
-   * Check if restaurant is currently open based on current time
-   */
   public boolean isCurrentlyOpen() {
-    if (!this.isOpen || !this.isActive) {
-      return false;
-    }
-
-    return this.isOpen;
+    return this.status == RestaurantStatus.APPROVED && Boolean.TRUE.equals(this.isOpen);
   }
 
-  /**
-   * Check if delivery is free for given order value
-   */
-  public boolean isFreeDelivery(Double orderValue) {
+  public boolean isFreeDelivery(Long orderValue) {
     return orderValue >= this.freeDeliveryThreshold;
   }
 
-  /**
-   * Calculate delivery fee for given order value
-   */
-  public Double calculateDeliveryFee(Double orderValue) {
+  public Long calculateDeliveryFee(Long orderValue) {
     if (isFreeDelivery(orderValue)) {
-      return 0.0;
+      return 0L;
     }
     return this.deliveryFee;
   }
