@@ -186,6 +186,21 @@ public class Order {
                     "Cannot transition from " + this.status + " to " + newStatus);
         }
         this.status = newStatus;
+        stampTransitionTime(newStatus);
+    }
+
+    // Stamped here, not in services, so every caller (merchant, admin, future
+    // shipper flow) records lifecycle times consistently. Popularity buckets
+    // depend on deliveredAt reflecting the real delivery moment.
+    private void stampTransitionTime(OrderStatus newStatus) {
+        Instant now = Instant.now();
+        switch (newStatus) {
+            case CONFIRMED -> this.confirmedAt = now;
+            case PICKED_UP -> this.pickedUpAt = now;
+            case DELIVERED -> this.deliveredAt = now;
+            case CANCELLED -> this.cancelledAt = now;
+            default -> { }
+        }
     }
 
     public void cancel(String reason) {

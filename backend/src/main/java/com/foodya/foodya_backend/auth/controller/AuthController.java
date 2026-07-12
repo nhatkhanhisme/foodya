@@ -53,6 +53,8 @@ public class AuthController {
           )
       )
   })
+  // Empty @SecurityRequirements clears the global bearerAuth lock in Swagger UI
+  @SecurityRequirements()
   @PostMapping("/register")
   public ResponseEntity<JwtAuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
     JwtAuthResponse response = authService.registerUser(registerRequest);
@@ -94,6 +96,8 @@ public class AuthController {
           )
       )
   })
+  // Auth is the refresh token in the body, not the (possibly expired) access token
+  @SecurityRequirements()
   @PostMapping("/refresh")
   public ResponseEntity<JwtAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
     JwtAuthResponse response = authService.refreshToken(request);
@@ -101,6 +105,10 @@ public class AuthController {
   }
 
   @Operation(summary = "Logout", description = "Revoke access and refresh tokens. Both tokens will be blacklisted immediately.")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "204", description = "Logged out, tokens revoked"),
+      @ApiResponse(responseCode = "401", description = "Missing or invalid access token")
+  })
   @PreAuthorize("isAuthenticated()")
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(

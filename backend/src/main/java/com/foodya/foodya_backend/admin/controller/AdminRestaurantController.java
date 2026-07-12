@@ -5,6 +5,10 @@ import com.foodya.foodya_backend.restaurant.service.RestaurantCommandService;
 import com.foodya.foodya_backend.restaurant.service.RestaurantQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,34 +32,60 @@ public class AdminRestaurantController {
 
     @Operation(
         summary = "Get all restaurants including inactive",
-        description = "Admin only - Retrieve all restaurants including inactive ones"
+        description = "Admin only - Retrieve all restaurants regardless of status (PENDING/APPROVED/REJECTED/SUSPENDED)"
     )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurants retrieved successfully",
+            content = @Content(schema = @Schema(implementation = RestaurantResponse.class)))
+    })
     @GetMapping
     public ResponseEntity<List<RestaurantResponse>> getAllRestaurantsIncludingInactive() {
         return ResponseEntity.ok(restaurantQueryService.getAllRestaurantsIncludingInactive());
     }
 
-    @Operation(summary = "Approve restaurant", description = "Admin only - Approve a pending restaurant")
+    @Operation(summary = "Approve restaurant",
+        description = "Admin only - Approve a pending restaurant. Approved restaurants become visible and orderable to customers.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurant approved"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
+    })
     @PatchMapping("/{id}/approve")
-    public ResponseEntity<RestaurantResponse> approveRestaurant(@PathVariable UUID id) {
+    public ResponseEntity<RestaurantResponse> approveRestaurant(
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
         return ResponseEntity.ok(restaurantCommandService.approveRestaurant(id));
     }
 
     @Operation(summary = "Reject restaurant", description = "Admin only - Reject a pending restaurant")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurant rejected"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
+    })
     @PatchMapping("/{id}/reject")
-    public ResponseEntity<RestaurantResponse> rejectRestaurant(@PathVariable UUID id) {
+    public ResponseEntity<RestaurantResponse> rejectRestaurant(
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
         return ResponseEntity.ok(restaurantCommandService.rejectRestaurant(id));
     }
 
-    @Operation(summary = "Suspend restaurant", description = "Admin only - Suspend restaurant for policy violation")
+    @Operation(summary = "Suspend restaurant",
+        description = "Admin only - Suspend restaurant for policy violation. Suspended restaurants are hidden from customers.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Restaurant suspended"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
+    })
     @PatchMapping("/{id}/suspend")
-    public ResponseEntity<RestaurantResponse> suspendRestaurant(@PathVariable UUID id) {
+    public ResponseEntity<RestaurantResponse> suspendRestaurant(
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
         return ResponseEntity.ok(restaurantCommandService.suspendRestaurant(id));
     }
 
     @Operation(summary = "Delete restaurant", description = "Admin only - Permanently delete a restaurant")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Restaurant deleted"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRestaurant(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteRestaurant(
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
         restaurantCommandService.deleteRestaurantById(id);
         return ResponseEntity.noContent().build();
     }

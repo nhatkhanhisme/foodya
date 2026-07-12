@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/restaurants")
 @RequiredArgsConstructor
 @Tag(name = "Restaurant", description = "Restaurant APIs for mobile app")
+// Public GET endpoints (SecurityConfig permitAll) — clear the global bearerAuth lock
+@SecurityRequirements()
 public class RestaurantController {
 
   private final RestaurantQueryService restaurantService;

@@ -33,6 +33,10 @@ public class MerchantOrderController {
     private final OrderCommandService orderCommandService;
 
     @Operation(summary = "Get restaurant orders", description = "Get all orders of a restaurant (for merchant)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Orders retrieved successfully",
+            content = @Content(schema = @Schema(implementation = OrderResponse.class)))
+    })
     @GetMapping("/restaurant/{restaurantId}")
     public ResponseEntity<List<OrderResponse>> getRestaurantOrders(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
@@ -40,9 +44,11 @@ public class MerchantOrderController {
     }
 
     @Operation(summary = "Update order status",
-        description = "Update order status (PENDING → PREPARING → SHIPPING → DELIVERED)")
+        description = "Confirm/reject a pending order or advance preparation. Allowed transitions: "
+            + "PENDING → CONFIRMED/REJECTED; CONFIRMED → READY_FOR_PICKUP. Invalid transitions return 400.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Status updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Transition not allowed from current status"),
         @ApiResponse(responseCode = "404", description = "Order not found")
     })
     @PatchMapping("/{id}/status")

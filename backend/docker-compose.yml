@@ -1,6 +1,26 @@
-version: '3.8'
-
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: foodya-redis
+    # AOF persistence: popularity ZSET buckets are real data (35-day TTL),
+    # not just cache - they must survive container restarts.
+    # noeviction on purpose: this Redis also holds the token blacklist, and an
+    # LRU policy could silently evict revoked tokens (logged-out tokens would
+    # work again). If memory fills up, writes fail loudly instead.
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - foodya-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -17,6 +37,9 @@ services:
       # Đảm bảo Java nhận diện đúng giới hạn memory của Container (quan trọng khi deploy)
       - JAVA_OPTS=-XX:MaxRAMPercentage=75.0
 
+      # Inside the compose network, Redis is reachable by service name, not localhost
+      - REDIS_URL=redis://redis:6379
+
     ports:
       - "${SERVER_PORT:-8080}:8080"
 
@@ -24,6 +47,10 @@ services:
       - foodya-network
 
     restart: unless-stopped
+
+    depends_on:
+      redis:
+        condition: service_healthy
 
     # Healthcheck: Đảm bảo container "healthy" mới nhận request
     healthcheck:
@@ -36,3 +63,6 @@ services:
 networks:
   foodya-network:
     driver: bridge
+
+volumes:
+  redis-data:

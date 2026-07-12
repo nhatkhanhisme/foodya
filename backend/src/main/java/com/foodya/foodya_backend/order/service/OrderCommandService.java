@@ -7,6 +7,7 @@ import com.foodya.foodya_backend.order.dto.OrderRequest;
 import com.foodya.foodya_backend.order.dto.OrderResponse;
 import com.foodya.foodya_backend.order.model.Order;
 import com.foodya.foodya_backend.order.model.OrderItem;
+import com.foodya.foodya_backend.order.event.OrderDeliveredEvent;
 import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.repository.OrderRepository;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
@@ -19,6 +20,7 @@ import com.foodya.foodya_backend.user.repository.UserRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,7 @@ public class OrderCommandService {
     private final UserRepository userRepository;
     private final RestaurantCommandService restaurantCommandService;
     private final MenuItemCommandService menuItemCommandService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public OrderResponse createOrder(@NonNull Authentication authentication, @NonNull OrderRequest request) {
@@ -141,7 +144,11 @@ public class OrderCommandService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
         order.updateStatus(newStatus);
-        return OrderResponse.fromEntity(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        if (newStatus == OrderStatus.DELIVERED) {
+            eventPublisher.publishEvent(new OrderDeliveredEvent(saved.getId(), saved.getRestaurant().getId()));
+        }
+        return OrderResponse.fromEntity(saved);
     }
 
     @Transactional

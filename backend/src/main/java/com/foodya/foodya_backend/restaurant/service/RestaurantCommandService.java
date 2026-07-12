@@ -75,10 +75,9 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(saved);
     }
 
-    @Caching(evict = {
-            @CacheEvict(value = "restaurant", key = "#id"),
-            @CacheEvict(value = "popular-restaurants", allEntries = true)
-    })
+    // popular-restaurants not evicted here: name/description edits can tolerate
+    // up to 5 minutes of staleness; ranking freshness comes from the ZSET buckets
+    @CacheEvict(value = "restaurant", key = "#id")
     @Transactional
     public RestaurantResponse updateRestaurant(@NonNull UUID id, RestaurantRequest request,
             UUID currentUserId, boolean isAdmin) {
