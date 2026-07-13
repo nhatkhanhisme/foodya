@@ -12,6 +12,7 @@ import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.repository.OrderRepository;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.model.Restaurant;
+import com.foodya.foodya_backend.restaurant.model.RestaurantStatus;
 import com.foodya.foodya_backend.restaurant.service.MenuItemCommandService;
 import com.foodya.foodya_backend.restaurant.service.RestaurantCommandService;
 import com.foodya.foodya_backend.user.model.User;
@@ -64,13 +65,23 @@ public class OrderCommandService {
 
         Restaurant restaurant = restaurantCommandService.findById(request.getRestaurantId());
 
+        // BR-06: orderable only when APPROVED and currently open
+        if (restaurant.getStatus() != RestaurantStatus.APPROVED) {
+            throw new AppException(ErrorCode.RESTAURANT_SUSPENDED,
+                    "Restaurant is not accepting orders (status: " + restaurant.getStatus() + ")");
+        }
+        if (!Boolean.TRUE.equals(restaurant.getIsOpen())) {
+            throw new AppException(ErrorCode.RESTAURANT_CLOSED,
+                    "Restaurant is currently closed");
+        }
+
         Order order = Order.builder()
                 .customer(customer)
                 .restaurant(restaurant)
                 .status(OrderStatus.PENDING)
-                .orderDate(request.getOrderDate() != null ? request.getOrderDate() : Instant.now())
+                .orderDate(Instant.now())
                 .deliveryAddress(request.getDeliveryAddress())
-                .deliveryFee(request.getDeliveryFee() != null ? request.getDeliveryFee() : 0L)
+                .deliveryFee(0L)
                 .orderNotes(request.getOrderNotes())
                 .totalPrice(0L)
                 .totalItems(0)
@@ -114,8 +125,27 @@ public class OrderCommandService {
         }
 
         order.recalculateTotals();
+
+        // BR-07/BR-08: the fee is server-computed from the restaurant's own settings;
+        // clients never send money fields
+        if (restaurant.getMinimumOrder() != null && order.getSubtotal() < restaurant.getMinimumOrder()) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR,
+                    "Order subtotal is below the restaurant's minimum of " + restaurant.getMinimumOrder());
+        }
+        order.setDeliveryFee(resolveDeliveryFee(restaurant, order.getSubtotal()));
+        order.recalculateTotals();
+
         Order saved = orderRepository.save(order);
         return OrderResponse.fromEntity(saved);
+    }
+
+    private long resolveDeliveryFee(Restaurant restaurant, long subtotal) {
+        long fee = restaurant.getDeliveryFee() != null ? restaurant.getDeliveryFee() : 0L;
+        Long freeThreshold = restaurant.getFreeDeliveryThreshold();
+        if (freeThreshold != null && freeThreshold > 0 && subtotal >= freeThreshold) {
+            return 0L;
+        }
+        return fee;
     }
 
     @Transactional
@@ -141,22 +171,26 @@ public class OrderCommandService {
 
     @Transactional
     public OrderResponse updateOrderStatus(@NonNull UUID id, OrderStatus newStatus) {
+        return updateOrderStatus(id, newStatus, null);
+    }
+
+    @Transactional
+    public OrderResponse updateOrderStatus(@NonNull UUID id, OrderStatus newStatus, String reason) {
+        // UC-R05: a rejection must tell the customer why
+        if (newStatus == OrderStatus.REJECTED && (reason == null || reason.isBlank())) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "A reason is required when rejecting an order");
+        }
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
         order.updateStatus(newStatus);
+        if ((newStatus == OrderStatus.REJECTED || newStatus == OrderStatus.CANCELLED) && reason != null) {
+            order.setCancelReason(reason);
+        }
         Order saved = orderRepository.save(order);
         if (newStatus == OrderStatus.DELIVERED) {
             eventPublisher.publishEvent(new OrderDeliveredEvent(saved.getId(), saved.getRestaurant().getId()));
         }
         return OrderResponse.fromEntity(saved);
-    }
-
-    @Transactional
-    public void deleteOrder(@NonNull UUID id) {
-        if (!orderRepository.existsById(id)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id);
-        }
-        orderRepository.deleteById(id);
     }
 
     private User getCurrentUser(Authentication authentication) {

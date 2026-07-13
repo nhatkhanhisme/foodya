@@ -55,15 +55,18 @@ public class AdminRestaurantController {
         return ResponseEntity.ok(restaurantCommandService.approveRestaurant(id));
     }
 
-    @Operation(summary = "Reject restaurant", description = "Admin only - Reject a pending restaurant")
+    @Operation(summary = "Reject restaurant",
+        description = "Admin only - Reject a pending restaurant with a reason (owner can fix and resubmit)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Restaurant rejected"),
+        @ApiResponse(responseCode = "400", description = "Missing rejection reason"),
         @ApiResponse(responseCode = "404", description = "Restaurant not found")
     })
     @PatchMapping("/{id}/reject")
     public ResponseEntity<RestaurantResponse> rejectRestaurant(
-            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(restaurantCommandService.rejectRestaurant(id));
+            @Parameter(description = "Restaurant ID") @PathVariable UUID id,
+            @Parameter(description = "Why the restaurant was rejected") @RequestParam String reason) {
+        return ResponseEntity.ok(restaurantCommandService.rejectRestaurant(id, reason));
     }
 
     @Operation(summary = "Suspend restaurant",
@@ -78,15 +81,6 @@ public class AdminRestaurantController {
         return ResponseEntity.ok(restaurantCommandService.suspendRestaurant(id));
     }
 
-    @Operation(summary = "Delete restaurant", description = "Admin only - Permanently delete a restaurant")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Restaurant deleted"),
-        @ApiResponse(responseCode = "404", description = "Restaurant not found")
-    })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRestaurant(
-            @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
-        restaurantCommandService.deleteRestaurantById(id);
-        return ResponseEntity.noContent().build();
-    }
+    // No DELETE endpoint on purpose: BR-31 — restaurants leave the platform via
+    // SUSPENDED, preserving order history and FK integrity
 }

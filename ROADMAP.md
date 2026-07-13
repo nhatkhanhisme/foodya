@@ -24,12 +24,12 @@ Kế hoạch phát triển tiếp backend từ trạng thái hiện tại đến
 
 Các lỗ hổng đã biết trong code hiện có — càng để lâu càng khó sửa vì feature mới xây chồng lên:
 
-- [ ] **1.1 Server tính tiền** — `OrderCommandService.createOrder` đang nhận `deliveryFee` từ client. Bỏ field khỏi `OrderRequest`; server tính (tạm: hằng số/công thức đơn giản BR-07, config qua properties). Không bao giờ tin giá từ client.
-- [ ] **1.2 Validate BR-06 khi đặt đơn** — check restaurant `APPROVED` + `isOpen` trước khi tạo order (hiện chỉ check menu item available).
-- [ ] **1.3 Ownership check merchant order** — `MerchantOrderController` hiện cho owner bất kỳ xem/sửa đơn của nhà hàng khác. Check `restaurant.ownerId == currentUser` ở cả 3 endpoint (dùng `OwnershipService` có sẵn).
-- [ ] **1.4 Bỏ/khóa hard-delete vi phạm SRS** — `DELETE /admin/users/{id}` (BR-30 cấm xóa user), `DELETE /admin/orders/{id}`, `DELETE /admin/restaurants/{id}`. Xóa endpoint hoặc chuyển thành soft (BANNED/CANCELLED/SUSPENDED).
-- [ ] **1.5 Reject kèm reason** — R05/A02 yêu cầu reason khi reject order/restaurant; thêm request body + lưu vào entity.
-- [ ] **1.6 Test cho order state machine** — transition map, isCancellable, timestamps (đã có logic, chưa có test nào).
+- [x] **1.1 Server tính tiền** — `OrderCommandService.createOrder` đang nhận `deliveryFee` từ client. Bỏ field khỏi `OrderRequest`; server tính (tạm: hằng số/công thức đơn giản BR-07, config qua properties). Không bao giờ tin giá từ client.
+- [x] **1.2 Validate BR-06 khi đặt đơn** — check restaurant `APPROVED` + `isOpen` trước khi tạo order (hiện chỉ check menu item available).
+- [x] **1.3 Ownership check merchant order** — `MerchantOrderController` hiện cho owner bất kỳ xem/sửa đơn của nhà hàng khác. Check `restaurant.ownerId == currentUser` ở cả 3 endpoint (dùng `OwnershipService` có sẵn).
+- [x] **1.4 Bỏ/khóa hard-delete vi phạm SRS** — `DELETE /admin/users/{id}` (BR-30 cấm xóa user), `DELETE /admin/orders/{id}`, `DELETE /admin/restaurants/{id}`. Xóa endpoint hoặc chuyển thành soft (BANNED/CANCELLED/SUSPENDED).
+- [x] **1.5 Reject kèm reason** — R05/A02 yêu cầu reason khi reject order/restaurant; thêm request body + lưu vào entity.
+- [x] **1.6 Test cho order state machine** — transition map, isCancellable, timestamps (đã có logic, chưa có test nào).
 
 ✅ **Phase DONE khi:** không còn endpoint nào tin dữ liệu tiền từ client, không owner nào đụng được resource người khác, test order model xanh.
 
@@ -124,4 +124,5 @@ UC: **A01, A04–A06** · BR: **02 ✅, 09, 20** · Schema: `V13__notifications`
 | Ngày | Phase/Bước | Ghi chú |
 |---|---|---|
 | 2026-07-11 | (pre) | Redis integration, security/swagger/config fixes, Flyway PG17, OSIV off |
+| 2026-07-13 | Phase 1 ✅ | Server tính fee (dùng restaurant.deliveryFee + freeDeliveryThreshold + minimumOrder), BR-06 check, ownership merchant orders + whitelist status, gỡ 3 hard-delete, reject kèm reason (V16), 33 test order model. Bonus: fix bug @Builder.Default version=0 làm save() đi đường merge → subtotal/totalItems ghi 0; map 3 exception thiếu trong GlobalExceptionHandler (400/405/404 thay vì 500) |
 | | | |

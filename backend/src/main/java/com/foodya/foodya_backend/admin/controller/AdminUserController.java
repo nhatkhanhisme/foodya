@@ -40,17 +40,8 @@ public class AdminUserController {
         return ResponseEntity.ok(userQueryService.getAllUsers());
     }
 
-    @Operation(summary = "Delete user", description = "Admin only - Permanently delete user")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "User deleted"),
-        @ApiResponse(responseCode = "404", description = "User not found")
-    })
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(
-            @Parameter(description = "User ID") @PathVariable UUID userId) {
-        userCommandService.deleteUserById(userId);
-        return ResponseEntity.noContent().build();
-    }
+    // No DELETE endpoint on purpose: BR-30 — accounts are BANNED, never deleted
+    // (FK constraints from orders/restaurants would break, and history must survive)
 
     @Operation(summary = "Toggle user status",
         description = "Admin only - Flip account status between ACTIVE and BANNED. Banned users cannot log in.")

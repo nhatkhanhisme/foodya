@@ -91,15 +91,6 @@ public class AdminOrderController {
         return ResponseEntity.ok(orderQueryService.calculateRevenue(restaurantId, startDate, endDate));
     }
 
-    @Operation(summary = "Delete order", description = "Permanently delete an order (Admin only)")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Order deleted"),
-        @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(
-            @Parameter(description = "Order ID") @PathVariable UUID id) {
-        orderCommandService.deleteOrder(id);
-        return ResponseEntity.noContent().build();
-    }
+    // No DELETE endpoint on purpose: orders are financial history — terminal
+    // states are CANCELLED/REJECTED/DELIVERED (§8.2), rows are never removed
 }
