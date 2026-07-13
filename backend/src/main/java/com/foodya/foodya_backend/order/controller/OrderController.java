@@ -10,11 +10,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +26,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/customers/orders")
 @RequiredArgsConstructor
+// ADMIN included for support operations (cancel/inspect on a customer's behalf)
+@PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
 @Tag(name = "Customer Orders", description = "Customer Order APIs for mobile app")
+@SecurityRequirement(name = "bearerAuth")
 public class OrderController {
 
     private final OrderQueryService orderQueryService;

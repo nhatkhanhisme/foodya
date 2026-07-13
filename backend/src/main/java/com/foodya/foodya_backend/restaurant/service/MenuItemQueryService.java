@@ -32,7 +32,7 @@ public class MenuItemQueryService {
     private final RestaurantRepository restaurantRepository;
     private final MenuItemMapper menuItemMapper;
 
-    @Cacheable(value = "menu-item", key = "#menuItemId")
+    @Cacheable(value = "menu-item", key = "#menuItemId", sync = true)
     @Transactional(readOnly = true)
     public MenuItemResponse getMenuItemById(@NonNull UUID menuItemId) {
         log.info("Fetching menu item with ID: {}", menuItemId);
@@ -68,7 +68,7 @@ public class MenuItemQueryService {
                 .collect(Collectors.toList());
     }
 
-    @Cacheable(value = "menu-items-active", key = "#restaurantId")
+    @Cacheable(value = "menu-items-active", key = "#restaurantId", sync = true)
     @Transactional(readOnly = true)
     public List<MenuItemResponse> getActiveMenuItemsByRestaurant(@NonNull UUID restaurantId) {
         log.info("Fetching active menu items for restaurant ID: {}", restaurantId);

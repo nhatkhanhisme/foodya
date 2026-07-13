@@ -75,10 +75,9 @@ public class RestaurantCommandService {
         return RestaurantResponse.fromEntity(saved);
     }
 
-    @Caching(evict = {
-            @CacheEvict(value = "restaurant", key = "#id"),
-            @CacheEvict(value = "popular-restaurants", allEntries = true)
-    })
+    // popular-restaurants not evicted here: name/description edits can tolerate
+    // up to 5 minutes of staleness; ranking freshness comes from the ZSET buckets
+    @CacheEvict(value = "restaurant", key = "#id")
     @Transactional
     public RestaurantResponse updateRestaurant(@NonNull UUID id, RestaurantRequest request,
             UUID currentUserId, boolean isAdmin) {
@@ -125,19 +124,6 @@ public class RestaurantCommandService {
             @CacheEvict(value = "popular-restaurants", allEntries = true)
     })
     @Transactional
-    public void deleteRestaurantById(@NonNull UUID id) {
-        log.info("Deleting restaurant with id: {}", id);
-        if (!restaurantRepository.existsById(id)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id);
-        }
-        restaurantRepository.deleteById(id);
-    }
-
-    @Caching(evict = {
-            @CacheEvict(value = "restaurant", key = "#id"),
-            @CacheEvict(value = "popular-restaurants", allEntries = true)
-    })
-    @Transactional
     public RestaurantResponse toggleRestaurantStatus(@NonNull UUID id, UUID currentUserId, boolean isAdmin) {
         log.info("Toggling status for restaurant ID: {}", id);
         Restaurant restaurant = findById(id);
@@ -157,6 +143,7 @@ public class RestaurantCommandService {
     public RestaurantResponse approveRestaurant(@NonNull UUID id) {
         Restaurant restaurant = findById(id);
         restaurant.setStatus(RestaurantStatus.APPROVED);
+        restaurant.setRejectionReason(null);
         log.info("Restaurant {} approved", id);
         return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
     }
@@ -166,10 +153,15 @@ public class RestaurantCommandService {
             @CacheEvict(value = "popular-restaurants", allEntries = true)
     })
     @Transactional
-    public RestaurantResponse rejectRestaurant(@NonNull UUID id) {
+    public RestaurantResponse rejectRestaurant(@NonNull UUID id, String reason) {
+        // UC-A02: the owner must be told why, so they can fix and resubmit (BR-31)
+        if (reason == null || reason.isBlank()) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "A reason is required when rejecting a restaurant");
+        }
         Restaurant restaurant = findById(id);
         restaurant.setStatus(RestaurantStatus.REJECTED);
-        log.info("Restaurant {} rejected", id);
+        restaurant.setRejectionReason(reason);
+        log.info("Restaurant {} rejected: {}", id, reason);
         return RestaurantResponse.fromEntity(restaurantRepository.save(restaurant));
     }
 

@@ -19,7 +19,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 public class RestaurantQueryService {
 
     private final RestaurantRepository restaurantRepository;
+    private final RestaurantPopularityService restaurantPopularityService;
 
     @Transactional(readOnly = true)
     public Page<RestaurantResponse> getRestaurantsWithFilters(
@@ -59,7 +64,7 @@ public class RestaurantQueryService {
         return restaurants.map(RestaurantResponse::fromEntity);
     }
 
-    @Cacheable(value = "restaurant", key = "#id")
+    @Cacheable(value = "restaurant", key = "#id", sync = true)
     @Transactional(readOnly = true)
     public RestaurantResponse getRestaurantById(@NonNull UUID id) {
         log.info("Fetching restaurant with id: {}", id);
@@ -68,14 +73,42 @@ public class RestaurantQueryService {
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
     }
 
-    @Cacheable(value = "popular-restaurants", key = "#limit")
+    @Cacheable(value = "popular-restaurants", key = "#limit", sync = true)
     @Transactional(readOnly = true)
     public List<RestaurantResponse> getPopularRestaurants(int limit) {
         log.info("Fetching top {} popular restaurants", limit);
-        Pageable pageable = PageRequest.of(0, limit,
+
+        List<UUID> topIds = restaurantPopularityService.getTopPopularRestaurants(limit);
+        if (topIds.isEmpty()) {
+            return fallbackPopularRestaurants(limit, Set.of());
+        }
+
+        Map<UUID, Restaurant> approvedById = restaurantRepository.findAllById(topIds).stream()
+                .filter(r -> r.getStatus() == RestaurantStatus.APPROVED)
+                .collect(Collectors.toMap(Restaurant::getId, Function.identity()));
+
+        // findAllById does not preserve order, so re-sort by ZSET ranking
+        List<RestaurantResponse> ranked = topIds.stream()
+                .map(approvedById::get)
+                .filter(Objects::nonNull)
+                .map(RestaurantResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        if (ranked.size() < limit) {
+            ranked.addAll(fallbackPopularRestaurants(limit - ranked.size(), approvedById.keySet()));
+        }
+        return ranked;
+    }
+
+    private List<RestaurantResponse> fallbackPopularRestaurants(int limit, Set<UUID> excludeIds) {
+        Pageable pageable = PageRequest.of(0, limit + excludeIds.size(),
                 Sort.by("totalReviews").descending().and(Sort.by("rating").descending()));
         return restaurantRepository.findByStatus(RestaurantStatus.APPROVED, pageable)
-                .getContent().stream().map(RestaurantResponse::fromEntity).toList();
+                .getContent().stream()
+                .filter(r -> !excludeIds.contains(r.getId()))
+                .limit(limit)
+                .map(RestaurantResponse::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

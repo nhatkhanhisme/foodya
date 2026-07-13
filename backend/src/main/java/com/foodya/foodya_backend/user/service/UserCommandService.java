@@ -25,14 +25,6 @@ public class UserCommandService {
     private final UserRepository userRepository;
 
     @Transactional
-    public void deleteUserById(@NonNull UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId);
-        }
-        userRepository.deleteById(userId);
-    }
-
-    @Transactional
     public UserProfileResponse toggleUserActiveStatus(@NonNull UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId));

@@ -1,1 +1,16 @@
+# Secrets — never commit; keep real values only in local .env / deployment env
 .env
+.env.*
+!.env.example
+
+# Build output
+target/
+*.jar
+!**/gradle-wrapper.jar
+.attach_pid*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+ROADMAP.md

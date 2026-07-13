@@ -34,6 +34,14 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   List<Order> findByStatus(OrderStatus status);
 
   /**
+   * Delivered orders in a time window, for the popularity backfill.
+   * deliveredAt is null on rows delivered before Order.updateStatus started
+   * stamping timestamps — orderDate is the fallback for those.
+   */
+  @Query("SELECT o FROM Order o WHERE o.status = :status AND COALESCE(o.deliveredAt, o.orderDate) > :after")
+  List<Order> findByStatusAndDeliveredAfter(@Param("status") OrderStatus status, @Param("after") Instant after);
+
+  /**
    * Tìm orders của customer theo status
    */
   @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId AND o.status = :status ORDER BY o.orderDate DESC")

@@ -35,6 +35,7 @@ public class RestaurantResponse {
 
     // Status
     private RestaurantStatus status;
+    private String rejectionReason;
     private Boolean isOpen;
     private Boolean isFeatured;
 
@@ -98,6 +99,7 @@ public class RestaurantResponse {
 
                 // Status
                 .status(restaurant.getStatus())
+                .rejectionReason(restaurant.getRejectionReason())
                 .isOpen(restaurant.getIsOpen())
                 .isFeatured(restaurant.getIsFeatured())
 

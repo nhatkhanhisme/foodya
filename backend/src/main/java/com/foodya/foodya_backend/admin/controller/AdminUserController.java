@@ -4,6 +4,11 @@ import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.service.UserCommandService;
 import com.foodya.foodya_backend.user.service.UserQueryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -26,21 +31,27 @@ public class AdminUserController {
     private final UserCommandService userCommandService;
 
     @Operation(summary = "Get all users", description = "Admin only - Retrieve all users")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Users retrieved successfully",
+            content = @Content(schema = @Schema(implementation = UserProfileResponse.class)))
+    })
     @GetMapping
     public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
         return ResponseEntity.ok(userQueryService.getAllUsers());
     }
 
-    @Operation(summary = "Delete user", description = "Admin only - Permanently delete user")
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID userId) {
-        userCommandService.deleteUserById(userId);
-        return ResponseEntity.noContent().build();
-    }
+    // No DELETE endpoint on purpose: BR-30 — accounts are BANNED, never deleted
+    // (FK constraints from orders/restaurants would break, and history must survive)
 
-    @Operation(summary = "Toggle user status", description = "Admin only - Enable/disable user account")
+    @Operation(summary = "Toggle user status",
+        description = "Admin only - Flip account status between ACTIVE and BANNED. Banned users cannot log in.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Status toggled; body contains the new state"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
     @PatchMapping("/{userId}/toggle-active")
-    public ResponseEntity<UserProfileResponse> toggleUserActive(@PathVariable UUID userId) {
+    public ResponseEntity<UserProfileResponse> toggleUserActive(
+            @Parameter(description = "User ID") @PathVariable UUID userId) {
         return ResponseEntity.ok(userCommandService.toggleUserActiveStatus(userId));
     }
 }

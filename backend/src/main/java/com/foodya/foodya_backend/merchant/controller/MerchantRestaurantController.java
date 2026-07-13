@@ -93,6 +93,10 @@ public class MerchantRestaurantController {
     }
 
     @Operation(summary = "Toggle restaurant open/close", description = "Open or close restaurant for orders")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Open/close state toggled"),
+        @ApiResponse(responseCode = "404", description = "Restaurant not found")
+    })
     @PatchMapping("/{id}/toggle-status")
     public ResponseEntity<RestaurantResponse> toggleRestaurantStatus(
             @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
