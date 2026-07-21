@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.admin.controller;
+package com.foodya.foodya_backend.restaurant.controller;
 
 import com.foodya.foodya_backend.restaurant.service.RestaurantPopularityService;
 import io.swagger.v3.oas.annotations.Operation;
