@@ -44,21 +44,15 @@ public class SecurityConfig {
             .requestMatchers("/error").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/actuator/**").permitAll()
-            // Public read
+            // Public read — this pattern already covers nested menu-items/categories paths
             .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/**").permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/*/menu-items/**").permitAll()
             // User
             .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
             .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
-            // Merchant registration
-            .requestMatchers(HttpMethod.POST, "/api/v1/merchant-registration").hasRole("CUSTOMER")
-            .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/me").authenticated()
-            .requestMatchers(HttpMethod.GET, "/api/v1/merchant-registration/*").authenticated()
-            .requestMatchers(HttpMethod.DELETE, "/api/v1/merchant-registration/*").authenticated()
             // Merchant
             .requestMatchers("/api/v1/merchant/**").hasAnyRole("RESTAURANT_OWNER", "ADMIN")
-            // Orders
-            .requestMatchers("/api/v1/orders/**").authenticated()
+            // Customer orders — ADMIN included for support operations
+            .requestMatchers("/api/v1/customers/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
             // Admin
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated())

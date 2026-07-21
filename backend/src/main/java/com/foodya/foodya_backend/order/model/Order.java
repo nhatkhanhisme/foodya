@@ -108,11 +108,14 @@ public class Order {
     @Column(name = "distance_source", length = 10)
     private String distanceSource;
 
-    // BR-13: optimistic lock prevents concurrent shipper assignment racing
+    // BR-13: optimistic lock prevents concurrent shipper assignment racing.
+    // MUST stay null until persisted: Spring Data decides persist-vs-merge for
+    // @Version entities by "version == null" — a default of 0 sends new orders
+    // down the merge path, whose half-populated copy zeroes the totals in
+    // @PrePersist. Hibernate initializes it to 0 on insert.
     @Version
     @Column(name = "version", nullable = false)
-    @Builder.Default
-    private Integer version = 0;
+    private Integer version;
 
     // ========== STATUS TIMESTAMPS ==========
 
@@ -186,6 +189,21 @@ public class Order {
                     "Cannot transition from " + this.status + " to " + newStatus);
         }
         this.status = newStatus;
+        stampTransitionTime(newStatus);
+    }
+
+    // Stamped here, not in services, so every caller (merchant, admin, future
+    // shipper flow) records lifecycle times consistently. Popularity buckets
+    // depend on deliveredAt reflecting the real delivery moment.
+    private void stampTransitionTime(OrderStatus newStatus) {
+        Instant now = Instant.now();
+        switch (newStatus) {
+            case CONFIRMED -> this.confirmedAt = now;
+            case PICKED_UP -> this.pickedUpAt = now;
+            case DELIVERED -> this.deliveredAt = now;
+            case CANCELLED -> this.cancelledAt = now;
+            default -> { }
+        }
     }
 
     public void cancel(String reason) {

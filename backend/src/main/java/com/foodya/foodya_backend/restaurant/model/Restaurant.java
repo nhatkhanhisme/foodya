@@ -79,6 +79,10 @@ public class Restaurant {
   @Builder.Default
   private RestaurantStatus status = RestaurantStatus.PENDING;
 
+  // Only populated when status = REJECTED (UC-A02); owner can fix and resubmit (BR-31)
+  @Column(length = 500)
+  private String rejectionReason;
+
   @Column(nullable = false)
   @Builder.Default
   private Boolean isOpen = true;
