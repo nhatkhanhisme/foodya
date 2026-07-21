@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.admin.controller;
+package com.foodya.foodya_backend.order.controller;
 
 import com.foodya.foodya_backend.order.dto.OrderResponse;
 import com.foodya.foodya_backend.order.model.OrderStatus;

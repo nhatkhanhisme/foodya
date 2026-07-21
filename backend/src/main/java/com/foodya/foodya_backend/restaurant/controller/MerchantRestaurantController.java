@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.merchant.controller;
+package com.foodya.foodya_backend.restaurant.controller;
 
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;

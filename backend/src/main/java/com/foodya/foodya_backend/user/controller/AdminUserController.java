@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.admin.controller;
+package com.foodya.foodya_backend.user.controller;
 
 import com.foodya.foodya_backend.user.dto.UserProfileResponse;
 import com.foodya.foodya_backend.user.service.UserCommandService;
