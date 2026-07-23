@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.order.dto;
+package com.foodya.foodya_backend.order.api.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;

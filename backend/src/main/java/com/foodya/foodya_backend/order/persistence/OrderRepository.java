@@ -1,7 +1,7 @@
-package com.foodya.foodya_backend.order.repository;
+package com.foodya.foodya_backend.order.persistence;
 
-import com.foodya.foodya_backend.order.model.Order;
-import com.foodya.foodya_backend.order.model.OrderStatus;
+import com.foodya.foodya_backend.order.domain.Order;
+import com.foodya.foodya_backend.order.domain.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

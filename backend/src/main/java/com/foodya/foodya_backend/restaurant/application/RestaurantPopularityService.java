@@ -18,9 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.foodya.foodya_backend.order.event.OrderDeliveredEvent;
-import com.foodya.foodya_backend.order.service.DeliveredOrderSummary;
-import com.foodya.foodya_backend.order.service.OrderQueryService;
+import com.foodya.foodya_backend.order.domain.event.OrderDeliveredEvent;
+import com.foodya.foodya_backend.order.application.DeliveredOrderSummary;
+import com.foodya.foodya_backend.order.application.OrderQueryService;
 import com.foodya.foodya_backend.shared.redis.RedisKeys;
 
 import lombok.RequiredArgsConstructor;

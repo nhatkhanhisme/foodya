@@ -1,15 +1,15 @@
-package com.foodya.foodya_backend.order.service;
+package com.foodya.foodya_backend.order.application;
 
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
-import com.foodya.foodya_backend.order.dto.OrderItemRequest;
-import com.foodya.foodya_backend.order.dto.OrderRequest;
-import com.foodya.foodya_backend.order.dto.OrderResponse;
-import com.foodya.foodya_backend.order.model.Order;
-import com.foodya.foodya_backend.order.model.OrderItem;
-import com.foodya.foodya_backend.order.event.OrderDeliveredEvent;
-import com.foodya.foodya_backend.order.model.OrderStatus;
-import com.foodya.foodya_backend.order.repository.OrderRepository;
+import com.foodya.foodya_backend.order.api.dto.OrderItemRequest;
+import com.foodya.foodya_backend.order.api.dto.OrderRequest;
+import com.foodya.foodya_backend.order.api.dto.OrderResponse;
+import com.foodya.foodya_backend.order.domain.Order;
+import com.foodya.foodya_backend.order.domain.OrderItem;
+import com.foodya.foodya_backend.order.domain.event.OrderDeliveredEvent;
+import com.foodya.foodya_backend.order.domain.OrderStatus;
+import com.foodya.foodya_backend.order.persistence.OrderRepository;
 import com.foodya.foodya_backend.restaurant.domain.MenuItem;
 import com.foodya.foodya_backend.restaurant.domain.Restaurant;
 import com.foodya.foodya_backend.restaurant.domain.RestaurantStatus;

@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.order.model;
+package com.foodya.foodya_backend.order.domain;
 
 import com.foodya.foodya_backend.user.domain.User;
 import com.foodya.foodya_backend.shared.exception.AppException;

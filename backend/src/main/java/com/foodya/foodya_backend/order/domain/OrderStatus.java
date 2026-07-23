@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.order.model;
+package com.foodya.foodya_backend.order.domain;
 
 public enum OrderStatus {
   PENDING,

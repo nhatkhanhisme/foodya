@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.order.model;
+package com.foodya.foodya_backend.order.domain;
 
 import com.foodya.foodya_backend.restaurant.domain.MenuItem;
 import com.fasterxml.jackson.annotation.JsonIgnore;

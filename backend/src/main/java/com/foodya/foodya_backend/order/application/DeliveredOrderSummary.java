@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.order.service;
+package com.foodya.foodya_backend.order.application;
 
 import java.time.Instant;
 import java.util.UUID;

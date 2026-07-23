@@ -1,9 +1,9 @@
-package com.foodya.foodya_backend.order.controller;
+package com.foodya.foodya_backend.order.api;
 
-import com.foodya.foodya_backend.order.dto.OrderResponse;
-import com.foodya.foodya_backend.order.model.OrderStatus;
-import com.foodya.foodya_backend.order.service.OrderCommandService;
-import com.foodya.foodya_backend.order.service.OrderQueryService;
+import com.foodya.foodya_backend.order.api.dto.OrderResponse;
+import com.foodya.foodya_backend.order.domain.OrderStatus;
+import com.foodya.foodya_backend.order.application.OrderCommandService;
+import com.foodya.foodya_backend.order.application.OrderQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

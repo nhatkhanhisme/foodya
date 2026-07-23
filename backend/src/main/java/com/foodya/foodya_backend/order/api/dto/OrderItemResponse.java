@@ -1,6 +1,6 @@
-package com.foodya.foodya_backend.order.dto;
+package com.foodya.foodya_backend.order.api.dto;
 
-import com.foodya.foodya_backend.order.model.OrderItem;
+import com.foodya.foodya_backend.order.domain.OrderItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
