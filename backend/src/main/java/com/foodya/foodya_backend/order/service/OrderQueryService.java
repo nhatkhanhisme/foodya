@@ -86,6 +86,21 @@ public class OrderQueryService {
         return sum == null ? 0L : sum;
     }
 
+    /**
+     * Facade for restaurant popularity backfill: hands back only what's needed
+     * to bucket DELIVERED orders, instead of exposing OrderRepository/Order
+     * across the module boundary.
+     */
+    @Transactional(readOnly = true)
+    public List<DeliveredOrderSummary> getDeliveredOrderSummariesSince(Instant since) {
+        return orderRepository.findByStatusAndDeliveredAfter(OrderStatus.DELIVERED, since).stream()
+                .filter(o -> o.getRestaurant() != null && o.getRestaurant().getId() != null)
+                .map(o -> new DeliveredOrderSummary(
+                        o.getRestaurant().getId(),
+                        o.getDeliveredAt() != null ? o.getDeliveredAt() : o.getOrderDate()))
+                .collect(Collectors.toList());
+    }
+
     private User getCurrentUser(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new AccessDeniedException("Unauthenticated");

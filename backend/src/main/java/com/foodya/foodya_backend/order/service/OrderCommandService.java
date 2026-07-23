@@ -10,11 +10,11 @@ import com.foodya.foodya_backend.order.model.OrderItem;
 import com.foodya.foodya_backend.order.event.OrderDeliveredEvent;
 import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.repository.OrderRepository;
-import com.foodya.foodya_backend.restaurant.model.MenuItem;
-import com.foodya.foodya_backend.restaurant.model.Restaurant;
-import com.foodya.foodya_backend.restaurant.model.RestaurantStatus;
-import com.foodya.foodya_backend.restaurant.service.MenuItemCommandService;
-import com.foodya.foodya_backend.restaurant.service.RestaurantCommandService;
+import com.foodya.foodya_backend.restaurant.domain.MenuItem;
+import com.foodya.foodya_backend.restaurant.domain.Restaurant;
+import com.foodya.foodya_backend.restaurant.domain.RestaurantStatus;
+import com.foodya.foodya_backend.restaurant.application.MenuItemCommandService;
+import com.foodya.foodya_backend.restaurant.application.RestaurantCommandService;
 import com.foodya.foodya_backend.user.domain.User;
 import com.foodya.foodya_backend.user.persistence.UserRepository;
 

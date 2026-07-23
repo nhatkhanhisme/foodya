@@ -3,7 +3,7 @@ package com.foodya.foodya_backend.order.model;
 import com.foodya.foodya_backend.user.domain.User;
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
-import com.foodya.foodya_backend.restaurant.model.Restaurant;
+import com.foodya.foodya_backend.restaurant.domain.Restaurant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

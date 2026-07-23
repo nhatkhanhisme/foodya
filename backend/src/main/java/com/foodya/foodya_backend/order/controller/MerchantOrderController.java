@@ -4,7 +4,7 @@ import com.foodya.foodya_backend.order.dto.OrderResponse;
 import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.service.OrderCommandService;
 import com.foodya.foodya_backend.order.service.OrderQueryService;
-import com.foodya.foodya_backend.restaurant.service.OwnershipService;
+import com.foodya.foodya_backend.restaurant.application.OwnershipService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
