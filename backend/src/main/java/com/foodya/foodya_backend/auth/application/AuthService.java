@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.auth.service;
+package com.foodya.foodya_backend.auth.application;
 
 import java.time.Instant;
 import java.util.Set;
@@ -14,17 +14,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import com.foodya.foodya_backend.auth.dto.ChangePasswordRequest;
-import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
-import com.foodya.foodya_backend.auth.dto.LoginRequest;
-import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
-import com.foodya.foodya_backend.auth.dto.RegisterRequest;
+import com.foodya.foodya_backend.auth.api.dto.ChangePasswordRequest;
+import com.foodya.foodya_backend.auth.api.dto.JwtAuthResponse;
+import com.foodya.foodya_backend.auth.api.dto.LoginRequest;
+import com.foodya.foodya_backend.auth.api.dto.RefreshTokenRequest;
+import com.foodya.foodya_backend.auth.api.dto.RegisterRequest;
 import com.foodya.foodya_backend.shared.security.JwtService;
 import com.foodya.foodya_backend.shared.security.TokenType;
-import com.foodya.foodya_backend.user.model.Role;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.model.UserStatus;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.domain.UserStatus;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.extern.slf4j.Slf4j;
 

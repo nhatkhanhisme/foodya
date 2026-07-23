@@ -6,8 +6,8 @@ import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.foodya.foodya_backend.restaurant.model.MenuItem;
 import com.foodya.foodya_backend.restaurant.repository.RestaurantRepository;
 import com.foodya.foodya_backend.restaurant.repository.MenuItemRepository;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

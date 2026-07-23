@@ -15,8 +15,8 @@ import com.foodya.foodya_backend.restaurant.model.Restaurant;
 import com.foodya.foodya_backend.restaurant.model.RestaurantStatus;
 import com.foodya.foodya_backend.restaurant.service.MenuItemCommandService;
 import com.foodya.foodya_backend.restaurant.service.RestaurantCommandService;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

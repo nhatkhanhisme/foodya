@@ -6,8 +6,8 @@ import com.foodya.foodya_backend.order.dto.OrderResponse;
 import com.foodya.foodya_backend.order.model.Order;
 import com.foodya.foodya_backend.order.model.OrderStatus;
 import com.foodya.foodya_backend.order.repository.OrderRepository;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

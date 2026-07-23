@@ -6,9 +6,9 @@ import com.foodya.foodya_backend.restaurant.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.service.RestaurantCommandService;
 import com.foodya.foodya_backend.restaurant.service.RestaurantQueryService;
-import com.foodya.foodya_backend.user.model.Role;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

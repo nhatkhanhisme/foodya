@@ -1,7 +1,7 @@
-package com.foodya.foodya_backend.auth.service;
+package com.foodya.foodya_backend.auth.application;
 
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

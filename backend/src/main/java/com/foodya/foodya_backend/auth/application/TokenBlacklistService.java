@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.auth.service;
+package com.foodya.foodya_backend.auth.application;
 
 import com.foodya.foodya_backend.shared.redis.RedisKeys;
 import com.foodya.foodya_backend.shared.security.JwtService;

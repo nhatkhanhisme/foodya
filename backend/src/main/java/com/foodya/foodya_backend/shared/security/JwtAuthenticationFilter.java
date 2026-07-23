@@ -14,13 +14,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.foodya.foodya_backend.auth.service.CustomUserDetailsService;
-import com.foodya.foodya_backend.auth.service.TokenBlacklistService;
+import com.foodya.foodya_backend.auth.application.TokenBlacklistService;
 
 import java.io.IOException;
 
@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private static final String BEARER_PREFIX = "Bearer ";
 
   private final JwtService jwtService;
-  private final CustomUserDetailsService customUserDetailsService;
+  private final UserDetailsService userDetailsService;
   private final JwtAuthenticationEntryPoint entryPoint;
   private final TokenBlacklistService tokenBlacklistService;
 
@@ -66,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return;
       }
 
-      UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+      UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
       if (!userDetails.isEnabled()) {
         rejectWithUnauthorized(request, response, new DisabledException("Account is disabled"));

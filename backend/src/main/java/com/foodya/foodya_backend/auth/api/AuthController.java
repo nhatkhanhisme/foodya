@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.auth.controller;
+package com.foodya.foodya_backend.auth.api;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.foodya.foodya_backend.auth.dto.ChangePasswordRequest;
-import com.foodya.foodya_backend.auth.dto.JwtAuthResponse;
-import com.foodya.foodya_backend.auth.dto.LoginRequest;
-import com.foodya.foodya_backend.auth.dto.RefreshTokenRequest;
-import com.foodya.foodya_backend.auth.dto.RegisterRequest;
-import com.foodya.foodya_backend.auth.service.AuthService;
+import com.foodya.foodya_backend.auth.api.dto.ChangePasswordRequest;
+import com.foodya.foodya_backend.auth.api.dto.JwtAuthResponse;
+import com.foodya.foodya_backend.auth.api.dto.LoginRequest;
+import com.foodya.foodya_backend.auth.api.dto.RefreshTokenRequest;
+import com.foodya.foodya_backend.auth.api.dto.RegisterRequest;
+import com.foodya.foodya_backend.auth.application.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
