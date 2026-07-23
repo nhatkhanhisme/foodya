@@ -1,6 +1,6 @@
-package com.foodya.foodya_backend.user.repository;
+package com.foodya.foodya_backend.user.persistence;
 
-import com.foodya.foodya_backend.user.model.User;
+import com.foodya.foodya_backend.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

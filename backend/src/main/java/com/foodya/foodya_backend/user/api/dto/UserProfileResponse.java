@@ -3,9 +3,9 @@ package com.foodya.foodya_backend. user.dto;
 import java.time.Instant;
 import java. util.UUID;
 
-import com.foodya.foodya_backend.user.model.Role;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.model.UserStatus;
+import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.domain.UserStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

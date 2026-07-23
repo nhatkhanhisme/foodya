@@ -1,12 +1,12 @@
-package com.foodya.foodya_backend.user.service;
+package com.foodya.foodya_backend.user.application;
 
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
-import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
-import com.foodya.foodya_backend.user.dto.UserProfileResponse;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.model.UserStatus;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.api.dto.UpdateProfileRequest;
+import com.foodya.foodya_backend.user.api.dto.UserProfileResponse;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.domain.UserStatus;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

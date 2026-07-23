@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.user.model;
+package com.foodya.foodya_backend.user.domain;
 
 public enum Role {
   CUSTOMER,

@@ -1,9 +1,9 @@
-package com.foodya.foodya_backend.user.controller;
+package com.foodya.foodya_backend.user.api;
 
-import com.foodya.foodya_backend.user.dto.UpdateProfileRequest;
-import com.foodya.foodya_backend.user.dto.UserProfileResponse;
-import com.foodya.foodya_backend.user.service.UserCommandService;
-import com.foodya.foodya_backend.user.service.UserQueryService;
+import com.foodya.foodya_backend.user.api.dto.UpdateProfileRequest;
+import com.foodya.foodya_backend.user.api.dto.UserProfileResponse;
+import com.foodya.foodya_backend.user.application.UserCommandService;
+import com.foodya.foodya_backend.user.application.UserQueryService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

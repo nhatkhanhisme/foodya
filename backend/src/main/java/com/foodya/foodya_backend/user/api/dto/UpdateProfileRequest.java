@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.user.dto;
+package com.foodya.foodya_backend.user.api.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;

@@ -1,10 +1,11 @@
-package com.foodya.foodya_backend.user.service;
+package com.foodya.foodya_backend.user.application;
 
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
-import com.foodya.foodya_backend.user.dto.UserProfileResponse;
-import com.foodya.foodya_backend.user.model.User;
-import com.foodya.foodya_backend.user.repository.UserRepository;
+import com.foodya.foodya_backend.user.api.dto.UserProfileResponse;
+import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.user.persistence.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,10 +33,28 @@ public class UserQueryService {
 
     @Transactional(readOnly = true)
     public UserProfileResponse getCurrentUserProfile() {
+        return UserProfileResponse.fromEntity(getCurrentUserEntity());
+    }
+
+    /**
+     * Facade for other modules that only need the current user's id for
+     * authorization checks — avoids exposing the User entity/repository across
+     * the module boundary.
+     */
+    @Transactional(readOnly = true)
+    public UUID getCurrentUserId() {
+        return getCurrentUserEntity().getId();
+    }
+
+    @Transactional(readOnly = true)
+    public Role getCurrentUserRole() {
+        return getCurrentUserEntity().getRole();
+    }
+
+    private User getCurrentUserEntity() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found: " + username));
-        return UserProfileResponse.fromEntity(user);
     }
 
 }
