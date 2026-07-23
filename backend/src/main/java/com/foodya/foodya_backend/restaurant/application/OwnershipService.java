@@ -37,7 +37,7 @@ public class OwnershipService {
     /**
      * Check if current user owns the restaurant that contains the menu item
      */
-    public boolean isMenuItemOwner(@NonNull UUID menuItemId) {
+    boolean isMenuItemOwner(@NonNull UUID menuItemId) {
         UUID currentUserId = userQueryService.getCurrentUserId();
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found"));

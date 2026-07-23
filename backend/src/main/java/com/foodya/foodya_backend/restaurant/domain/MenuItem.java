@@ -87,7 +87,7 @@ public class MenuItem {
     private Restaurant restaurant;
 
     // Helper method
-    public void incrementOrderCount() {
+    void incrementOrderCount() {
         this.orderCount++;
     }
 }

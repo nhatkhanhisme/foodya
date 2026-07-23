@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class CustomUserDetailsService implements UserDetailsService {
+class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
@@ -29,7 +29,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetails loadUserByEmail(String email) throws UsernameNotFoundException {
+    UserDetails loadUserByEmail(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
@@ -37,7 +37,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetails loadUserById(@NonNull UUID id) throws UsernameNotFoundException {
+    UserDetails loadUserById(@NonNull UUID id) throws UsernameNotFoundException {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
 

@@ -159,13 +159,13 @@ public class Order {
         return restaurant != null ? restaurant.getId() : null;
     }
 
-    public void addOrderItem(OrderItem item) {
+    void addOrderItem(OrderItem item) {
         orderItems.add(item);
         item.setOrder(this);
         recalculateTotals();
     }
 
-    public void removeOrderItem(OrderItem item) {
+    void removeOrderItem(OrderItem item) {
         orderItems.remove(item);
         item.setOrder(null);
         recalculateTotals();
@@ -217,17 +217,17 @@ public class Order {
                 || this.status == OrderStatus.CONFIRMED;
     }
 
-    public boolean isDelivered() {
+    boolean isDelivered() {
         return this.status == OrderStatus.DELIVERED;
     }
 
-    public boolean isCancelled() {
+    boolean isCancelled() {
         return this.status == OrderStatus.CANCELLED;
     }
 
     @PrePersist
     @PreUpdate
-    public void prePersist() {
+    private void prePersist() {
         recalculateTotals();
     }
 

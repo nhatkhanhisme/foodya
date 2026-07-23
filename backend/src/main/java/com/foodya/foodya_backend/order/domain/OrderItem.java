@@ -76,7 +76,7 @@ public class OrderItem {
     /**
      * Tính tổng tiền cho item này
      */
-    public void calculateSubtotal() {
+    private void calculateSubtotal() {
         this.subtotal = this.quantity * this.priceAtPurchase;
     }
 
@@ -96,7 +96,7 @@ public class OrderItem {
 
     @PrePersist
     @PreUpdate
-    public void prePersist() {
+    private void prePersist() {
         calculateSubtotal();
     }
 }
