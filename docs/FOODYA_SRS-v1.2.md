@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.2-draft |
+| **Version** | 1.3-draft |
 | **Status** | In progress |
 | **Architecture** | Modular monolith (Spring Boot) |
 
@@ -14,6 +14,7 @@
 | 1.0 | Initial specification. |
 | 1.1-draft | Normative rewrite; module responsibility and UC traceability added (§3.3). |
 | 1.2-draft | Implementation status and priority added to the UC index (§4.1); BR-34, BR-35 added; UC-R01 respecified (owner role granted on approval); risks added (§2.6); package structure aligned with the codebase after removal of the `admin` and `merchant` packages; §7.2 register constraint documented. Pending: auth session rework (BR-03, BR-04, UC-C02, UC-C13). |
+| 1.3-draft | §3.1/§3.2 updated: each module's internal layout changed from `controller/service/repository/model/mapper/dto` to `api/application/domain/persistence` (mapper folded into `api/dto/`). No change to module boundaries, ownership, or the role-oriented-modules prohibition. |
 
 ---
 
@@ -126,16 +127,16 @@ Foodya is a standalone three-sided marketplace (Customer / Restaurant / Shipper)
 ## 3. System Architecture
 
 ### 3.1 Architecture Style
-Package-by-feature modular monolith. Each feature module owns its `controller`, `service`, `repository`, `model`, `mapper`, and `dto` packages. Request processing follows:
+Package-by-feature modular monolith. Each feature module owns four packages — `api` (controllers + `dto/` request/response contracts, mappers folded into `api/dto/`), `application` (`XxxService` for commands, `XxxQueryService` for queries, orchestration), `domain` (entities owned by the module + domain events under `domain/event/`), and `persistence` (repositories, JPA/Redis adapters). Request processing follows:
 
 ```
-Request → Controller (REST, validation)
-        → Service (business logic, transactions)
-        → Repository (Spring Data JPA)
+Request → api (REST, validation)
+        → application (business logic, transactions)
+        → persistence (Spring Data JPA)
         → PostgreSQL
 ```
 
-**Module boundary rule.** A module may invoke another module's `*Service` only. Direct references to another module's `*Repository` or `*Model` are prohibited. External SDKs (payment, mapping) shall be accessed only through their internal interface (`PaymentProvider`, mapping-provider interface); business logic shall not reference provider SDKs directly.
+**Module boundary rule.** A module may invoke another module's `application` facade only. Direct references to another module's `persistence` or `domain` packages are prohibited. External SDKs (payment, mapping) shall be accessed only through their internal interface (`PaymentProvider`, mapping-provider interface); business logic shall not reference provider SDKs directly.
 
 **Role-oriented modules are prohibited.** Modules are delimited by owned data and behavior, not by consuming actor. Actor-specific endpoints reside in the module that owns the underlying domain (e.g., restaurant-side order endpoints in `order`; moderation endpoints in the module owning the moderated entity).
 
@@ -143,9 +144,11 @@ Request → Controller (REST, validation)
 
 ```
 com.foodya.backend
-├── shared/           # cross-cutting only: response envelope, exceptions,
-│                     # trace-id filter, validation utils, OpenAPI config
-├── auth/             # credentials, tokens, sessions, security filter chain
+├── shared/           # cross-cutting only, not the api/application/domain/persistence
+│                     # layout: response envelope, exceptions, security filter chain,
+│                     # trace-id filter, validation utils, OpenAPI config, Redis config
+├── auth/             # credentials, tokens, sessions
+│                     # (no owned entity — domain/, persistence/ are placeholders)
 ├── user/             # user profile, delivery addresses, user moderation
 ├── restaurant/       # restaurant profile, categories, menu items,
 │                     # restaurant approval, owner dashboard
@@ -153,15 +156,22 @@ com.foodya.backend
 ├── order/            # order lifecycle, state machine, restaurant-side
 │                     # order management, platform analytics
 ├── payment/          # (scaffold — Planned) payment records, webhook handling
+│   ├── api/ application/ domain/ persistence/
 │   └── provider/     # PaymentProvider interface + VNPay/Momo adapters
+│                     # (sits alongside the four standard packages — external-SDK
+│                     # adapters are not application-layer orchestration)
 ├── delivery/         # (scaffold — Planned) shipper profile, jobs, tracking
 ├── review/           # (scaffold — Planned)
 ├── notification/     # (scaffold — Planned)
-├── audit/            # (Planned) append-only AuditLog for moderation actions
+├── audit/            # (Planned, not yet scaffolded) append-only AuditLog for
+│                     # moderation actions — created when a module first needs it,
+│                     # not ahead of time
 └── FoodyaApplication.java
 ```
 
-The former `admin` and `merchant` packages are removed. Their endpoints are hosted by the owning domain modules per §3.1; public URL paths are unchanged (§7.5–§7.7).
+Every module above (except `shared`, which is organized by cross-cutting concern, not by feature) follows the four-package layout from §3.1: `api/`, `application/`, `domain/`, `persistence/`. A module with no owned entity or repository (e.g. `auth`) still has empty `domain/`/`persistence/` placeholders so the shape stays uniform.
+
+The former `admin` and `merchant` packages are removed. Their endpoints are hosted by the owning domain modules per §3.1, inside that module's `api/`; public URL paths are unchanged (§7.5–§7.7).
 
 ### 3.3 Module Responsibilities & Use-Case Traceability
 
