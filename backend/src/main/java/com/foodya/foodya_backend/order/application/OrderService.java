@@ -13,10 +13,10 @@ import com.foodya.foodya_backend.order.persistence.OrderRepository;
 import com.foodya.foodya_backend.restaurant.domain.MenuItem;
 import com.foodya.foodya_backend.restaurant.domain.Restaurant;
 import com.foodya.foodya_backend.restaurant.domain.RestaurantStatus;
-import com.foodya.foodya_backend.restaurant.application.MenuItemCommandService;
-import com.foodya.foodya_backend.restaurant.application.RestaurantCommandService;
-import com.foodya.foodya_backend.user.domain.User;
-import com.foodya.foodya_backend.user.persistence.UserRepository;
+import com.foodya.foodya_backend.restaurant.application.MenuItemService;
+import com.foodya.foodya_backend.restaurant.application.RestaurantService;
+import com.foodya.foodya_backend.auth.domain.User;
+import com.foodya.foodya_backend.auth.persistence.UserRepository;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -29,17 +29,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class OrderCommandService {
+public class OrderService {
+
+    private static final EnumSet<OrderStatus> ACTIVE_STATUSES = EnumSet.of(
+            OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.READY_FOR_PICKUP, OrderStatus.PICKED_UP);
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
-    private final RestaurantCommandService restaurantCommandService;
-    private final MenuItemCommandService menuItemCommandService;
+    private final RestaurantService restaurantService;
+    private final MenuItemService menuItemService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -63,7 +69,7 @@ public class OrderCommandService {
 
         log.info("Creating order for customer: {}, restaurant: {}", customer.getId(), request.getRestaurantId());
 
-        Restaurant restaurant = restaurantCommandService.findById(request.getRestaurantId());
+        Restaurant restaurant = restaurantService.findById(request.getRestaurantId());
 
         // BR-06: orderable only when APPROVED and currently open
         if (restaurant.getStatus() != RestaurantStatus.APPROVED) {
@@ -93,7 +99,7 @@ public class OrderCommandService {
             if (menuItemId == null) {
                 throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item ID cannot be null");
             }
-            MenuItem menuItem = menuItemCommandService.findById(menuItemId);
+            MenuItem menuItem = menuItemService.findById(menuItemId);
 
             if (menuItem.getRestaurant() == null || menuItem.getRestaurant().getId() == null) {
                 throw new AppException(ErrorCode.VALIDATION_ERROR,
@@ -191,6 +197,73 @@ public class OrderCommandService {
             eventPublisher.publishEvent(new OrderDeliveredEvent(saved.getId(), saved.getRestaurant().getId()));
         }
         return OrderResponse.fromEntity(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getMyOrders(@NonNull Authentication authentication) {
+        User customer = getCurrentUser(authentication);
+        return orderRepository.findByCustomer_Id(customer.getId()).stream()
+                .map(OrderResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getMyActiveOrders(@NonNull Authentication authentication) {
+        User customer = getCurrentUser(authentication);
+        return orderRepository.findByCustomer_IdAndStatusIn(customer.getId(), List.copyOf(ACTIVE_STATUSES))
+                .stream()
+                .map(OrderResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(@NonNull UUID id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
+        return OrderResponse.fromEntity(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getOrdersByRestaurant(@NonNull UUID restaurantId) {
+        return orderRepository.findByRestaurant_Id(restaurantId).stream()
+                .map(OrderResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> searchOrders(
+            OrderStatus status, UUID restaurantId, UUID customerId, Instant startDate, Instant endDate) {
+        return orderRepository.adminSearch(status, restaurantId, customerId, startDate, endDate)
+                .stream()
+                .map(OrderResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Long calculateRevenue(UUID restaurantId, Instant startDate, Instant endDate) {
+        if (restaurantId == null || startDate == null || endDate == null) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId, startDate, endDate are required");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "endDate must be after startDate");
+        }
+        Long sum = orderRepository.sumRevenueByRestaurantIdAndDateRange(restaurantId, startDate, endDate);
+        return sum == null ? 0L : sum;
+    }
+
+    /**
+     * Facade for restaurant popularity backfill: hands back only what's needed
+     * to bucket DELIVERED orders, instead of exposing OrderRepository/Order
+     * across the module boundary.
+     */
+    @Transactional(readOnly = true)
+    public List<DeliveredOrderSummary> getDeliveredOrderSummariesSince(Instant since) {
+        return orderRepository.findByStatusAndDeliveredAfter(OrderStatus.DELIVERED, since).stream()
+                .filter(o -> o.getRestaurant() != null && o.getRestaurant().getId() != null)
+                .map(o -> new DeliveredOrderSummary(
+                        o.getRestaurant().getId(),
+                        o.getDeliveredAt() != null ? o.getDeliveredAt() : o.getOrderDate()))
+                .collect(Collectors.toList());
     }
 
     private User getCurrentUser(Authentication authentication) {

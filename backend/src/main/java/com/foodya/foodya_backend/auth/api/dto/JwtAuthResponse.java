@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.auth.api.dto;
 
-import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.auth.domain.Role;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

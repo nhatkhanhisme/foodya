@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.api;
 
 import com.foodya.foodya_backend.restaurant.api.dto.CategoryResponse;
-import com.foodya.foodya_backend.restaurant.application.CategoryQueryService;
+import com.foodya.foodya_backend.restaurant.application.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @SecurityRequirements()
 public class CategoryController {
 
-    private final CategoryQueryService categoryQueryService;
+    private final CategoryService categoryService;
 
     @Operation(
         summary = "Get public categories by restaurant",
@@ -42,6 +42,6 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getPublicCategories(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
-        return ResponseEntity.ok(categoryQueryService.getPublicCategoriesByRestaurant(restaurantId));
+        return ResponseEntity.ok(categoryService.getPublicCategoriesByRestaurant(restaurantId));
     }
 }

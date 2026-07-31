@@ -2,8 +2,7 @@ package com.foodya.foodya_backend.restaurant.api;
 
 import com.foodya.foodya_backend.restaurant.api.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.api.dto.MenuItemResponse;
-import com.foodya.foodya_backend.restaurant.application.MenuItemCommandService;
-import com.foodya.foodya_backend.restaurant.application.MenuItemQueryService;
+import com.foodya.foodya_backend.restaurant.application.MenuItemService;
 import com.foodya.foodya_backend.restaurant.application.OwnershipService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,8 +31,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantMenuItemController {
 
-    private final MenuItemQueryService menuItemQueryService;
-    private final MenuItemCommandService menuItemCommandService;
+    private final MenuItemService menuItemService;
     private final OwnershipService ownershipService;
 
     @Operation(
@@ -52,7 +50,7 @@ public class MerchantMenuItemController {
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return ResponseEntity.ok(menuItemQueryService.getAllMenuItemsByRestaurant(restaurantId));
+        return ResponseEntity.ok(menuItemService.getAllMenuItemsByRestaurant(restaurantId));
     }
 
     @Operation(
@@ -71,7 +69,7 @@ public class MerchantMenuItemController {
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return ResponseEntity.ok(menuItemQueryService.getActiveMenuItemsByRestaurant(restaurantId));
+        return ResponseEntity.ok(menuItemService.getActiveMenuItemsByRestaurant(restaurantId));
     }
 
     @Operation(
@@ -96,7 +94,7 @@ public class MerchantMenuItemController {
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        MenuItemResponse response = menuItemCommandService.createMenuItem(restaurantId, request);
+        MenuItemResponse response = menuItemService.createMenuItem(restaurantId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -119,7 +117,7 @@ public class MerchantMenuItemController {
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return ResponseEntity.ok(menuItemCommandService.updateMenuItem(menuItemId, request));
+        return ResponseEntity.ok(menuItemService.updateMenuItem(menuItemId, request));
     }
 
     @Operation(
@@ -139,7 +137,7 @@ public class MerchantMenuItemController {
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        menuItemCommandService.softDeleteMenuItem(menuItemId);
+        menuItemService.softDeleteMenuItem(menuItemId);
         return ResponseEntity.noContent().build();
     }
 
@@ -160,6 +158,6 @@ public class MerchantMenuItemController {
         if (!ownershipService.isAdmin() && !ownershipService.isRestaurantOwner(restaurantId)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return ResponseEntity.ok(menuItemCommandService.toggleAvailability(menuItemId));
+        return ResponseEntity.ok(menuItemService.toggleAvailability(menuItemId));
     }
 }

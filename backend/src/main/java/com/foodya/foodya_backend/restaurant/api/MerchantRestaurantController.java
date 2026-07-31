@@ -2,10 +2,9 @@ package com.foodya.foodya_backend.restaurant.api;
 
 import com.foodya.foodya_backend.restaurant.api.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.api.dto.RestaurantResponse;
-import com.foodya.foodya_backend.restaurant.application.RestaurantCommandService;
-import com.foodya.foodya_backend.restaurant.application.RestaurantQueryService;
-import com.foodya.foodya_backend.user.application.UserQueryService;
-import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.restaurant.application.RestaurantService;
+import com.foodya.foodya_backend.user.application.UserService;
+import com.foodya.foodya_backend.auth.domain.Role;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,12 +33,11 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantRestaurantController {
 
-    private final RestaurantQueryService restaurantQueryService;
-    private final RestaurantCommandService restaurantCommandService;
-    private final UserQueryService userQueryService;
+    private final RestaurantService restaurantService;
+    private final UserService userService;
 
     private boolean isAdmin() {
-        return userQueryService.getCurrentUserRole() == Role.ADMIN;
+        return userService.getCurrentUserRole() == Role.ADMIN;
     }
 
     @Operation(summary = "Get my restaurants", description = "Get all restaurants owned by current merchant")
@@ -48,7 +46,7 @@ public class MerchantRestaurantController {
     })
     @GetMapping("/me")
     public ResponseEntity<List<RestaurantResponse>> getMyRestaurants() {
-        return ResponseEntity.ok(restaurantQueryService.getRestaurantsByOwner(userQueryService.getCurrentUserId()));
+        return ResponseEntity.ok(restaurantService.getRestaurantsByOwner(userService.getCurrentUserId()));
     }
 
     @Operation(summary = "Create new restaurant", description = "Merchant creates a new restaurant")
@@ -61,8 +59,8 @@ public class MerchantRestaurantController {
     })
     @PostMapping
     public ResponseEntity<RestaurantResponse> createRestaurant(@Valid @RequestBody RestaurantRequest request) {
-        RestaurantResponse response = restaurantCommandService.createRestaurant(
-                request, userQueryService.getCurrentUserId());
+        RestaurantResponse response = restaurantService.createRestaurant(
+                request, userService.getCurrentUserId());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -75,8 +73,8 @@ public class MerchantRestaurantController {
             @Parameter(description = "Restaurant ID") @PathVariable UUID id,
             @Valid @RequestBody RestaurantRequest request) {
 
-        RestaurantResponse response = restaurantCommandService.updateRestaurant(
-                id, request, userQueryService.getCurrentUserId(), isAdmin());
+        RestaurantResponse response = restaurantService.updateRestaurant(
+                id, request, userService.getCurrentUserId(), isAdmin());
         return ResponseEntity.ok(response);
     }
 
@@ -89,8 +87,8 @@ public class MerchantRestaurantController {
     public ResponseEntity<RestaurantResponse> toggleRestaurantStatus(
             @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
 
-        RestaurantResponse response = restaurantCommandService.toggleRestaurantStatus(
-                id, userQueryService.getCurrentUserId(), isAdmin());
+        RestaurantResponse response = restaurantService.toggleRestaurantStatus(
+                id, userService.getCurrentUserId(), isAdmin());
         return ResponseEntity.ok(response);
     }
 }

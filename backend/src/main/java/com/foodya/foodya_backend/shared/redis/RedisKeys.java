@@ -10,7 +10,7 @@ public final class RedisKeys {
     private RedisKeys() {}
 
     private static final String TOKEN_BLACKLIST   = "auth:blacklist:";
-    private static final String RATE_LIMIT_LOGIN  = "rate:login:";
+    private static final String RATE_LIMIT        = "rate:";
     private static final String POPULAR_RESTAURANTS = "restaurants:popular:";
 
     private static final ZoneId POPULARITY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -19,8 +19,8 @@ public final class RedisKeys {
         return TOKEN_BLACKLIST + token;
     }
 
-    public static String rateLoginByIp(String ip) {
-        return RATE_LIMIT_LOGIN + ip;
+    public static String rateLimitByIp(String bucket, String ip) {
+        return RATE_LIMIT + bucket + ":" + ip;
     }
 
     public static String popularRestaurantsWeek(Instant instant) {

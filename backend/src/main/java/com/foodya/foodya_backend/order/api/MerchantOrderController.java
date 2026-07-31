@@ -2,8 +2,7 @@ package com.foodya.foodya_backend.order.api;
 
 import com.foodya.foodya_backend.order.api.dto.OrderResponse;
 import com.foodya.foodya_backend.order.domain.OrderStatus;
-import com.foodya.foodya_backend.order.application.OrderCommandService;
-import com.foodya.foodya_backend.order.application.OrderQueryService;
+import com.foodya.foodya_backend.order.application.OrderService;
 import com.foodya.foodya_backend.restaurant.application.OwnershipService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,8 +36,7 @@ public class MerchantOrderController {
     private static final Set<OrderStatus> MERCHANT_SETTABLE_STATUSES =
             Set.of(OrderStatus.CONFIRMED, OrderStatus.REJECTED, OrderStatus.READY_FOR_PICKUP);
 
-    private final OrderQueryService orderQueryService;
-    private final OrderCommandService orderCommandService;
+    private final OrderService orderService;
     private final OwnershipService ownershipService;
 
     private void verifyRestaurantAccess(UUID restaurantId) {
@@ -57,7 +55,7 @@ public class MerchantOrderController {
     public ResponseEntity<List<OrderResponse>> getRestaurantOrders(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
         verifyRestaurantAccess(restaurantId);
-        return ResponseEntity.ok(orderQueryService.getOrdersByRestaurant(restaurantId));
+        return ResponseEntity.ok(orderService.getOrdersByRestaurant(restaurantId));
     }
 
     @Operation(summary = "Update order status",
@@ -78,9 +76,9 @@ public class MerchantOrderController {
         if (!MERCHANT_SETTABLE_STATUSES.contains(status)) {
             throw new AccessDeniedException("Merchants cannot set status " + status);
         }
-        OrderResponse order = orderQueryService.getOrderById(id);
+        OrderResponse order = orderService.getOrderById(id);
         verifyRestaurantAccess(order.getRestaurantId());
-        return ResponseEntity.ok(orderCommandService.updateOrderStatus(id, status, reason));
+        return ResponseEntity.ok(orderService.updateOrderStatus(id, status, reason));
     }
 
     @Operation(summary = "Get order details", description = "Get an order of a restaurant you own")
@@ -93,7 +91,7 @@ public class MerchantOrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrderById(
             @Parameter(description = "Order ID") @PathVariable UUID id) {
-        OrderResponse order = orderQueryService.getOrderById(id);
+        OrderResponse order = orderService.getOrderById(id);
         verifyRestaurantAccess(order.getRestaurantId());
         return ResponseEntity.ok(order);
     }

@@ -6,8 +6,8 @@ import com.foodya.foodya_backend.restaurant.domain.Restaurant;
 import com.foodya.foodya_backend.restaurant.domain.MenuItem;
 import com.foodya.foodya_backend.restaurant.persistence.RestaurantRepository;
 import com.foodya.foodya_backend.restaurant.persistence.MenuItemRepository;
-import com.foodya.foodya_backend.user.application.UserQueryService;
-import com.foodya.foodya_backend.user.domain.Role;
+import com.foodya.foodya_backend.user.application.UserService;
+import com.foodya.foodya_backend.auth.domain.Role;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OwnershipService {
 
-    private final UserQueryService userQueryService;
+    private final UserService userService;
     private final RestaurantRepository restaurantRepository;
     private final MenuItemRepository menuItemRepository;
 
@@ -27,7 +27,7 @@ public class OwnershipService {
      * Check if current user owns the restaurant
      */
     public boolean isRestaurantOwner(@NonNull UUID restaurantId) {
-        UUID currentUserId = userQueryService.getCurrentUserId();
+        UUID currentUserId = userService.getCurrentUserId();
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found"));
 
@@ -38,7 +38,7 @@ public class OwnershipService {
      * Check if current user owns the restaurant that contains the menu item
      */
     boolean isMenuItemOwner(@NonNull UUID menuItemId) {
-        UUID currentUserId = userQueryService.getCurrentUserId();
+        UUID currentUserId = userService.getCurrentUserId();
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found"));
 
@@ -49,6 +49,6 @@ public class OwnershipService {
      * Check if current user is admin
      */
     public boolean isAdmin() {
-        return userQueryService.getCurrentUserRole() == Role.ADMIN;
+        return userService.getCurrentUserRole() == Role.ADMIN;
     }
 }

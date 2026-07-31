@@ -2,8 +2,7 @@ package com.foodya.foodya_backend.user.api;
 
 import com.foodya.foodya_backend.user.api.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.api.dto.UserProfileResponse;
-import com.foodya.foodya_backend.user.application.UserCommandService;
-import com.foodya.foodya_backend.user.application.UserQueryService;
+import com.foodya.foodya_backend.user.application.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,8 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class UserController {
 
-    private final UserQueryService userQueryService;
-    private final UserCommandService userCommandService;
+    private final UserService userService;
 
     @Operation(summary = "Get Current User Profile",
         description = "Retrieve the profile of the currently authenticated user")
@@ -40,7 +38,7 @@ public class UserController {
     })
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getCurrentUserProfile() {
-        return ResponseEntity.ok(userQueryService.getCurrentUserProfile());
+        return ResponseEntity.ok(userService.getCurrentUserProfile());
     }
 
     @Operation(summary = "Update my profile", description = "Update profile information of the current user")
@@ -54,6 +52,6 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         log.info("Controller received request: {}", request);
-        return ResponseEntity.ok(userCommandService.updateProfile(request));
+        return ResponseEntity.ok(userService.updateProfile(request));
     }
 }

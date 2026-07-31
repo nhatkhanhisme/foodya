@@ -1,8 +1,7 @@
 package com.foodya.foodya_backend.user.api;
 
 import com.foodya.foodya_backend.user.api.dto.UserProfileResponse;
-import com.foodya.foodya_backend.user.application.UserCommandService;
-import com.foodya.foodya_backend.user.application.UserQueryService;
+import com.foodya.foodya_backend.user.application.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,8 +26,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminUserController {
 
-    private final UserQueryService userQueryService;
-    private final UserCommandService userCommandService;
+    private final UserService userService;
 
     @Operation(summary = "Get all users", description = "Admin only - Retrieve all users")
     @ApiResponses(value = {
@@ -37,7 +35,7 @@ public class AdminUserController {
     })
     @GetMapping
     public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
-        return ResponseEntity.ok(userQueryService.getAllUsers());
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     // No DELETE endpoint on purpose: BR-30 — accounts are BANNED, never deleted
@@ -52,6 +50,6 @@ public class AdminUserController {
     @PatchMapping("/{userId}/toggle-active")
     public ResponseEntity<UserProfileResponse> toggleUserActive(
             @Parameter(description = "User ID") @PathVariable UUID userId) {
-        return ResponseEntity.ok(userCommandService.toggleUserActiveStatus(userId));
+        return ResponseEntity.ok(userService.toggleUserActiveStatus(userId));
     }
 }

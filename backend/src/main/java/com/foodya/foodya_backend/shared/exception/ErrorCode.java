@@ -43,12 +43,6 @@ public enum ErrorCode {
     "Requested resource not found"),
 
   // 409 Conflict
-  AUTH_EMAIL_TAKEN(
-    HttpStatus.CONFLICT,
-    "Email is already exists"),
-  AUTH_USERNAME_TAKEN(
-    HttpStatus.CONFLICT,
-    "Username is already exists"),
   JOB_ALREADY_TAKEN(
     HttpStatus.CONFLICT,
     "This job is already taken by another shipper"),

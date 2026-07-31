@@ -2,8 +2,7 @@ package com.foodya.foodya_backend.order.api;
 
 import com.foodya.foodya_backend.order.api.dto.OrderResponse;
 import com.foodya.foodya_backend.order.domain.OrderStatus;
-import com.foodya.foodya_backend.order.application.OrderCommandService;
-import com.foodya.foodya_backend.order.application.OrderQueryService;
+import com.foodya.foodya_backend.order.application.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,8 +29,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminOrderController {
 
-    private final OrderQueryService orderQueryService;
-    private final OrderCommandService orderCommandService;
+    private final OrderService orderService;
 
     @Operation(summary = "Search orders",
         description = "List orders with optional filters: status, restaurant, customer, and date range. All filters combine with AND.")
@@ -46,7 +44,7 @@ public class AdminOrderController {
             @Parameter(description = "Filter by customer ID") @RequestParam(required = false) UUID customerId,
             @Parameter(description = "Orders created at/after this time (ISO-8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
             @Parameter(description = "Orders created at/before this time (ISO-8601)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate) {
-        return ResponseEntity.ok(orderQueryService.searchOrders(status, restaurantId, customerId, startDate, endDate));
+        return ResponseEntity.ok(orderService.searchOrders(status, restaurantId, customerId, startDate, endDate));
     }
 
     @Operation(summary = "Get order details", description = "Get any order by ID (no ownership restriction — admin scope)")
@@ -58,7 +56,7 @@ public class AdminOrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getOrder(
             @Parameter(description = "Order ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(orderQueryService.getOrderById(id));
+        return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
     @Operation(summary = "Update order status",
@@ -75,7 +73,7 @@ public class AdminOrderController {
     public ResponseEntity<OrderResponse> updateStatus(
             @Parameter(description = "Order ID") @PathVariable UUID id,
             @Parameter(description = "Target status") @RequestParam OrderStatus status) {
-        return ResponseEntity.ok(orderCommandService.updateOrderStatus(id, status));
+        return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
     }
 
     @Operation(summary = "Get restaurant revenue",
@@ -88,7 +86,7 @@ public class AdminOrderController {
             @Parameter(description = "Restaurant ID") @RequestParam UUID restaurantId,
             @Parameter(description = "Range start (ISO-8601)") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
             @Parameter(description = "Range end (ISO-8601)") @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate) {
-        return ResponseEntity.ok(orderQueryService.calculateRevenue(restaurantId, startDate, endDate));
+        return ResponseEntity.ok(orderService.calculateRevenue(restaurantId, startDate, endDate));
     }
 
     // No DELETE endpoint on purpose: orders are financial history — terminal

@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.restaurant.api;
 
-import com.foodya.foodya_backend.restaurant.application.MenuItemCommandService;
+import com.foodya.foodya_backend.restaurant.application.MenuItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,7 +22,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminMenuItemController {
 
-    private final MenuItemCommandService menuItemService;
+    private final MenuItemService menuItemService;
 
     @Operation(
         summary = "Permanently delete menu item",

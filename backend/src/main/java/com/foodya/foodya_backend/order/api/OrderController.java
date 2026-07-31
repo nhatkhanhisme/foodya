@@ -2,8 +2,7 @@ package com.foodya.foodya_backend.order.api;
 
 import com.foodya.foodya_backend.order.api.dto.OrderRequest;
 import com.foodya.foodya_backend.order.api.dto.OrderResponse;
-import com.foodya.foodya_backend.order.application.OrderCommandService;
-import com.foodya.foodya_backend.order.application.OrderQueryService;
+import com.foodya.foodya_backend.order.application.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,8 +31,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class OrderController {
 
-    private final OrderQueryService orderQueryService;
-    private final OrderCommandService orderCommandService;
+    private final OrderService orderService;
 
     @Operation(summary = "Create new order", description = "Customer creates a new order")
     @ApiResponses(value = {
@@ -47,7 +45,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> createOrder(
             Authentication authentication,
             @Valid @RequestBody OrderRequest request) {
-        return new ResponseEntity<>(orderCommandService.createOrder(authentication, request), HttpStatus.CREATED);
+        return new ResponseEntity<>(orderService.createOrder(authentication, request), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Get my orders", description = "Get all orders of current customer (newest first)")
@@ -56,7 +54,7 @@ public class OrderController {
     })
     @GetMapping("/me")
     public ResponseEntity<List<OrderResponse>> getMyOrders(Authentication authentication) {
-        return ResponseEntity.ok(orderQueryService.getMyOrders(authentication));
+        return ResponseEntity.ok(orderService.getMyOrders(authentication));
     }
 
     @Operation(summary = "Get my active orders", description = "Get my orders that are PENDING, PREPARING, or SHIPPING")
@@ -65,7 +63,7 @@ public class OrderController {
     })
     @GetMapping("/me/active")
     public ResponseEntity<List<OrderResponse>> getMyActiveOrders(Authentication authentication) {
-        return ResponseEntity.ok(orderQueryService.getMyActiveOrders(authentication));
+        return ResponseEntity.ok(orderService.getMyActiveOrders(authentication));
     }
 
     @Operation(summary = "Cancel order", description = "Cancel order (only PENDING or PREPARING can be cancelled)")
@@ -77,6 +75,6 @@ public class OrderController {
             Authentication authentication,
             @Parameter(description = "Order ID") @PathVariable UUID id,
             @Parameter(description = "Cancel reason") @RequestParam(required = false) String reason) {
-        return ResponseEntity.ok(orderCommandService.cancelMyOrder(authentication, id, reason));
+        return ResponseEntity.ok(orderService.cancelMyOrder(authentication, id, reason));
     }
 }

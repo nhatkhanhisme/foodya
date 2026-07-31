@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -19,7 +21,12 @@ import com.foodya.foodya_backend.auth.api.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.api.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.api.dto.RegisterRequest;
 import com.foodya.foodya_backend.auth.application.AuthService;
+import com.foodya.foodya_backend.shared.exception.AppException;
+import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.security.AuthCookieService;
+import com.foodya.foodya_backend.shared.security.CsrfTokenService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -27,6 +34,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -37,11 +45,14 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
   private final AuthService authService;
+  private final AuthCookieService authCookieService;
+  private final CsrfTokenService csrfTokenService;
 
   @Operation(
       summary = "Register new user",
       description = "Create a new user account with username, email, password, and other required information. " +
-                    "Phone number will be automatically normalized to international format (+84...)."
+                    "Phone number will be automatically normalized to international format (+84...). " +
+                    "Web clients: the refresh token is also set as an HttpOnly cookie — ignore the refreshToken field in the body and rely on the cookie instead."
   )
   @ApiResponses(value = {
       @ApiResponse(
@@ -56,14 +67,17 @@ public class AuthController {
   // Empty @SecurityRequirements clears the global bearerAuth lock in Swagger UI
   @SecurityRequirements()
   @PostMapping("/register")
-  public ResponseEntity<JwtAuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+  public ResponseEntity<JwtAuthResponse> register(
+      @Valid @RequestBody RegisterRequest registerRequest, HttpServletResponse httpResponse) {
     JwtAuthResponse response = authService.registerUser(registerRequest);
+    setAuthCookies(httpResponse, response);
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   @Operation(
       summary = "User login",
-      description = "Authenticate user with username and password. Returns access token and refresh token upon successful authentication."
+      description = "Authenticate user with username and password. Returns access token and refresh token upon successful authentication. " +
+                    "Web clients: the refresh token is also set as an HttpOnly cookie — ignore the refreshToken field in the body and rely on the cookie instead."
   )
   @ApiResponses(value = {
       @ApiResponse(
@@ -77,14 +91,19 @@ public class AuthController {
   })
   @SecurityRequirements()
   @PostMapping("/login")
-  public ResponseEntity<JwtAuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+  public ResponseEntity<JwtAuthResponse> login(
+      @Valid @RequestBody LoginRequest loginRequest, HttpServletResponse httpResponse) {
     JwtAuthResponse response = authService.login(loginRequest);
+    setAuthCookies(httpResponse, response);
     return ResponseEntity.ok(response);
   }
 
   @Operation(
       summary = "Refresh access token",
-      description = "Generate a new access token using a valid refresh token. The refresh token remains unchanged."
+      description = "Generate a new access token using a valid refresh token. The refresh token remains unchanged. " +
+                    "Web clients: send no body — the refresh token is read from its HttpOnly cookie, and the X-XSRF-TOKEN " +
+                    "header (value from the readable XSRF-TOKEN cookie) is required as CSRF protection. " +
+                    "Mobile clients: pass the refresh token in the body instead; no CSRF header needed."
   )
   @ApiResponses(value = {
       @ApiResponse(
@@ -96,15 +115,34 @@ public class AuthController {
           )
       )
   })
-  // Auth is the refresh token in the body, not the (possibly expired) access token
   @SecurityRequirements()
   @PostMapping("/refresh")
-  public ResponseEntity<JwtAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-    JwtAuthResponse response = authService.refreshToken(request);
+  public ResponseEntity<JwtAuthResponse> refreshToken(
+      @CookieValue(value = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String cookieRefreshToken,
+      @RequestBody(required = false) RefreshTokenRequest request,
+      @Parameter(hidden = true) @RequestHeader(value = "X-XSRF-TOKEN", required = false) String csrfHeader,
+      HttpServletResponse httpResponse) {
+
+    boolean fromCookie = StringUtils.hasText(cookieRefreshToken);
+    String refreshToken = fromCookie ? cookieRefreshToken
+        : (request != null ? request.getRefreshToken() : null);
+
+    if (!StringUtils.hasText(refreshToken)) {
+      throw new AppException(ErrorCode.VALIDATION_ERROR, "Refresh token is required");
+    }
+    if (fromCookie && !csrfTokenService.isValid(cookieRefreshToken, csrfHeader)) {
+      throw new AppException(ErrorCode.FORBIDDEN, "Missing or invalid CSRF token");
+    }
+
+    JwtAuthResponse response = authService.refreshToken(refreshToken);
+    if (fromCookie) {
+      setAuthCookies(httpResponse, response);
+    }
     return ResponseEntity.ok(response);
   }
 
-  @Operation(summary = "Logout", description = "Revoke access and refresh tokens. Both tokens will be blacklisted immediately.")
+  @Operation(summary = "Logout", description = "Revoke access and refresh tokens. Both tokens will be blacklisted immediately. " +
+      "Web clients also need a valid X-XSRF-TOKEN header; the auth cookies are cleared on success.")
   @ApiResponses(value = {
       @ApiResponse(responseCode = "204", description = "Logged out, tokens revoked"),
       @ApiResponse(responseCode = "401", description = "Missing or invalid access token")
@@ -113,11 +151,20 @@ public class AuthController {
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(
       @RequestHeader("Authorization") String authHeader,
-      @RequestBody(required = false) RefreshTokenRequest request) {
+      @CookieValue(value = AuthCookieService.REFRESH_COOKIE_NAME, required = false) String cookieRefreshToken,
+      @RequestBody(required = false) RefreshTokenRequest request,
+      @Parameter(hidden = true) @RequestHeader(value = "X-XSRF-TOKEN", required = false) String csrfHeader,
+      HttpServletResponse httpResponse) {
+
+    boolean fromCookie = StringUtils.hasText(cookieRefreshToken);
+    if (fromCookie && !csrfTokenService.isValid(cookieRefreshToken, csrfHeader)) {
+      throw new AppException(ErrorCode.FORBIDDEN, "Missing or invalid CSRF token");
+    }
 
     String accessToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
-    String refreshToken = request != null ? request.getRefreshToken() : null;
+    String refreshToken = fromCookie ? cookieRefreshToken : (request != null ? request.getRefreshToken() : null);
     authService.logout(accessToken, refreshToken);
+    authCookieService.clearAuthCookies(httpResponse);
     return ResponseEntity.noContent().build();
   }
 
@@ -153,6 +200,12 @@ public class AuthController {
     response.put("message", "Password changed successfully");
 
     return ResponseEntity.ok(response);
+  }
+
+  private void setAuthCookies(HttpServletResponse httpResponse, JwtAuthResponse response) {
+    String csrfToken = csrfTokenService.deriveToken(response.getRefreshToken());
+    authCookieService.setAuthCookies(
+        httpResponse, response.getRefreshToken(), csrfToken, response.getRefreshTokenExpiresIn());
   }
 
 }

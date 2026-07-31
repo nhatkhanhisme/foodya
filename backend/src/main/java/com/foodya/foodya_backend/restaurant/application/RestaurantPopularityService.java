@@ -20,7 +20,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.foodya.foodya_backend.order.domain.event.OrderDeliveredEvent;
 import com.foodya.foodya_backend.order.application.DeliveredOrderSummary;
-import com.foodya.foodya_backend.order.application.OrderQueryService;
+import com.foodya.foodya_backend.order.application.OrderService;
 import com.foodya.foodya_backend.shared.redis.RedisKeys;
 
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class RestaurantPopularityService {
   private static final int BACKFILL_DAYS = 28;
 
   private final StringRedisTemplate redisTemplate;
-  private final OrderQueryService orderQueryService;
+  private final OrderService orderService;
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void onOrderDelivered(OrderDeliveredEvent event) {
@@ -92,7 +92,7 @@ public class RestaurantPopularityService {
    */
   public long backfill() {
     Instant since = Instant.now().minus(BACKFILL_DAYS, ChronoUnit.DAYS);
-    List<DeliveredOrderSummary> deliveries = orderQueryService.getDeliveredOrderSummariesSince(since);
+    List<DeliveredOrderSummary> deliveries = orderService.getDeliveredOrderSummariesSince(since);
 
     // Wipe every bucket the 28-day window can touch (spans up to 5 ISO weeks)
     // so a rerun recounts instead of double-counting

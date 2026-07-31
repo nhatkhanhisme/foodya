@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.shared.redis.RedisKeys;
 import com.foodya.foodya_backend.shared.response.ApiResponse;
+import com.foodya.foodya_backend.shared.utils.IpUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,18 +19,31 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
+/**
+ * IP-scoped rate limiting for the auth endpoints most worth throttling:
+ * credential guessing (login, change-password), account-creation spam
+ * (register), and refresh-token cycling abuse (refresh). Counters are plain
+ * Redis INCR+EXPIRE per (bucket, IP) — no external rate-limit library needed
+ * at this volume.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final String LOGIN_PATH  = "/api/v1/auth/login";
-    private static final int    MAX_ATTEMPTS = 10;
-    private static final Duration WINDOW    = Duration.ofMinutes(15);
+    private record Rule(String method, String path, String bucket, int maxAttempts, Duration window) {}
+
+    private static final List<Rule> RULES = List.of(
+            new Rule("POST", "/api/v1/auth/login", "login", 10, Duration.ofMinutes(15)),
+            new Rule("POST", "/api/v1/auth/register", "register", 5, Duration.ofMinutes(15)),
+            new Rule("POST", "/api/v1/auth/refresh", "refresh", 30, Duration.ofMinutes(15)),
+            new Rule("POST", "/api/v1/auth/change-password", "change-password", 5, Duration.ofMinutes(15)));
 
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final IpUtil ipUtil;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -37,22 +51,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        if (!LOGIN_PATH.equals(request.getRequestURI())
-                || !"POST".equalsIgnoreCase(request.getMethod())) {
+        Rule rule = matchRule(request);
+        if (rule == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String ip  = resolveClientIp(request);
-        String key = RedisKeys.rateLoginByIp(ip);
+        String ip = ipUtil.extractClientIp(request);
+        String key = RedisKeys.rateLimitByIp(rule.bucket(), ip);
 
         Long count = stringRedisTemplate.opsForValue().increment(key);
         if (count != null && count == 1) {
-            stringRedisTemplate.expire(key, WINDOW);
+            stringRedisTemplate.expire(key, rule.window());
         }
 
-        if (count != null && count > MAX_ATTEMPTS) {
-            log.warn("Rate limit exceeded for IP: {}", ip);
+        if (count != null && count > rule.maxAttempts()) {
+            log.warn("Rate limit exceeded for {} {} from IP: {}", rule.method(), rule.path(), ip);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             objectMapper.writeValue(response.getWriter(),
@@ -63,11 +77,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String resolveClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+    private Rule matchRule(HttpServletRequest request) {
+        return RULES.stream()
+                .filter(r -> r.method().equalsIgnoreCase(request.getMethod())
+                        && r.path().equals(request.getRequestURI()))
+                .findFirst()
+                .orElse(null);
     }
 }

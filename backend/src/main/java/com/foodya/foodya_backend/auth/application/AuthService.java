@@ -17,14 +17,13 @@ import org.springframework.util.StringUtils;
 import com.foodya.foodya_backend.auth.api.dto.ChangePasswordRequest;
 import com.foodya.foodya_backend.auth.api.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.api.dto.LoginRequest;
-import com.foodya.foodya_backend.auth.api.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.api.dto.RegisterRequest;
 import com.foodya.foodya_backend.shared.security.JwtService;
 import com.foodya.foodya_backend.shared.security.TokenType;
-import com.foodya.foodya_backend.user.domain.Role;
-import com.foodya.foodya_backend.user.domain.User;
-import com.foodya.foodya_backend.user.domain.UserStatus;
-import com.foodya.foodya_backend.user.persistence.UserRepository;
+import com.foodya.foodya_backend.auth.domain.Role;
+import com.foodya.foodya_backend.auth.domain.User;
+import com.foodya.foodya_backend.auth.domain.UserStatus;
+import com.foodya.foodya_backend.auth.persistence.UserRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -113,9 +112,7 @@ public class AuthService {
     return generateTokenResponse(authentication);
   }
 
-  public JwtAuthResponse refreshToken(RefreshTokenRequest request) {
-    String refreshToken = request.getRefreshToken();
-
+  public JwtAuthResponse refreshToken(String refreshToken) {
     if (!jwtService.validateToken(refreshToken)) {
       throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Invalid refresh token");
     }
@@ -148,6 +145,7 @@ public class AuthService {
         .refreshTokenExpiresIn(getExpireIn(refreshToken))
         .userId(user.getId().toString())
         .username(username)
+        .role(user.getRole())
         .build();
   }
 
@@ -164,6 +162,7 @@ public class AuthService {
         .expiresIn(getExpireIn(accessToken))
         .refreshTokenExpiresIn(getExpireIn(refreshToken))
         .userId(user.getId().toString())
+        .username(user.getUsername())
         .role(user.getRole())
         .build();
   }

@@ -15,12 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CategoryCommandService {
+public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final RestaurantRepository restaurantRepository;
@@ -104,5 +105,28 @@ public class CategoryCommandService {
 
         categoryRepository.delete(category);
         log.info("Category deleted: {}", categoryId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getPublicCategoriesByRestaurant(@NonNull UUID restaurantId) {
+        log.info("Fetching public categories for restaurant ID: {}", restaurantId);
+        if (!restaurantRepository.existsById(restaurantId)) {
+            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
+        }
+        List<Category> categories = categoryRepository.findPublicCategoriesByRestaurantId(restaurantId);
+        return CategoryResponse.fromEntityList(categories);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getAllCategoriesByRestaurant(@NonNull UUID restaurantId) {
+        log.info("Fetching all categories for restaurant ID: {}", restaurantId);
+        if (!restaurantRepository.existsById(restaurantId)) {
+            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
+        }
+        if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
+            throw new AppException(ErrorCode.FORBIDDEN,
+                    "You don't have permission to view all categories for this restaurant");
+        }
+        return CategoryResponse.fromEntityList(categoryRepository.findAllByRestaurantId(restaurantId));
     }
 }

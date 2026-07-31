@@ -1,8 +1,7 @@
 package com.foodya.foodya_backend.restaurant.api;
 
 import com.foodya.foodya_backend.restaurant.api.dto.RestaurantResponse;
-import com.foodya.foodya_backend.restaurant.application.RestaurantCommandService;
-import com.foodya.foodya_backend.restaurant.application.RestaurantQueryService;
+import com.foodya.foodya_backend.restaurant.application.RestaurantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,8 +26,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class AdminRestaurantController {
 
-    private final RestaurantQueryService restaurantQueryService;
-    private final RestaurantCommandService restaurantCommandService;
+    private final RestaurantService restaurantService;
 
     @Operation(
         summary = "Get all restaurants including inactive",
@@ -40,7 +38,7 @@ public class AdminRestaurantController {
     })
     @GetMapping
     public ResponseEntity<List<RestaurantResponse>> getAllRestaurantsIncludingInactive() {
-        return ResponseEntity.ok(restaurantQueryService.getAllRestaurantsIncludingInactive());
+        return ResponseEntity.ok(restaurantService.getAllRestaurantsIncludingInactive());
     }
 
     @Operation(summary = "Approve restaurant",
@@ -52,7 +50,7 @@ public class AdminRestaurantController {
     @PatchMapping("/{id}/approve")
     public ResponseEntity<RestaurantResponse> approveRestaurant(
             @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(restaurantCommandService.approveRestaurant(id));
+        return ResponseEntity.ok(restaurantService.approveRestaurant(id));
     }
 
     @Operation(summary = "Reject restaurant",
@@ -66,7 +64,7 @@ public class AdminRestaurantController {
     public ResponseEntity<RestaurantResponse> rejectRestaurant(
             @Parameter(description = "Restaurant ID") @PathVariable UUID id,
             @Parameter(description = "Why the restaurant was rejected") @RequestParam String reason) {
-        return ResponseEntity.ok(restaurantCommandService.rejectRestaurant(id, reason));
+        return ResponseEntity.ok(restaurantService.rejectRestaurant(id, reason));
     }
 
     @Operation(summary = "Suspend restaurant",
@@ -78,7 +76,7 @@ public class AdminRestaurantController {
     @PatchMapping("/{id}/suspend")
     public ResponseEntity<RestaurantResponse> suspendRestaurant(
             @Parameter(description = "Restaurant ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(restaurantCommandService.suspendRestaurant(id));
+        return ResponseEntity.ok(restaurantService.suspendRestaurant(id));
     }
 
     // No DELETE endpoint on purpose: BR-31 — restaurants leave the platform via

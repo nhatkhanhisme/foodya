@@ -1,4 +1,4 @@
-package com.foodya.foodya_backend.user.domain;
+package com.foodya.foodya_backend.auth.domain;
 
 import jakarta.persistence.*;
 import lombok.*;

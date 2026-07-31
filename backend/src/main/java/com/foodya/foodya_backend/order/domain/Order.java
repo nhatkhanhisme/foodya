@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.order.domain;
 
-import com.foodya.foodya_backend.user.domain.User;
+import com.foodya.foodya_backend.auth.domain.User;
 import com.foodya.foodya_backend.shared.exception.AppException;
 import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.restaurant.domain.Restaurant;

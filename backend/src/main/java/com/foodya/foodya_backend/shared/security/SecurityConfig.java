@@ -20,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -33,11 +34,16 @@ public class SecurityConfig {
   private final TraceIdFilter traceIdFilter;
   private final RateLimitFilter rateLimitFilter;
   private final UserDetailsService userDetailsService;
+  private final CorsConfigurationSource corsConfigurationSource;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
+        // Spring Security's built-in CSRF filter targets session-cookie auth; this API is
+        // stateless JWT with its own double-submit check scoped to the refresh-cookie
+        // endpoints (see AuthController) — the built-in filter would just be dead weight here.
         .csrf(AbstractHttpConfigurer::disable)
+        .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .authorizeHttpRequests(auth -> auth
             // Public
             .requestMatchers("/api/v1/auth/**").permitAll()

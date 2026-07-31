@@ -2,8 +2,7 @@ package com.foodya.foodya_backend.restaurant.api;
 
 import com.foodya.foodya_backend.restaurant.api.dto.CategoryRequest;
 import com.foodya.foodya_backend.restaurant.api.dto.CategoryResponse;
-import com.foodya.foodya_backend.restaurant.application.CategoryCommandService;
-import com.foodya.foodya_backend.restaurant.application.CategoryQueryService;
+import com.foodya.foodya_backend.restaurant.application.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,8 +31,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class MerchantCategoryController {
 
-    private final CategoryQueryService categoryQueryService;
-    private final CategoryCommandService categoryCommandService;
+    private final CategoryService categoryService;
 
     @Operation(
         summary = "Create category",
@@ -50,7 +48,7 @@ public class MerchantCategoryController {
     public ResponseEntity<CategoryResponse> createCategory(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Valid @RequestBody CategoryRequest request) {
-        return new ResponseEntity<>(categoryCommandService.createCategory(restaurantId, request), HttpStatus.CREATED);
+        return new ResponseEntity<>(categoryService.createCategory(restaurantId, request), HttpStatus.CREATED);
     }
 
     @Operation(
@@ -66,7 +64,7 @@ public class MerchantCategoryController {
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId) {
-        return ResponseEntity.ok(categoryQueryService.getAllCategoriesByRestaurant(restaurantId));
+        return ResponseEntity.ok(categoryService.getAllCategoriesByRestaurant(restaurantId));
     }
 
     @Operation(
@@ -85,7 +83,7 @@ public class MerchantCategoryController {
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Parameter(description = "Category ID") @PathVariable UUID categoryId,
             @Valid @RequestBody CategoryRequest request) {
-        return ResponseEntity.ok(categoryCommandService.updateCategory(categoryId, restaurantId, request));
+        return ResponseEntity.ok(categoryService.updateCategory(categoryId, restaurantId, request));
     }
 
     @Operation(summary = "Delete category", description = "Delete a category permanently.")
@@ -98,7 +96,7 @@ public class MerchantCategoryController {
     public ResponseEntity<Void> deleteCategory(
             @Parameter(description = "Restaurant ID") @PathVariable UUID restaurantId,
             @Parameter(description = "Category ID") @PathVariable UUID categoryId) {
-        categoryCommandService.deleteCategory(categoryId, restaurantId);
+        categoryService.deleteCategory(categoryId, restaurantId);
         return ResponseEntity.noContent().build();
     }
 }

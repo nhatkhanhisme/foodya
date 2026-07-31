@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.api;
 
 import com.foodya.foodya_backend.restaurant.api.dto.MenuItemResponse;
-import com.foodya.foodya_backend.restaurant.application.MenuItemQueryService;
+import com.foodya.foodya_backend.restaurant.application.MenuItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,7 +26,7 @@ import java.util.UUID;
 @SecurityRequirements()
 public class MenuItemController {
 
-    private final MenuItemQueryService menuItemService;
+    private final MenuItemService menuItemService;
 
     @Operation(
         summary = "Get menu items with pagination",
