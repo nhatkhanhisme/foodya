@@ -35,20 +35,11 @@ public class Category {
   @Builder.Default
   private Integer displayOrder = 0;
 
-  /**
-   * Many-to-One relationship with Restaurant
-   * Một Category bắt buộc phải thuộc về một Restaurant
-   */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "restaurant_id", nullable = false)
   @JsonIgnore
   private Restaurant restaurant;
 
-  // ========== HELPER METHODS ==========
-
-  /**
-   * Get restaurant ID
-   */
   public UUID getRestaurantId() {
     return restaurant != null ? restaurant.getId() : null;
   }

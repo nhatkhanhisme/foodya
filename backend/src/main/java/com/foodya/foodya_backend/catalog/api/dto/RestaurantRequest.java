@@ -14,8 +14,6 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Request to create or update a restaurant")
 public class RestaurantRequest {
 
-  // ========== BASIC INFORMATION ==========
-
   @NotBlank(message = "Restaurant name is required")
   @Size(min = 2, max = 200, message = "Restaurant name must be between 2 and 200 characters")
   @Schema(description = "Restaurant name", example = "Phở Hà Nội 24h")
@@ -44,15 +42,11 @@ public class RestaurantRequest {
   @Schema(description = "Type of cuisine", example = "Vietnamese")
   private String cuisine;
 
-  // ========== MEDIA ==========
-
   @Schema(description = "Restaurant image URL", example = "https://images.unsplash.com/photo-xxx")
   private String imageUrl;
 
   @Schema(description = "Cover image URL (large banner)", example = "https://images.unsplash.com/photo-yyy")
   private String coverImageUrl;
-
-  // ========== OPERATING HOURS ==========
 
   @Pattern(regexp = "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$", message = "Invalid time format.  Use HH:mm")
   @Schema(description = "Opening time (HH:mm)", example = "08:00")
@@ -66,8 +60,6 @@ public class RestaurantRequest {
   @Schema(description = "Opening hours description", example = "Mon-Fri: 08:00-22:00, Sat-Sun: 07:00-23:00")
   private String openingHours;
 
-  // ========== DELIVERY INFORMATION ==========
-
   @Min(value = 0, message = "Minimum order must be non-negative")
   @Schema(description = "Minimum order value in VND", example = "50000")
   private Long minimumOrder;
@@ -76,8 +68,6 @@ public class RestaurantRequest {
   @Max(value = 100, message = "Max delivery distance must not exceed 100 km")
   @Schema(description = "Maximum delivery distance in km", example = "10")
   private Double maxDeliveryDistance;
-
-  // ========== STATUS ==========
 
   @Schema(description = "Is restaurant currently open", example = "true")
   private Boolean isOpen;

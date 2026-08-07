@@ -31,17 +31,12 @@ public class UserProfileResponse {
     private Boolean isEmailVerified;
     private Boolean isPhoneNumberVerified;
 
-    // Profile
     private String profileImageUrl;
 
-    // Timestamps
     private Instant lastLoginAt;
     private Instant createdAt;
     private Instant updatedAt;
 
-    /**
-     * Convert User entity to UserProfileResponse DTO
-     */
     public static UserProfileResponse fromEntity(User user) {
         return UserProfileResponse.builder()
                 .id(user.getId())

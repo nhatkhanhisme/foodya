@@ -49,8 +49,6 @@ public class User implements UserDetails {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    // ========== STATUS FIELDS ==========
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -64,8 +62,6 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean isPhoneNumberVerified = false;
 
-    // ========== TIMESTAMPS ==========
-
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
@@ -76,8 +72,6 @@ public class User implements UserDetails {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;
-
-    // ========== UserDetails Implementation ==========
 
     @Override
     @Transient

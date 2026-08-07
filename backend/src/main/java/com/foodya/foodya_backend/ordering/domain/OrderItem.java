@@ -31,8 +31,6 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // ========== RELATIONSHIPS ==========
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     @JsonIgnore
@@ -42,8 +40,6 @@ public class OrderItem {
     @JoinColumn(name = "menu_item_id", nullable = false)
     @JsonIgnore
     private MenuItem menuItem;
-
-    // ========== ORDER ITEM DETAILS ==========
 
     @Column(nullable = false)
     private Integer quantity;
@@ -58,10 +54,8 @@ public class OrderItem {
     @Column(name = "item_price_snapshot", nullable = false)
     private Long priceAtPurchase;
 
-    // Total for this line (quantity * priceAtPurchase)
     @Column(nullable = false)
     private Long subtotal;
-
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
@@ -71,25 +65,15 @@ public class OrderItem {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    // ========== HELPER METHODS ==========
-
-    /**
-     * Tính tổng tiền cho item này
-     */
     private void calculateSubtotal() {
         this.subtotal = this.quantity * this.priceAtPurchase;
     }
 
-    /**
-     * Getter cho menuItemId (để dễ serialize JSON)
-     */
+    // menuItem itself is @JsonIgnore'd, so responses need these flattened out
     public UUID getMenuItemId() {
         return menuItem != null ? menuItem.getId() : null;
     }
 
-    /**
-     * Getter cho menuItemName (để dễ hiển thị)
-     */
     public String getMenuItemName() {
         return menuItem != null ? menuItem.getName() : null;
     }

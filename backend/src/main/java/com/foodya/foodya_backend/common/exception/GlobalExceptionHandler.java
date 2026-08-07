@@ -24,8 +24,6 @@ import java.util.List;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // ── Business exceptions ───────────────────────────────────────────────────
-
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
         log.warn("AppException [{}]: {}", ex.getCode(), ex.getMessage());
@@ -33,8 +31,6 @@ public class GlobalExceptionHandler {
                 .status(ex.getStatus())
                 .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
-
-    // ── Validation ────────────────────────────────────────────────────────────
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<List<ValidationError>>> handleValidation(
@@ -83,15 +79,12 @@ public class GlobalExceptionHandler {
                         ex.getMethod() + " is not supported on this endpoint"));
     }
 
-    // ── Authorization ─────────────────────────────────────────────────────────
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(ForbiddenException.CODE, ForbiddenException.DEFAULT_MESSAGE));
     }
 
-    // ── Login-time authentication failures ──────────────────────────────────
     // AuthenticationManager.authenticate() (called directly from AuthService,
     // outside the JWT filter/entry-point path) throws these — without handlers
     // here they'd fall through to the generic 500 below.
@@ -112,8 +105,6 @@ public class GlobalExceptionHandler {
                         AuthAccountBannedException.DEFAULT_MESSAGE));
     }
 
-    // ── 404 ──────────────────────────────────────────────────────────────────
-
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNoHandler(NoHandlerFoundException ex) {
         log.warn("No handler: {} {}", ex.getHttpMethod(), ex.getRequestURL());
@@ -128,8 +119,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(ResourceNotFoundException.CODE, "Endpoint not found"));
     }
-
-    // ── Fallback ──────────────────────────────────────────────────────────────
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {

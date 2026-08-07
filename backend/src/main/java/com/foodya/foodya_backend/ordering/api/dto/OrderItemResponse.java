@@ -38,12 +38,8 @@ public class OrderItemResponse {
     @Schema(description = "Updated timestamp")
     private Instant updatedAt;
 
-    // ========== CONSTRUCTORS ==========
-
     public OrderItemResponse() {
     }
-
-    // ========== FACTORY METHOD ==========
 
     public static OrderItemResponse fromEntity(OrderItem item) {
         if (item == null) {

@@ -14,23 +14,12 @@ import java.util.UUID;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-  // ========== BASIC QUERIES ==========
-
-  /**
-   * Tìm orders của customer (newest first)
-   */
   @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId ORDER BY o.orderDate DESC")
   List<Order> findByCustomer_Id(@Param("customerId") UUID customerId);
 
-  /**
-   * Tìm orders của restaurant (newest first)
-   */
   @Query("SELECT o FROM Order o WHERE o.restaurant.id = :restaurantId ORDER BY o.orderDate DESC")
   List<Order> findByRestaurant_Id(@Param("restaurantId") UUID restaurantId);
 
-  /**
-   * Tìm orders theo status
-   */
   List<Order> findByStatus(OrderStatus status);
 
   /**
@@ -41,23 +30,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
   @Query("SELECT o FROM Order o WHERE o.status = :status AND COALESCE(o.deliveredAt, o.orderDate) > :after")
   List<Order> findByStatusAndDeliveredAfter(@Param("status") OrderStatus status, @Param("after") Instant after);
 
-  /**
-   * Tìm orders của customer theo status
-   */
   @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId AND o.status = :status ORDER BY o.orderDate DESC")
   List<Order> findByCustomer_IdAndStatus(
       @Param("customerId") UUID customerId,
       @Param("status") OrderStatus status);
 
-  /**
-   * Tìm orders của restaurant theo status
-   */
   @Query("SELECT o FROM Order o WHERE o.restaurant.id = :restaurantId AND o.status = :status ORDER BY o.orderDate DESC")
   List<Order> findByRestaurant_IdAndStatus(
       @Param("restaurantId") UUID restaurantId,
       @Param("status") OrderStatus status);
 
-  // NEW: active status list
   @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId AND o.status IN :statuses ORDER BY o.orderDate DESC")
   List<Order> findByCustomer_IdAndStatusIn(
       @Param("customerId") UUID customerId,

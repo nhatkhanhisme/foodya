@@ -42,8 +42,7 @@ public class PaginationMeta {
   @JsonProperty("has_previous")
   @Schema(description = "Whether there are more pages before current", example = "false")
   private Boolean hasPrevious;
-  
-  // Factory method
+
   public static PaginationMeta from(Page<?> page) {
     return PaginationMeta.builder()
         .page(page.getNumber())

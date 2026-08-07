@@ -189,13 +189,9 @@ public class AuthController {
   public ResponseEntity<Map<String, String>> changePassword(
       @Valid @RequestBody ChangePasswordRequest request) {
 
-    // Get current authenticated user
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
-    // Change password
     authService.changePassword(username, request);
 
-    // Return success message
     Map<String, String> response = new HashMap<>();
     response.put("message", "Password changed successfully");
 

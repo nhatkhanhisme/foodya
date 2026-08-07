@@ -11,15 +11,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream. Collectors;
+import java.util.stream.Collectors;
 
 @Schema(description = "Response containing order details")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderResponse {
-
-    // ========== BASIC INFO ==========
 
     @Schema(description = "Order ID")
     private UUID id;
@@ -42,12 +40,8 @@ public class OrderResponse {
     @Schema(description = "Restaurant phone")
     private String restaurantPhone;
 
-    // ========== ORDER ITEMS ==========
-
     @Schema(description = "List of order items")
     private List<OrderItemResponse> items = new ArrayList<>();
-
-    // ========== PRICING ==========
 
     @Schema(description = "Subtotal (before delivery fee)")
     private Long subtotal;
@@ -61,13 +55,8 @@ public class OrderResponse {
     @Schema(description = "Total number of items")
     private Integer totalItems;
 
-    // ========== STATUS ==========
-
     @Schema(description = "Order status", example = "PENDING")
     private OrderStatus status;
-
-
-    // ========== DELIVERY INFO ==========
 
     @Schema(description = "Delivery address")
     private String deliveryAddress;
@@ -78,8 +67,6 @@ public class OrderResponse {
     @Schema(description = "Cancel reason (if cancelled)")
     private String cancelReason;
 
-    // ========== DATES ==========
-
     @Schema(description = "Order date")
     private Instant orderDate;
 
@@ -89,12 +76,8 @@ public class OrderResponse {
     @Schema(description = "Updated at")
     private Instant updatedAt;
 
-    // ========== ACTIONS (for mobile UI) ==========
-
     @Schema(description = "Can user cancel this order?")
     private Boolean canCancel;
-
-    // ========== FACTORY METHOD ==========
 
     public static OrderResponse fromEntity(Order order) {
         if (order == null) {
@@ -103,24 +86,20 @@ public class OrderResponse {
 
         OrderResponse response = new OrderResponse();
 
-        // Basic info
         response.setId(order.getId());
         response.setCustomerId(order.getCustomerId());
         response.setRestaurantId(order.getRestaurantId());
 
-        // Customer info
         if (order.getCustomer() != null) {
             response.setCustomerName(order.getCustomer().getFullName());
         }
 
-        // Restaurant info
         if (order.getRestaurant() != null) {
             response.setRestaurantName(order.getRestaurant().getName());
             response.setRestaurantImageUrl(order.getRestaurant().getImageUrl());
-            response. setRestaurantPhone(order. getRestaurant().getPhoneNumber());
+            response.setRestaurantPhone(order.getRestaurant().getPhoneNumber());
         }
 
-        // Order items
         if (order.getOrderItems() != null) {
             response.setItems(
                 order.getOrderItems().stream()
@@ -129,27 +108,22 @@ public class OrderResponse {
             );
         }
 
-        // Pricing
         long subtotal = order.getTotalPrice() - order.getDeliveryFee();
         response.setSubtotal(subtotal);
         response.setDeliveryFee(order.getDeliveryFee());
         response.setTotalPrice(order.getTotalPrice());
-        response.setTotalItems(order. getTotalItems());
+        response.setTotalItems(order.getTotalItems());
 
-        // Status
-        response.setStatus(order. getStatus());
+        response.setStatus(order.getStatus());
 
-        // Delivery info
         response.setDeliveryAddress(order.getDeliveryAddress());
         response.setOrderNotes(order.getOrderNotes());
-        response.setCancelReason(order. getCancelReason());
+        response.setCancelReason(order.getCancelReason());
 
-        // Dates
         response.setOrderDate(order.getOrderDate());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
 
-        // Actions
         response.setCanCancel(order.isCancellable());
 
         return response;

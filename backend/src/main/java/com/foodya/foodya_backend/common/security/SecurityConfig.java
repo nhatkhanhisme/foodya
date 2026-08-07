@@ -45,21 +45,17 @@ public class SecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .authorizeHttpRequests(auth -> auth
-            // Public
             .requestMatchers("/api/v1/auth/**").permitAll()
             .requestMatchers("/error").permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/actuator/**").permitAll()
             // Public read — this pattern already covers nested menu-items/categories paths
             .requestMatchers(HttpMethod.GET, "/api/v1/restaurants/**").permitAll()
-            // User
             .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
             .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
-            // Merchant
             .requestMatchers("/api/v1/merchant/**").hasAnyRole("RESTAURANT_OWNER", "ADMIN")
             // Customer orders — ADMIN included for support operations
             .requestMatchers("/api/v1/customers/orders/**").hasAnyRole("CUSTOMER", "ADMIN")
-            // Admin
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated())
         .sessionManagement(session -> session

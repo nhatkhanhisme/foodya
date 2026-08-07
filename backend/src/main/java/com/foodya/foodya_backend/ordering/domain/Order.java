@@ -38,8 +38,6 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // ========== RELATIONSHIPS ==========
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     @JsonIgnore
@@ -53,8 +51,6 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> orderItems = new ArrayList<>();
-
-    // ========== ORDER SUMMARY ==========
 
     // Shipper assigned at UC-S03; null until then (BR-13: version guards concurrent assignment)
     @Column(name = "shipper_id")
@@ -116,8 +112,6 @@ public class Order {
     @Column(name = "version", nullable = false)
     private Integer version;
 
-    // ========== STATUS TIMESTAMPS ==========
-
     @Column(name = "confirmed_at")
     private Instant confirmedAt;
 
@@ -137,8 +131,6 @@ public class Order {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
-
-    // ========== HELPER METHODS ==========
 
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOW_TRANSITIONS = Map.of(
             OrderStatus.AWAITING_PAYMENT, Set.of(OrderStatus.PENDING, OrderStatus.CANCELLED),

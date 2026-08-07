@@ -62,7 +62,6 @@ public class MenuItem {
 
     private Integer preparationTime; // in minutes
 
-    // Nutritional information (optional)
     private Integer calories;
     private Boolean isVegetarian;
     private Boolean isVegan;
@@ -80,13 +79,11 @@ public class MenuItem {
     @UpdateTimestamp
     private Instant updatedAt;
 
-    // Relationship with Restaurant
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "restaurant_id", nullable = false)
     @JsonIgnore
     private Restaurant restaurant;
 
-    // Helper method
     void incrementOrderCount() {
         this.orderCount++;
     }

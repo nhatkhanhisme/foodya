@@ -23,7 +23,6 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, UUID> {
 
   Page<MenuItem> findByRestaurantIdAndIsActiveTrueAndIsAvailableTrue(UUID restaurantId, Pageable pageable);
 
-  // Category-based queries — using FK (category_id)
   List<MenuItem> findByRestaurantIdAndCategory_Id(UUID restaurantId, UUID categoryId);
 
   List<MenuItem> findByRestaurantIdAndCategory_IdAndIsActiveTrue(UUID restaurantId, UUID categoryId);

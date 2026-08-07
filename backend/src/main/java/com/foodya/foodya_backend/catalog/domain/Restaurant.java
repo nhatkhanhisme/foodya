@@ -33,8 +33,6 @@ public class Restaurant {
   @Column(columnDefinition = "UUID", updatable = false, nullable = false)
   private UUID id;
 
-  // ========== BASIC INFORMATION ==========
-
   @Column(nullable = false, unique = true, length = 200)
   private String name;
 
@@ -53,15 +51,11 @@ public class Restaurant {
   @Column(nullable = false, length = 100)
   private String cuisine; // Vietnamese, Italian, Japanese, Korean, Thai, American, Chinese, Cafe
 
-  // ========== MEDIA ==========
-
   @Column(length = 500)
   private String imageUrl;
 
   @Column(length = 500)
   private String coverImageUrl;
-
-  // ========== RATING & REVIEWS ==========
 
   // V5 migration renamed column rating → rating_avg (BR-16: simple arithmetic mean)
   @Column(name = "rating_avg", nullable = false)
@@ -71,8 +65,6 @@ public class Restaurant {
   @Column(nullable = false)
   @Builder.Default
   private Integer totalReviews = 0;
-
-  // ========== STATUS ==========
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -91,8 +83,6 @@ public class Restaurant {
   @Builder.Default
   private Boolean isFeatured = false;
 
-  // ========== OPERATING HOURS ==========
-
   @Column(length = 10)
   private String openingTime; // Format: "HH:mm" - e.g., "09:00"
 
@@ -101,8 +91,6 @@ public class Restaurant {
 
   @Column(length = 200)
   private String openingHours; // e.g. "Mon-Fri: 09:00-22:00, Sat-Sun: 08:00-23:00"
-
-  // ========== DELIVERY INFORMATION ==========
 
   @Column(nullable = false)
   @Builder.Default
@@ -122,12 +110,8 @@ public class Restaurant {
   @Builder.Default
   private Double maxDeliveryDistance = 10.0;
 
-  // ========== LOCATION (for future geo-search) ==========
-
   private Double latitude;
   private Double longitude;
-
-  // ========== STATISTICS ==========
 
   @Column(nullable = false)
   @Builder.Default
@@ -140,8 +124,6 @@ public class Restaurant {
   @Column(nullable = false)
   @Builder.Default
   private Long averageOrderValue = 0L;
-
-  // ========== PROMO & FEATURES ==========
 
   @Column(length = 200)
   private String promotionText;
@@ -158,8 +140,6 @@ public class Restaurant {
   @Builder.Default
   private Boolean acceptsCard = true;
 
-  // ========== TIMESTAMPS ==========
-
   @CreationTimestamp
   @Column(updatable = false, nullable = false)
   private Instant createdAt;
@@ -170,16 +150,12 @@ public class Restaurant {
 
   private Instant deletedAt;
 
-  // ========== RELATIONSHIPS ==========
-
   @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<MenuItem> menuItems = new ArrayList<>();
 
   @Column(columnDefinition = "UUID", nullable = false)
   private UUID ownerId;
-
-  // ========== HELPER METHODS ==========
 
   public void addMenuItem(MenuItem menuItem) {
     menuItems.add(menuItem);
