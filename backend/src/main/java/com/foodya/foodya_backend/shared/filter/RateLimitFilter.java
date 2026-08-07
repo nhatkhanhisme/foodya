@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.shared.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.RateLimitExceededException;
 import com.foodya.foodya_backend.shared.redis.RedisKeys;
 import com.foodya.foodya_backend.shared.response.ApiResponse;
 import com.foodya.foodya_backend.shared.utils.IpUtil;
@@ -70,7 +70,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             objectMapper.writeValue(response.getWriter(),
-                    ApiResponse.error(ErrorCode.RATE_LIMIT_EXCEEDED));
+                    ApiResponse.error(RateLimitExceededException.CODE, RateLimitExceededException.DEFAULT_MESSAGE));
             return;
         }
 

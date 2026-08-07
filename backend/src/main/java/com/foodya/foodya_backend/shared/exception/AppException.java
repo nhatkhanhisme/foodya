@@ -1,19 +1,16 @@
 package com.foodya.foodya_backend.shared.exception;
 
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 @Getter
-public class AppException extends RuntimeException {
-  private final ErrorCode errorCode;
+public abstract class AppException extends RuntimeException {
+  private final HttpStatus status;
+  private final String code;
 
-  public AppException(ErrorCode errorCode) {
-    super(errorCode.getDefaultMessage());
-    this.errorCode = errorCode;
-  }
-
-  public AppException(ErrorCode errorCode, String message) {
+  protected AppException(HttpStatus status, String code, String message) {
     super(message);
-    this.errorCode = errorCode;
+    this.status = status;
+    this.code = code;
   }
-
 }

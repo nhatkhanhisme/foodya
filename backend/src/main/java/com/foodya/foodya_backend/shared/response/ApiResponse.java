@@ -4,7 +4,6 @@ import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
 import com.foodya.foodya_backend.shared.utils.TraceIdUtil;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -68,30 +67,20 @@ public class ApiResponse<T> {
         .build();
   }
 
-  public static <T> ApiResponse<T> error(ErrorCode errorCode) {
+  public static <T> ApiResponse<T> error(String code, String message) {
     return ApiResponse.<T>builder()
         .success(false)
-        .code(errorCode.name())
-        .message(errorCode.getDefaultMessage())
-        .timestamp(Instant.now())
-        .traceId(TraceIdUtil.getTraceId())
-        .build();
-  }
-
-  public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
-    return ApiResponse.<T>builder()
-        .success(false)
-        .code(errorCode.name())
+        .code(code)
         .message(message)
         .timestamp(Instant.now())
         .traceId(TraceIdUtil.getTraceId())
         .build();
   }
 
-  public static <T> ApiResponse<T> error(ErrorCode errorCode, String message, T data) {
+  public static <T> ApiResponse<T> error(String code, String message, T data) {
     return ApiResponse.<T>builder()
         .success(false)
-        .code(errorCode.name())
+        .code(code)
         .message(message)
         .data(data)
         .timestamp(Instant.now())

@@ -1,7 +1,6 @@
 package com.foodya.foodya_backend.restaurant.application;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.domain.Restaurant;
 import com.foodya.foodya_backend.restaurant.domain.MenuItem;
 import com.foodya.foodya_backend.restaurant.persistence.RestaurantRepository;
@@ -29,7 +28,7 @@ public class OwnershipService {
     public boolean isRestaurantOwner(@NonNull UUID restaurantId) {
         UUID currentUserId = userService.getCurrentUserId();
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException( "Restaurant not found"));
 
         return restaurant.getOwnerId().equals(currentUserId);
     }
@@ -40,7 +39,7 @@ public class OwnershipService {
     boolean isMenuItemOwner(@NonNull UUID menuItemId) {
         UUID currentUserId = userService.getCurrentUserId();
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found"));
+                .orElseThrow(() -> new ResourceNotFoundException( "Menu item not found"));
 
         return menuItem.getRestaurant().getOwnerId().equals(currentUserId);
     }

@@ -1,7 +1,9 @@
 package com.foodya.foodya_backend.restaurant.application;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.DuplicateResourceException;
+import com.foodya.foodya_backend.shared.exception.ForbiddenException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
+import com.foodya.foodya_backend.shared.exception.ValidationException;
 import com.foodya.foodya_backend.restaurant.api.dto.CategoryRequest;
 import com.foodya.foodya_backend.restaurant.api.dto.CategoryResponse;
 import com.foodya.foodya_backend.restaurant.domain.Category;
@@ -32,15 +34,15 @@ public class CategoryService {
         log.info("Creating category '{}' for restaurant ID: {}", request.getName(), restaurantId);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Restaurant not found with id: " + restaurantId));
 
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new AppException(ErrorCode.FORBIDDEN,
+            throw new ForbiddenException(
                     "You don't have permission to create categories for this restaurant");
         }
         if (categoryRepository.existsByNameAndRestaurantId(request.getName(), restaurantId)) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Category with name '" + request.getName() + "' already exists for this restaurant");
         }
 
@@ -60,23 +62,23 @@ public class CategoryService {
         log.info("Updating category ID: {} for restaurant ID: {}", categoryId, restaurantId);
 
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new AppException(ErrorCode.FORBIDDEN,
+            throw new ForbiddenException(
                     "You don't have permission to update categories for this restaurant");
         }
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found with id: " + categoryId));
 
         if (!category.getRestaurantId().equals(restaurantId)) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "Category does not belong to this restaurant");
+            throw new ValidationException( "Category does not belong to this restaurant");
         }
 
         if (!category.getName().equals(request.getName())) {
             Category existing = categoryRepository.findByNameAndRestaurantId(request.getName(), restaurantId)
                     .orElse(null);
             if (existing != null && !existing.getId().equals(categoryId)) {
-                throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+                throw new DuplicateResourceException(
                         "Category with name '" + request.getName() + "' already exists for this restaurant");
             }
         }
@@ -91,16 +93,16 @@ public class CategoryService {
         log.info("Deleting category ID: {} for restaurant ID: {}", categoryId, restaurantId);
 
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new AppException(ErrorCode.FORBIDDEN,
+            throw new ForbiddenException(
                     "You don't have permission to delete categories for this restaurant");
         }
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found with id: " + categoryId));
 
         if (!category.getRestaurantId().equals(restaurantId)) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "Category does not belong to this restaurant");
+            throw new ValidationException( "Category does not belong to this restaurant");
         }
 
         categoryRepository.delete(category);
@@ -111,7 +113,7 @@ public class CategoryService {
     public List<CategoryResponse> getPublicCategoriesByRestaurant(@NonNull UUID restaurantId) {
         log.info("Fetching public categories for restaurant ID: {}", restaurantId);
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
+            throw new ResourceNotFoundException( "Restaurant not found with id: " + restaurantId);
         }
         List<Category> categories = categoryRepository.findPublicCategoriesByRestaurantId(restaurantId);
         return CategoryResponse.fromEntityList(categories);
@@ -121,10 +123,10 @@ public class CategoryService {
     public List<CategoryResponse> getAllCategoriesByRestaurant(@NonNull UUID restaurantId) {
         log.info("Fetching all categories for restaurant ID: {}", restaurantId);
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
+            throw new ResourceNotFoundException( "Restaurant not found with id: " + restaurantId);
         }
         if (!ownershipService.isRestaurantOwner(restaurantId) && !ownershipService.isAdmin()) {
-            throw new AppException(ErrorCode.FORBIDDEN,
+            throw new ForbiddenException(
                     "You don't have permission to view all categories for this restaurant");
         }
         return CategoryResponse.fromEntityList(categoryRepository.findAllByRestaurantId(restaurantId));

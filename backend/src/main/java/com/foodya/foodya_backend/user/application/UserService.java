@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.user.application;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.DuplicateResourceException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
 import com.foodya.foodya_backend.user.api.dto.UpdateProfileRequest;
 import com.foodya.foodya_backend.user.api.dto.UserProfileResponse;
 import com.foodya.foodya_backend.auth.domain.Role;
@@ -30,7 +30,7 @@ public class UserService {
     @Transactional
     public UserProfileResponse toggleUserActiveStatus(@NonNull UUID userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException( "User not found with id: " + userId));
         user.setStatus(user.getStatus() == UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE);
         userRepository.save(user);
         return UserProfileResponse.fromEntity(user);
@@ -40,7 +40,7 @@ public class UserService {
     public UserProfileResponse updateProfile(UpdateProfileRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException( "User not found: " + username));
 
         log.info("Updating profile for user: {}", username);
 
@@ -52,7 +52,7 @@ public class UserService {
             String newEmail = request.getEmail().trim().toLowerCase();
             if (!newEmail.equals(user.getEmail().toLowerCase())) {
                 if (userRepository.existsByEmail(newEmail)) {
-                    throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
+                    throw new DuplicateResourceException( "Email already exists");
                 }
                 user.setEmail(newEmail);
                 user.setIsEmailVerified(false);
@@ -63,7 +63,7 @@ public class UserService {
             String newPhone = request.getPhoneNumber().trim();
             if (!newPhone.equals(user.getPhoneNumber())) {
                 if (userRepository.existsByPhoneNumber(newPhone)) {
-                    throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
+                    throw new DuplicateResourceException( "Phone number already exists");
                 }
                 user.setPhoneNumber(newPhone);
                 user.setIsPhoneNumberVerified(false);
@@ -108,7 +108,7 @@ public class UserService {
     private User getCurrentUserEntity() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException( "User not found: " + username));
     }
 
 }

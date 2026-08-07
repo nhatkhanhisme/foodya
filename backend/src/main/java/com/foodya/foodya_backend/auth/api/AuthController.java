@@ -21,8 +21,8 @@ import com.foodya.foodya_backend.auth.api.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.api.dto.RefreshTokenRequest;
 import com.foodya.foodya_backend.auth.api.dto.RegisterRequest;
 import com.foodya.foodya_backend.auth.application.AuthService;
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.ForbiddenException;
+import com.foodya.foodya_backend.shared.exception.ValidationException;
 import com.foodya.foodya_backend.shared.security.AuthCookieService;
 import com.foodya.foodya_backend.shared.security.CsrfTokenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -128,10 +128,10 @@ public class AuthController {
         : (request != null ? request.getRefreshToken() : null);
 
     if (!StringUtils.hasText(refreshToken)) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, "Refresh token is required");
+      throw new ValidationException( "Refresh token is required");
     }
     if (fromCookie && !csrfTokenService.isValid(cookieRefreshToken, csrfHeader)) {
-      throw new AppException(ErrorCode.FORBIDDEN, "Missing or invalid CSRF token");
+      throw new ForbiddenException( "Missing or invalid CSRF token");
     }
 
     JwtAuthResponse response = authService.refreshToken(refreshToken);
@@ -158,7 +158,7 @@ public class AuthController {
 
     boolean fromCookie = StringUtils.hasText(cookieRefreshToken);
     if (fromCookie && !csrfTokenService.isValid(cookieRefreshToken, csrfHeader)) {
-      throw new AppException(ErrorCode.FORBIDDEN, "Missing or invalid CSRF token");
+      throw new ForbiddenException( "Missing or invalid CSRF token");
     }
 
     String accessToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;

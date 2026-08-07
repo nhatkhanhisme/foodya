@@ -1,7 +1,9 @@
 package com.foodya.foodya_backend.restaurant.application;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.DuplicateResourceException;
+import com.foodya.foodya_backend.shared.exception.ForbiddenException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
+import com.foodya.foodya_backend.shared.exception.ValidationException;
 import com.foodya.foodya_backend.restaurant.api.dto.RestaurantRequest;
 import com.foodya.foodya_backend.restaurant.api.dto.RestaurantResponse;
 import com.foodya.foodya_backend.restaurant.domain.Restaurant;
@@ -41,7 +43,7 @@ public class RestaurantService {
     @Transactional(readOnly = true)
     public Restaurant findById(@NonNull UUID id) {
         return restaurantRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException( "Restaurant not found: " + id));
     }
 
     @Transactional
@@ -49,13 +51,13 @@ public class RestaurantService {
         log.info("Creating restaurant '{}' for owner ID: {}", request.getName(), ownerId);
 
         if (restaurantRepository.existsByName(request.getName())) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Restaurant with name '" + request.getName() + "' already exists");
         }
 
         String normalizedPhone = normalizePhone(request.getPhoneNumber());
         if (normalizedPhone != null && restaurantRepository.existsByPhoneNumber(normalizedPhone)) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Restaurant with phone number '" + normalizedPhone + "' already exists");
         }
 
@@ -98,17 +100,17 @@ public class RestaurantService {
         Restaurant restaurant = findById(id);
 
         if (!isAdmin && !restaurant.getOwnerId().equals(currentUserId)) {
-            throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to update this restaurant");
+            throw new ForbiddenException( "You don't have permission to update this restaurant");
         }
         if (!restaurant.getName().equals(request.getName()) && restaurantRepository.existsByName(request.getName())) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Restaurant with name '" + request.getName() + "' already exists");
         }
 
         String normalizedPhone = normalizePhone(request.getPhoneNumber());
         if (normalizedPhone != null && !normalizedPhone.equals(restaurant.getPhoneNumber())
                 && restaurantRepository.existsByPhoneNumber(normalizedPhone)) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Restaurant with phone number '" + normalizedPhone + "' already exists");
         }
 
@@ -140,7 +142,7 @@ public class RestaurantService {
         log.info("Toggling status for restaurant ID: {}", id);
         Restaurant restaurant = findById(id);
         if (!isAdmin && !restaurant.getOwnerId().equals(currentUserId)) {
-            throw new AppException(ErrorCode.FORBIDDEN, "You don't have permission to update this restaurant");
+            throw new ForbiddenException( "You don't have permission to update this restaurant");
         }
         restaurant.setIsOpen(!restaurant.getIsOpen());
         log.info("Restaurant status toggled to: {}", restaurant.getIsOpen() ? "OPEN" : "CLOSED");
@@ -168,7 +170,7 @@ public class RestaurantService {
     public RestaurantResponse rejectRestaurant(@NonNull UUID id, String reason) {
         // UC-A02: the owner must be told why, so they can fix and resubmit (BR-31)
         if (reason == null || reason.isBlank()) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "A reason is required when rejecting a restaurant");
+            throw new ValidationException( "A reason is required when rejecting a restaurant");
         }
         Restaurant restaurant = findById(id);
         restaurant.setStatus(RestaurantStatus.REJECTED);
@@ -230,7 +232,7 @@ public class RestaurantService {
         log.info("Fetching restaurant with id: {}", id);
         return restaurantRepository.findById(id)
                 .map(RestaurantResponse::fromEntity)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException( "Restaurant not found with id: " + id));
     }
 
     @Cacheable(value = "popular-restaurants", key = "#limit", sync = true)

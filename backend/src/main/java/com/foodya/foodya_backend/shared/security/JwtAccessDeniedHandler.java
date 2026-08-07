@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodya.foodya_backend.shared.response.ApiResponse;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.ForbiddenException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +30,6 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     objectMapper.writeValue(
         response.getWriter(),
-        ApiResponse.error(ErrorCode.FORBIDDEN));
+        ApiResponse.error(ForbiddenException.CODE, ForbiddenException.DEFAULT_MESSAGE));
   }
 }

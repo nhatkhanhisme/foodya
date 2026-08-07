@@ -2,7 +2,8 @@ package com.foodya.foodya_backend.shared.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.foodya.foodya_backend.shared.response.ApiResponse;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AuthInvalidCredentialsException;
+import com.foodya.foodya_backend.shared.exception.AuthTokenRevokedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +33,9 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     // Distinguish: token present but invalid → AUTH_TOKEN_REVOKED
     //              no token at all → AUTH_INVALID_CREDENTIALS (unauthenticated)
     boolean hasToken = request.getHeader("Authorization") != null;
-    ErrorCode code = hasToken ? ErrorCode.AUTH_TOKEN_REVOKED : ErrorCode.AUTH_INVALID_CREDENTIALS;
+    String code = hasToken ? AuthTokenRevokedException.CODE : AuthInvalidCredentialsException.CODE;
+    String message = hasToken ? AuthTokenRevokedException.DEFAULT_MESSAGE : AuthInvalidCredentialsException.DEFAULT_MESSAGE;
 
-    objectMapper.writeValue(response.getWriter(), ApiResponse.error(code));
+    objectMapper.writeValue(response.getWriter(), ApiResponse.error(code, message));
   }
 }

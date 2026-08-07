@@ -3,8 +3,12 @@ package com.foodya.foodya_backend.auth.application;
 import java.time.Instant;
 import java.util.Set;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AuthAccountBannedException;
+import com.foodya.foodya_backend.shared.exception.AuthTokenRevokedException;
+import com.foodya.foodya_backend.shared.exception.DuplicateResourceException;
+import com.foodya.foodya_backend.shared.exception.ForbiddenException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
+import com.foodya.foodya_backend.shared.exception.ValidationException;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -52,24 +56,24 @@ public class AuthService {
   @Transactional
   public JwtAuthResponse registerUser(RegisterRequest registerRequest) {
     if (userRepository.existsByUsername(registerRequest.getUsername())) {
-      throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Username already exists");
+      throw new DuplicateResourceException( "Username already exists");
     }
     if (userRepository.existsByEmail(registerRequest.getEmail())) {
-      throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already exists");
+      throw new DuplicateResourceException( "Email already exists");
     }
 
     String normalizedPhone = null;
     if (registerRequest.getPhoneNumber() != null && !registerRequest.getPhoneNumber().isBlank()) {
       normalizedPhone = normalizePhoneNumber(registerRequest.getPhoneNumber().trim());
       if (userRepository.existsByPhoneNumber(normalizedPhone)) {
-        throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone number already exists");
+        throw new DuplicateResourceException( "Phone number already exists");
       }
     }
 
     String requestedRole = registerRequest.getRole() != null
         ? registerRequest.getRole().toUpperCase() : "CUSTOMER";
     if (!SELF_REGISTERABLE_ROLES.contains(requestedRole)) {
-      throw new AppException(ErrorCode.FORBIDDEN, "Role " + requestedRole + " cannot be self-assigned");
+      throw new ForbiddenException( "Role " + requestedRole + " cannot be self-assigned");
     }
 
     User user = new User();
@@ -105,7 +109,7 @@ public class AuthService {
             loginRequest.getPassword()));
 
     User user = userRepository.findByUsername(loginRequest.getUsername())
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException( "User not found"));
     user.setLastLoginAt(Instant.now());
     userRepository.save(user);
 
@@ -114,24 +118,24 @@ public class AuthService {
 
   public JwtAuthResponse refreshToken(String refreshToken) {
     if (!jwtService.validateToken(refreshToken)) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Invalid refresh token");
+      throw new AuthTokenRevokedException( "Invalid refresh token");
     }
 
     if (!jwtService.isTokenType(refreshToken, TokenType.REFRESH)) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Token is not a refresh token");
+      throw new AuthTokenRevokedException( "Token is not a refresh token");
     }
 
     if (tokenBlacklistService.isRevoked(refreshToken)) {
-      throw new AppException(ErrorCode.AUTH_TOKEN_REVOKED, "Refresh token has been revoked");
+      throw new AuthTokenRevokedException( "Refresh token has been revoked");
     }
 
     String username = jwtService.extractUsername(refreshToken);
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException( "User not found"));
 
     if (user.getStatus() == UserStatus.BANNED) {
-      throw new AppException(ErrorCode.AUTH_ACCOUNT_BANNED, "Account is deactivated");
+      throw new AuthAccountBannedException( "Account is deactivated");
     }
 
     Authentication authentication = new UsernamePasswordAuthenticationToken(username, null, null);
@@ -153,7 +157,7 @@ public class AuthService {
     String accessToken = jwtService.generateToken(authentication);
     String refreshToken = jwtService.generateRefreshToken(authentication);
     User user = userRepository.findByUsername(authentication.getName())
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException( "User not found"));
 
     return JwtAuthResponse.builder()
         .accessToken(accessToken)
@@ -186,18 +190,18 @@ public class AuthService {
     log.info("Changing password for user: {}", username);
 
     if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, "New password and confirm password do not match");
+      throw new ValidationException( "New password and confirm password do not match");
     }
 
     User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        .orElseThrow(() -> new ResourceNotFoundException( "User not found"));
 
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, "Current password is incorrect");
+      throw new ValidationException( "Current password is incorrect");
     }
 
     if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-      throw new AppException(ErrorCode.VALIDATION_ERROR, "New password must be different from current password");
+      throw new ValidationException( "New password must be different from current password");
     }
 
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));

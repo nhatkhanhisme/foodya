@@ -1,7 +1,7 @@
 package com.foodya.foodya_backend.restaurant.application;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.DuplicateResourceException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
 import com.foodya.foodya_backend.restaurant.api.dto.MenuItemMapper;
 import com.foodya.foodya_backend.restaurant.api.dto.MenuItemRequest;
 import com.foodya.foodya_backend.restaurant.api.dto.MenuItemResponse;
@@ -43,7 +43,7 @@ public class MenuItemService {
     @Transactional(readOnly = true)
     public MenuItem findById(@NonNull UUID menuItemId) {
         return menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Menu item not found with id: " + menuItemId));
     }
 
@@ -53,16 +53,16 @@ public class MenuItemService {
         log.info("Creating menu item '{}' for restaurant ID: {}", request.getName(), restaurantId);
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Restaurant not found with id: " + restaurantId));
 
         if (menuItemRepository.existsByNameAndRestaurantId(request.getName(), restaurantId)) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Menu item with name '" + request.getName() + "' already exists for this restaurant");
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found with id: " + request.getCategoryId()));
 
         MenuItem menuItem = menuItemMapper.toMenuItem(request);
@@ -89,7 +89,7 @@ public class MenuItemService {
 
         if (!menuItem.getName().equals(request.getName()) &&
                 menuItemRepository.existsByNameAndRestaurantId(request.getName(), menuItem.getRestaurant().getId())) {
-            throw new AppException(ErrorCode.DUPLICATE_RESOURCE,
+            throw new DuplicateResourceException(
                     "Menu item with name '" + request.getName() + "' already exists for this restaurant");
         }
 
@@ -98,7 +98,7 @@ public class MenuItemService {
         if (request.getCategoryId() != null &&
                 (menuItem.getCategory() == null || !menuItem.getCategory().getId().equals(request.getCategoryId()))) {
             Category category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                    .orElseThrow(() -> new ResourceNotFoundException(
                             "Category not found with id: " + request.getCategoryId()));
             menuItem.setCategory(category);
         }
@@ -130,7 +130,7 @@ public class MenuItemService {
     public void hardDeleteMenuItem(@NonNull UUID menuItemId) {
         log.info("Hard deleting menu item with ID: {}", menuItemId);
         if (!menuItemRepository.existsById(menuItemId)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Menu item not found with id: " + menuItemId);
+            throw new ResourceNotFoundException( "Menu item not found with id: " + menuItemId);
         }
         menuItemRepository.deleteById(menuItemId);
         log.info("Menu item hard deleted: {}", menuItemId);
@@ -155,7 +155,7 @@ public class MenuItemService {
     public MenuItemResponse getMenuItemById(@NonNull UUID menuItemId) {
         log.info("Fetching menu item with ID: {}", menuItemId);
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Menu item not found with id: " + menuItemId));
         return menuItemMapper.toMenuItemResponse(menuItem);
     }
@@ -179,7 +179,7 @@ public class MenuItemService {
     public List<MenuItemResponse> getAllMenuItemsByRestaurant(@NonNull UUID restaurantId) {
         log.info("Fetching all menu items (including inactive) for restaurant ID: {}", restaurantId);
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
+            throw new ResourceNotFoundException( "Restaurant not found with id: " + restaurantId);
         }
         return menuItemRepository.findByRestaurantId(restaurantId).stream()
                 .map(menuItemMapper::toMenuItemResponse)
@@ -191,7 +191,7 @@ public class MenuItemService {
     public List<MenuItemResponse> getActiveMenuItemsByRestaurant(@NonNull UUID restaurantId) {
         log.info("Fetching active menu items for restaurant ID: {}", restaurantId);
         if (!restaurantRepository.existsById(restaurantId)) {
-            throw new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Restaurant not found with id: " + restaurantId);
+            throw new ResourceNotFoundException( "Restaurant not found with id: " + restaurantId);
         }
         return menuItemRepository.findByRestaurantIdAndIsActiveTrue(restaurantId).stream()
                 .map(menuItemMapper::toMenuItemResponse)

@@ -1,6 +1,6 @@
 package com.foodya.foodya_backend.order.domain;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
+import com.foodya.foodya_backend.shared.exception.InvalidOrderTransitionException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,7 +68,7 @@ class OrderTest {
         void rejectsInvalidTransitions(OrderStatus from, OrderStatus to) {
             Order order = orderIn(from);
             assertThatThrownBy(() -> order.updateStatus(to))
-                    .isInstanceOf(AppException.class);
+                    .isInstanceOf(InvalidOrderTransitionException.class);
         }
 
         @ParameterizedTest
@@ -78,7 +78,7 @@ class OrderTest {
                 Order order = orderIn(terminal);
                 assertThatThrownBy(() -> order.updateStatus(target))
                         .as("%s -> %s must be blocked", terminal, target)
-                        .isInstanceOf(AppException.class);
+                        .isInstanceOf(InvalidOrderTransitionException.class);
             }
         }
     }

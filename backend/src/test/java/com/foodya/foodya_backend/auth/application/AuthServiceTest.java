@@ -4,8 +4,12 @@ import com.foodya.foodya_backend.auth.api.dto.ChangePasswordRequest;
 import com.foodya.foodya_backend.auth.api.dto.JwtAuthResponse;
 import com.foodya.foodya_backend.auth.api.dto.LoginRequest;
 import com.foodya.foodya_backend.auth.api.dto.RegisterRequest;
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.AuthAccountBannedException;
+import com.foodya.foodya_backend.shared.exception.AuthTokenRevokedException;
+import com.foodya.foodya_backend.shared.exception.DuplicateResourceException;
+import com.foodya.foodya_backend.shared.exception.ForbiddenException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
+import com.foodya.foodya_backend.shared.exception.ValidationException;
 import com.foodya.foodya_backend.shared.security.JwtService;
 import com.foodya.foodya_backend.auth.domain.Role;
 import com.foodya.foodya_backend.auth.domain.User;
@@ -165,8 +169,7 @@ class AuthServiceTest {
             when(userRepository.existsByUsername("nguyenvana")).thenReturn(true);
 
             assertThatThrownBy(() -> authService.registerUser(request))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATE_RESOURCE);
+                    .isInstanceOf(DuplicateResourceException.class);
             verify(userRepository, never()).save(any());
         }
 
@@ -176,8 +179,7 @@ class AuthServiceTest {
             when(userRepository.existsByEmail("nguyenvana@example.com")).thenReturn(true);
 
             assertThatThrownBy(() -> authService.registerUser(request))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATE_RESOURCE);
+                    .isInstanceOf(DuplicateResourceException.class);
             verify(userRepository, never()).save(any());
         }
 
@@ -187,8 +189,7 @@ class AuthServiceTest {
             when(userRepository.existsByPhoneNumber("+84987654321")).thenReturn(true);
 
             assertThatThrownBy(() -> authService.registerUser(request))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATE_RESOURCE);
+                    .isInstanceOf(DuplicateResourceException.class);
             verify(userRepository, never()).save(any());
         }
 
@@ -197,8 +198,7 @@ class AuthServiceTest {
             RegisterRequest request = validRequest().role("ADMIN").build();
 
             assertThatThrownBy(() -> authService.registerUser(request))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
+                    .isInstanceOf(ForbiddenException.class);
             verify(userRepository, never()).save(any());
         }
     }
@@ -265,8 +265,7 @@ class AuthServiceTest {
             when(jwtService.validateToken("bad-token")).thenReturn(false);
 
             assertThatThrownBy(() -> authService.refreshToken("bad-token"))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AUTH_TOKEN_REVOKED);
+                    .isInstanceOf(AuthTokenRevokedException.class);
         }
 
         @Test
@@ -275,8 +274,7 @@ class AuthServiceTest {
             when(jwtService.isTokenType(eq("access-token"), any())).thenReturn(false);
 
             assertThatThrownBy(() -> authService.refreshToken("access-token"))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AUTH_TOKEN_REVOKED);
+                    .isInstanceOf(AuthTokenRevokedException.class);
         }
 
         @Test
@@ -286,8 +284,7 @@ class AuthServiceTest {
             when(tokenBlacklistService.isRevoked("refresh-token")).thenReturn(true);
 
             assertThatThrownBy(() -> authService.refreshToken("refresh-token"))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AUTH_TOKEN_REVOKED);
+                    .isInstanceOf(AuthTokenRevokedException.class);
         }
 
         @Test
@@ -301,8 +298,7 @@ class AuthServiceTest {
             when(userRepository.findByUsername("nguyenvana")).thenReturn(Optional.of(banned));
 
             assertThatThrownBy(() -> authService.refreshToken("refresh-token"))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AUTH_ACCOUNT_BANNED);
+                    .isInstanceOf(AuthAccountBannedException.class);
         }
 
         @Test
@@ -314,8 +310,7 @@ class AuthServiceTest {
             when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> authService.refreshToken("refresh-token"))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RESOURCE_NOT_FOUND);
+                    .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 
@@ -373,8 +368,7 @@ class AuthServiceTest {
             ChangePasswordRequest request = validRequest().confirmPassword("Different123!").build();
 
             assertThatThrownBy(() -> authService.changePassword("nguyenvana", request))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_ERROR);
+                    .isInstanceOf(ValidationException.class);
             verify(userRepository, never()).findByUsername(anyString());
         }
 
@@ -386,8 +380,7 @@ class AuthServiceTest {
             when(passwordEncoder.matches("OldPassword123!", "hashed-old")).thenReturn(false);
 
             assertThatThrownBy(() -> authService.changePassword("nguyenvana", validRequest().build()))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_ERROR);
+                    .isInstanceOf(ValidationException.class);
             verify(userRepository, never()).save(any());
         }
 
@@ -400,8 +393,7 @@ class AuthServiceTest {
             when(passwordEncoder.matches("NewPassword123!", "hashed-old")).thenReturn(true);
 
             assertThatThrownBy(() -> authService.changePassword("nguyenvana", validRequest().build()))
-                    .isInstanceOf(AppException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VALIDATION_ERROR);
+                    .isInstanceOf(ValidationException.class);
             verify(userRepository, never()).save(any());
         }
     }

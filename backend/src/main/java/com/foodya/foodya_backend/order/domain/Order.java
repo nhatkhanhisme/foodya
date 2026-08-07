@@ -1,8 +1,7 @@
 package com.foodya.foodya_backend.order.domain;
 
 import com.foodya.foodya_backend.auth.domain.User;
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.InvalidOrderTransitionException;
 import com.foodya.foodya_backend.restaurant.domain.Restaurant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -185,7 +184,7 @@ public class Order {
     public void updateStatus(OrderStatus newStatus) {
         Set<OrderStatus> allowed = ALLOW_TRANSITIONS.getOrDefault(this.status, Set.of());
         if (!allowed.contains(newStatus)) {
-            throw new AppException(ErrorCode.INVALID_ORDER_TRANSITION,
+            throw new InvalidOrderTransitionException(
                     "Cannot transition from " + this.status + " to " + newStatus);
         }
         this.status = newStatus;

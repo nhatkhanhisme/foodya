@@ -28,10 +28,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
-        log.warn("AppException [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        log.warn("AppException [{}]: {}", ex.getCode(), ex.getMessage());
         return ResponseEntity
-                .status(ex.getErrorCode().getStatus())
-                .body(ApiResponse.error(ex.getErrorCode(), ex.getMessage()));
+                .status(ex.getStatus())
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
     // ── Validation ────────────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR, "Validation failed", errors));
+                .body(ApiResponse.error(ValidationException.CODE, "Validation failed", errors));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR, "Validation failed", errors));
+                .body(ApiResponse.error(ValidationException.CODE, "Validation failed", errors));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -66,20 +66,20 @@ public class GlobalExceptionHandler {
                 ex.getName(),
                 ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR, msg));
+                .body(ApiResponse.error(ValidationException.CODE, msg));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingParameter(MissingServletRequestParameterException ex) {
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR,
+                .body(ApiResponse.error(ValidationException.CODE,
                         "Missing required parameter '" + ex.getParameterName() + "'"));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR,
+                .body(ApiResponse.error(ValidationException.CODE,
                         ex.getMethod() + " is not supported on this endpoint"));
     }
 
@@ -88,7 +88,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ErrorCode.FORBIDDEN));
+                .body(ApiResponse.error(ForbiddenException.CODE, ForbiddenException.DEFAULT_MESSAGE));
     }
 
     // ── Login-time authentication failures ──────────────────────────────────
@@ -98,16 +98,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
-        return ResponseEntity.status(ErrorCode.AUTH_INVALID_CREDENTIALS.getStatus())
-                .body(ApiResponse.error(ErrorCode.AUTH_INVALID_CREDENTIALS));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(AuthInvalidCredentialsException.CODE,
+                        AuthInvalidCredentialsException.DEFAULT_MESSAGE));
     }
 
     // Covers DisabledException/LockedException — thrown when User.isEnabled()/
     // isAccountNonLocked() reject a BANNED account during login
     @ExceptionHandler(AccountStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccountStatus(AccountStatusException ex) {
-        return ResponseEntity.status(ErrorCode.AUTH_ACCOUNT_BANNED.getStatus())
-                .body(ApiResponse.error(ErrorCode.AUTH_ACCOUNT_BANNED));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(AuthAccountBannedException.CODE,
+                        AuthAccountBannedException.DEFAULT_MESSAGE));
     }
 
     // ── 404 ──────────────────────────────────────────────────────────────────
@@ -116,7 +118,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleNoHandler(NoHandlerFoundException ex) {
         log.warn("No handler: {} {}", ex.getHttpMethod(), ex.getRequestURL());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ErrorCode.RESOURCE_NOT_FOUND, "Endpoint not found"));
+                .body(ApiResponse.error(ResourceNotFoundException.CODE, "Endpoint not found"));
     }
 
     // Boot 3.2+ raises this (not NoHandlerFoundException) for unmapped paths —
@@ -124,7 +126,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNoResource(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ErrorCode.RESOURCE_NOT_FOUND, "Endpoint not found"));
+                .body(ApiResponse.error(ResourceNotFoundException.CODE, "Endpoint not found"));
     }
 
     // ── Fallback ──────────────────────────────────────────────────────────────
@@ -133,6 +135,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
         log.error("Unhandled exception", ex);
         return ResponseEntity.internalServerError()
-                .body(ApiResponse.error(ErrorCode.INTERNAL_ERROR));
+                .body(ApiResponse.error(InternalErrorException.CODE, InternalErrorException.DEFAULT_MESSAGE));
     }
 }

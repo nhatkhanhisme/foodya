@@ -1,7 +1,10 @@
 package com.foodya.foodya_backend.order.application;
 
-import com.foodya.foodya_backend.shared.exception.AppException;
-import com.foodya.foodya_backend.shared.exception.ErrorCode;
+import com.foodya.foodya_backend.shared.exception.OrderNotCancellableException;
+import com.foodya.foodya_backend.shared.exception.ResourceNotFoundException;
+import com.foodya.foodya_backend.shared.exception.RestaurantClosedException;
+import com.foodya.foodya_backend.shared.exception.RestaurantSuspendedException;
+import com.foodya.foodya_backend.shared.exception.ValidationException;
 import com.foodya.foodya_backend.order.api.dto.OrderItemRequest;
 import com.foodya.foodya_backend.order.api.dto.OrderRequest;
 import com.foodya.foodya_backend.order.api.dto.OrderResponse;
@@ -53,18 +56,18 @@ public class OrderService {
         User customer = getCurrentUser(authentication);
 
         if (request.getRestaurantId() == null) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId is required");
+            throw new ValidationException( "restaurantId is required");
         }
         if (request.getItems() == null || request.getItems().isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "items is required");
+            throw new ValidationException( "items is required");
         }
         if (!request.getItems().stream()
                 .allMatch(i -> i != null && i.getMenuItemId() != null
                         && i.getQuantity() != null && i.getQuantity() > 0)) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "Each item must have menuItemId and quantity > 0");
+            throw new ValidationException( "Each item must have menuItemId and quantity > 0");
         }
         if (request.getDeliveryAddress() == null || request.getDeliveryAddress().isBlank()) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "deliveryAddress is required");
+            throw new ValidationException( "deliveryAddress is required");
         }
 
         log.info("Creating order for customer: {}, restaurant: {}", customer.getId(), request.getRestaurantId());
@@ -73,11 +76,11 @@ public class OrderService {
 
         // BR-06: orderable only when APPROVED and currently open
         if (restaurant.getStatus() != RestaurantStatus.APPROVED) {
-            throw new AppException(ErrorCode.RESTAURANT_SUSPENDED,
+            throw new RestaurantSuspendedException(
                     "Restaurant is not accepting orders (status: " + restaurant.getStatus() + ")");
         }
         if (!Boolean.TRUE.equals(restaurant.getIsOpen())) {
-            throw new AppException(ErrorCode.RESTAURANT_CLOSED,
+            throw new RestaurantClosedException(
                     "Restaurant is currently closed");
         }
 
@@ -97,25 +100,25 @@ public class OrderService {
         for (OrderItemRequest itemRequest : request.getItems()) {
             UUID menuItemId = itemRequest.getMenuItemId();
             if (menuItemId == null) {
-                throw new AppException(ErrorCode.VALIDATION_ERROR, "Menu item ID cannot be null");
+                throw new ValidationException( "Menu item ID cannot be null");
             }
             MenuItem menuItem = menuItemService.findById(menuItemId);
 
             if (menuItem.getRestaurant() == null || menuItem.getRestaurant().getId() == null) {
-                throw new AppException(ErrorCode.VALIDATION_ERROR,
+                throw new ValidationException(
                         "Menu item has no restaurant mapping: " + menuItem.getId());
             }
             if (!menuItem.getRestaurant().getId().equals(restaurant.getId())) {
-                throw new AppException(ErrorCode.VALIDATION_ERROR,
+                throw new ValidationException(
                         "Menu item " + menuItem.getName() + " does not belong to this restaurant");
             }
             if (menuItem.getIsAvailable() == null || menuItem.getIsActive() == null
                     || !menuItem.getIsAvailable() || !menuItem.getIsActive()) {
-                throw new AppException(ErrorCode.VALIDATION_ERROR,
+                throw new ValidationException(
                         "Menu item " + menuItem.getName() + " is not available");
             }
             if (menuItem.getPrice() == null) {
-                throw new AppException(ErrorCode.VALIDATION_ERROR,
+                throw new ValidationException(
                         "Menu item " + menuItem.getName() + " has no price");
             }
 
@@ -135,7 +138,7 @@ public class OrderService {
         // BR-07/BR-08: the fee is server-computed from the restaurant's own settings;
         // clients never send money fields
         if (restaurant.getMinimumOrder() != null && order.getSubtotal() < restaurant.getMinimumOrder()) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR,
+            throw new ValidationException(
                     "Order subtotal is below the restaurant's minimum of " + restaurant.getMinimumOrder());
         }
         order.setDeliveryFee(resolveDeliveryFee(restaurant, order.getSubtotal()));
@@ -160,14 +163,14 @@ public class OrderService {
         User customer = getCurrentUser(authentication);
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Order not found with id: " + orderId));
 
         if (order.getCustomerId() == null || !order.getCustomerId().equals(customer.getId())) {
             throw new AccessDeniedException("You are not allowed to cancel this order");
         }
         if (!order.isCancellable()) {
-            throw new AppException(ErrorCode.ORDER_NOT_CANCELLABLE,
+            throw new OrderNotCancellableException(
                     "Order cannot be cancelled in current status: " + order.getStatus());
         }
 
@@ -184,10 +187,10 @@ public class OrderService {
     public OrderResponse updateOrderStatus(@NonNull UUID id, OrderStatus newStatus, String reason) {
         // UC-R05: a rejection must tell the customer why
         if (newStatus == OrderStatus.REJECTED && (reason == null || reason.isBlank())) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "A reason is required when rejecting an order");
+            throw new ValidationException( "A reason is required when rejecting an order");
         }
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException( "Order not found with id: " + id));
         order.updateStatus(newStatus);
         if ((newStatus == OrderStatus.REJECTED || newStatus == OrderStatus.CANCELLED) && reason != null) {
             order.setCancelReason(reason);
@@ -219,7 +222,7 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(@NonNull UUID id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "Order not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException( "Order not found with id: " + id));
         return OrderResponse.fromEntity(order);
     }
 
@@ -242,10 +245,10 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Long calculateRevenue(UUID restaurantId, Instant startDate, Instant endDate) {
         if (restaurantId == null || startDate == null || endDate == null) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "restaurantId, startDate, endDate are required");
+            throw new ValidationException( "restaurantId, startDate, endDate are required");
         }
         if (endDate.isBefore(startDate)) {
-            throw new AppException(ErrorCode.VALIDATION_ERROR, "endDate must be after startDate");
+            throw new ValidationException( "endDate must be after startDate");
         }
         Long sum = orderRepository.sumRevenueByRestaurantIdAndDateRange(restaurantId, startDate, endDate);
         return sum == null ? 0L : sum;
@@ -271,7 +274,7 @@ public class OrderService {
             throw new AccessDeniedException("Unauthenticated");
         }
         return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND,
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found: " + authentication.getName()));
     }
 }
