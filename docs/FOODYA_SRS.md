@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.4-draft |
+| **Version** | 1.5-draft |
 | **Status** | In progress |
 | **Architecture** | Modular monolith (Spring Boot) |
 
@@ -16,6 +16,7 @@
 | 1.2-draft | Implementation status and priority added to the UC index (§4.1); BR-34, BR-35 added; UC-R01 respecified (owner role granted on approval); risks added (§2.6); package structure aligned with the codebase after removal of the `admin` and `merchant` packages; §7.2 register constraint documented. Pending: auth session rework (BR-03, BR-04, UC-C02, UC-C13). |
 | 1.3-draft | §3.1/§3.2 updated: each module's internal layout changed from `controller/service/repository/model/mapper/dto` to `api/application/domain/persistence` (mapper folded into `api/dto/`). No change to module boundaries, ownership, or the role-oriented-modules prohibition. |
 | 1.4-draft | Consolidated with the older, out-of-sync `FOODYA_SRS.md` (this file replaces it — that revision predated the 1.2/1.3 updates and had drifted). §3.1/§3.2/§3.3 updated: `shared` → `common`; `auth` + `user` merged into `identity` (both mutate the same `User` aggregate, so keeping them separate only produced a module-boundary violation in practice); `restaurant` → `catalog`; `order` → `ordering`. The role-oriented-modules prohibition (§3.1) is now enforced by an ArchUnit test, not just documented. |
+| 1.5-draft | Corrected drift found against the actual codebase: UC-C06 was wrongly marked Implemented (no Address entity/endpoints exist — §4.1); UC-C01/§10.3 specified error codes (`AUTH_EMAIL_TAKEN`/`AUTH_USERNAME_TAKEN`) that don't exist in code, replaced with the actual `DUPLICATE_RESOURCE`; BR-02 corrected from "10 req/min login" to the real per-15-minute limits across all four rate-limited auth endpoints; §7.2/NFR-02 now document the HttpOnly-cookie + CSRF delivery of the refresh token to web clients, previously undocumented; UC-R01 now calls out the `catalog`→`identity` role-grant as a module-boundary case requiring the same facade pattern as §3.1, not a direct `User` write; added A4 documenting the single-valued `User.role` limitation (no multi-role accounts). |
 
 ---
 
@@ -106,6 +107,7 @@ Foodya is a standalone three-sided marketplace (Customer / Restaurant / Shipper)
 - **A1** — Single-region deployment; no multi-region or multi-currency requirement in MVP.
 - **A2** — Restaurants and shippers are onboarded with Admin approval; onboarding is not fully self-service.
 - **A3** — Delivery fee derives from road distance obtained from a mapping provider, with a straight-line estimate as fallback (BR-19). No in-house routing engine is built.
+- **A4** — `User.role` is single-valued, not a set of permissions. Consequently, a Customer who is granted `RESTAURANT_OWNER` (BR-35) or `SHIPPER` no longer authenticates as `CUSTOMER` and loses Customer-only capabilities (e.g. placing orders) until/unless a role change reverses this. Multi-role accounts (e.g. a restaurant owner who also orders as a customer) are explicitly not supported in the MVP; this is a deliberate scope limitation of the current `User` model, not an oversight.
 - **D1** — The system depends on a third-party mapping provider for geocoding and road-distance lookup, accessed through a single internal interface.
 - **D2** — The system depends on external payment providers (VNPay, Momo) for the ONLINE payment method, accessed through the `PaymentProvider` interface with one adapter per provider. COD has no external dependency.
 
@@ -207,7 +209,7 @@ Module boundaries and the service-only call rule preserve the option of extracti
 | UC-C03 | Browse / search restaurants | M | Implemented |
 | UC-C04 | View restaurant menu | M | Implemented |
 | UC-C05 | Manage cart | M | Planned |
-| UC-C06 | Manage delivery addresses | M | Implemented |
+| UC-C06 | Manage delivery addresses | M | Planned — no Address entity/endpoints exist yet; `identity` currently only covers profile fields (UC-C12) |
 | UC-C07 | Checkout / place order | M | Planned |
 | UC-C08 | Track order | S | Planned |
 | UC-C09 | Cancel order | M | Planned |
@@ -242,7 +244,7 @@ Module boundaries and the service-only call rule preserve the option of extracti
 **UC-C01 — Register**
 - Preconditions: Email not registered.
 - Main flow: Customer submits email, password, full name, phone, and role. The system shall accept only self-registerable roles (BR-34), validate input, create a User (`status=ACTIVE` for CUSTOMER), and return a JWT pair.
-- Alternatives: (1a) Email already exists → 409 `AUTH_EMAIL_TAKEN`. (1b) Non-self-registerable role → 403 `FORBIDDEN` (BR-34).
+- Alternatives: (1a) Username, email, or phone already registered → 409 `DUPLICATE_RESOURCE` (one generic code; the message text distinguishes which field conflicted — there is no per-field error code). (1b) Non-self-registerable role → 403 `FORBIDDEN` (BR-34).
 - Postconditions: User created and authenticated.
 
 **UC-C02 — Login**
@@ -322,6 +324,7 @@ Module boundaries and the service-only call rule preserve the option of extracti
 - Main flow: The applicant submits a restaurant profile (name, address, phone, opening hours). The system shall create the Restaurant with status `PENDING` awaiting Admin review (UC-A02). Upon approval, the system shall grant the applicant the `RESTAURANT_OWNER` role (BR-35) and notify them.
 - Alternatives: (1a) Missing required fields → 400 `VALIDATION_ERROR`. (2a) Application rejected → applicant notified with reason; role unchanged.
 - Postconditions: Restaurant `PENDING`; on approval, restaurant `APPROVED` and applicant holds `RESTAURANT_OWNER`.
+- **Module boundary note.** Granting the role mutates `User`, which `identity` owns exclusively (§3.1). The `catalog` approval flow (UC-A02) shall perform the grant by calling an `identity` application-layer facade (the same pattern as `AuthService.findByUsername` used by `ordering`) — never by writing to the `User` row from within `catalog`. This is the same class of violation the `auth`/`user` merge (§3.1) removed; a new cross-module case must not reintroduce it.
 
 **UC-R02 — Manage Menu Categories**
 - Main flow: CRUD categories scoped to the owner's restaurant; reorder via `display_order`.
@@ -397,7 +400,7 @@ Module boundaries and the service-only call rule preserve the option of extracti
 | ID | Rule |
 |---|---|
 | BR-01 | A User shall have exactly one role. Roles are never self-changeable; role grants occur only through system-defined flows (BR-34, BR-35). |
-| BR-02 | The login endpoint shall be rate-limited to 10 requests/minute per IP. |
+| BR-02 | Auth endpoints shall be rate-limited per IP over a 15-minute window: login 10, register 5, refresh 30, change-password 5. Exceeding the limit returns 429 `RATE_LIMIT_EXCEEDED`. |
 | BR-03 | Refresh tokens shall be stored or denylisted server-side so that logout takes effect immediately. |
 | BR-04 | Access token TTL = 24 h; refresh token TTL = 30 days. *(Pending rework: shortened access TTL with rotating refresh tokens.)* |
 | BR-05 | A Cart shall belong to exactly one Restaurant at a time; adding an item from another restaurant requires clearing the cart. |
@@ -585,6 +588,8 @@ POST /api/v1/auth/change-password   (authenticated)
 ```
 
 Logout revokes the submitted refresh token server-side (BR-03); subsequent use returns 401 `AUTH_TOKEN_REVOKED`. Password change requires the current password.
+
+**Web client delivery (HttpOnly cookie + CSRF).** For browser clients, the refresh token shall additionally be set as an HttpOnly, `SameSite` cookie on login/register/refresh; the `refreshToken` field in the response body exists for non-browser (mobile) clients and shall be ignored by web clients in favor of the cookie. Because the cookie is sent automatically by the browser, every state-changing request from a web client shall include a CSRF token (issued alongside the cookie and validated server-side); a missing or invalid CSRF token returns 403 `FORBIDDEN`.
 
 ### 7.3 Restaurant & Menu
 
@@ -867,10 +872,8 @@ A single global exception handler (`@RestControllerAdvice`) shall map typed doma
 | 403 | AUTH_ACCOUNT_BANNED | UC-C02 (BR-30) |
 | 403 | FORBIDDEN | Authorization failure; non-self-registerable role (BR-34) |
 | 404 | RESOURCE_NOT_FOUND | Generic entity lookup |
-| 409 | AUTH_EMAIL_TAKEN | UC-C01 |
-| 409 | AUTH_USERNAME_TAKEN | UC-C01 |
 | 409 | JOB_ALREADY_TAKEN | UC-S03 (BR-13) |
-| 409 | DUPLICATE_RESOURCE | Generic duplicate |
+| 409 | DUPLICATE_RESOURCE | Generic duplicate — covers UC-C01 username/email/phone conflicts (message text differentiates, code does not) |
 | 422 | RESTAURANT_CLOSED | UC-C07 |
 | 422 | RESTAURANT_SUSPENDED | UC-C07 (BR-31) |
 | 422 | ITEMS_UNAVAILABLE | UC-C07 |
@@ -888,7 +891,7 @@ A single global exception handler (`@RestControllerAdvice`) shall map typed doma
 ## 11. Non-Functional Requirements
 
 - **NFR-01 (Performance)** — API p95 response time shall be < 500 ms under target load. Restaurant listing queries shall be index-backed: composite index on `(status, latitude, longitude)`, trigram/full-text index on name.
-- **NFR-02 (Security)** — Passwords hashed with BCrypt. Token TTLs per BR-04; server-side refresh revocation per BR-03. Rate limits: 100 req/min/IP on public endpoints; 10 req/min/IP on login (BR-02). Method-level authorization via `@PreAuthorize`. Bean Validation on all request DTOs; client-supplied monetary values are never trusted — the server recomputes all amounts (BR-07, BR-08). Webhooks are signature-verified and idempotent (BR-26); no card or wallet data ever enters the system (BR-27).
+- **NFR-02 (Security)** — Passwords hashed with BCrypt. Token TTLs per BR-04; server-side refresh revocation per BR-03. Web clients receive the refresh token via an HttpOnly cookie plus CSRF-token validation on state-changing requests (§7.2); mobile clients use the token from the response body directly. Rate limits currently cover only the auth endpoints, per-IP over a 15-minute window (BR-02); a general 100 req/min/IP limit on all public endpoints is specified but not yet implemented (Planned). Method-level authorization via `@PreAuthorize`. Bean Validation on all request DTOs; client-supplied monetary values are never trusted — the server recomputes all amounts (BR-07, BR-08). Webhooks are signature-verified and idempotent (BR-26); no card or wallet data ever enters the system (BR-27).
 - **NFR-03 (Reliability)** — Target uptime 99.9%. Database migrations are forward-only and version-controlled. A scheduled sweep shall cancel orders stuck in `AWAITING_PAYMENT` beyond the timeout window (BR-24).
 - **NFR-04 (Scalability)** — Initial target 1,000 concurrent users. The application shall hold no in-memory session state; instances scale horizontally behind a load balancer with pooled database connections (HikariCP).
 - **NFR-05 (Maintainability)** — Module coupling is limited by the service-only cross-module rule (§3.1). Each module ships its own unit and integration tests; no change in one module shall require modifying another module's internals.
