@@ -43,17 +43,24 @@ Flyway applies migrations automatically on startup (`src/main/resources/db/migra
 
 ```
 src/main/java/com/foodya/foodya_backend/
-├── auth/          # register, login, JWT, logout denylist
-├── user/          # user profile
-├── restaurant/    # restaurants, menu, categories (public + shared logic)
-├── merchant/      # restaurant owner API (manage restaurant/menu/orders)
-├── order/         # order placement, order status lifecycle
-├── admin/         # admin API (restaurant approval, user management...)
-├── cart/ delivery/ payment/ review/ notification/   # planned per roadmap, not yet implemented
-└── shared/        # config, security, exception handling, response envelope, Redis keys
+├── common/        # config, security, exception handling, response envelope, Redis keys
+├── identity/      # register, login, JWT, logout denylist, user profile, user moderation
+│                  #   (auth + user merged: both mutate the same User aggregate)
+├── catalog/       # restaurants, menu, categories
+├── ordering/      # order placement, order status lifecycle
+└── cart/ delivery/ payment/ review/ notification/   # planned per roadmap, not yet implemented
 ```
 
-Module rule: cross-module calls go through the other module's `*Service`, never its `*Repository`/`*Model` directly (SRS §3.2).
+There are no separate `admin`/`merchant` packages — actor-specific endpoints live inside the
+module that owns the underlying domain, split by audience: `<module>/api/{customer,merchant,admin}/`.
+`admin`/`merchant` are not bounded contexts in their own right (they don't own data), so treating
+them as top-level packages was a documentation error in earlier revisions of this README, not a
+real module boundary.
+
+**Module rule**: cross-module calls go through the other module's `application` service, never its
+`persistence`/`domain` package directly. This is **enforced by
+[`ArchitectureTest`](src/test/java/com/foodya/foodya_backend/ArchitectureTest.java)** (ArchUnit) —
+not just documented — so a violation fails the build instead of drifting in silently.
 
 ## Conventions
 
