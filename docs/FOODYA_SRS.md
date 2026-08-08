@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.5-draft |
+| **Version** | 1.6-draft |
 | **Status** | In progress |
 | **Architecture** | Modular monolith (Spring Boot) |
 
@@ -17,6 +17,7 @@
 | 1.3-draft | §3.1/§3.2 updated: each module's internal layout changed from `controller/service/repository/model/mapper/dto` to `api/application/domain/persistence` (mapper folded into `api/dto/`). No change to module boundaries, ownership, or the role-oriented-modules prohibition. |
 | 1.4-draft | Consolidated with the older, out-of-sync `FOODYA_SRS.md` (this file replaces it — that revision predated the 1.2/1.3 updates and had drifted). §3.1/§3.2/§3.3 updated: `shared` → `common`; `auth` + `user` merged into `identity` (both mutate the same `User` aggregate, so keeping them separate only produced a module-boundary violation in practice); `restaurant` → `catalog`; `order` → `ordering`. The role-oriented-modules prohibition (§3.1) is now enforced by an ArchUnit test, not just documented. |
 | 1.5-draft | Corrected drift found against the actual codebase: UC-C06 was wrongly marked Implemented (no Address entity/endpoints exist — §4.1); UC-C01/§10.3 specified error codes (`AUTH_EMAIL_TAKEN`/`AUTH_USERNAME_TAKEN`) that don't exist in code, replaced with the actual `DUPLICATE_RESOURCE`; BR-02 corrected from "10 req/min login" to the real per-15-minute limits across all four rate-limited auth endpoints; §7.2/NFR-02 now document the HttpOnly-cookie + CSRF delivery of the refresh token to web clients, previously undocumented; UC-R01 now calls out the `catalog`→`identity` role-grant as a module-boundary case requiring the same facade pattern as §3.1, not a direct `User` write; added A4 documenting the single-valued `User.role` limitation (no multi-role accounts). |
+| 1.6-draft | `review` module implemented (UC-C10, BR-15, BR-16) and marked Implemented in §4.1/§3.2; UC-C10 detail updated with the real route (`POST /api/v1/customers/orders/{id}/review`, not `/api/v1/orders/{id}/review` as previously written — matches the `ordering` module's actual base path, not the SRS-only one) and the `RestaurantRatingChangedEvent` mechanism used to update `catalog` without a cross-module query back; UC-A06's "remove review" action implemented as `DELETE /api/v1/admin/reviews/{id}` (§7.8). |
 
 ---
 
@@ -166,7 +167,8 @@ com.foodya.backend
 │                     # (sits alongside the four standard packages — external-SDK
 │                     # adapters are not application-layer orchestration)
 ├── delivery/         # (scaffold — Planned) shipper profile, jobs, tracking
-├── review/           # (scaffold — Planned)
+├── review/           # rate & review a delivered order (UC-C10); publishes
+│                     # RestaurantRatingChangedEvent, consumed by catalog
 ├── notification/     # (scaffold — Planned)
 ├── audit/            # (Planned, not yet scaffolded) append-only AuditLog for
 │                     # moderation actions — created when a module first needs it,
@@ -213,7 +215,7 @@ Module boundaries and the service-only call rule preserve the option of extracti
 | UC-C07 | Checkout / place order | M | Planned |
 | UC-C08 | Track order | S | Planned |
 | UC-C09 | Cancel order | M | Planned |
-| UC-C10 | Rate & review order | S | Planned |
+| UC-C10 | Rate & review order | S | Implemented |
 | UC-C11 | View order history | S | Planned |
 | UC-C12 | Manage profile | M | Implemented |
 | UC-C13 | Refresh token / logout | M | Divergent — no rotation; rework pending (BR-04) |
@@ -291,9 +293,10 @@ Module boundaries and the service-only call rule preserve the option of extracti
 - Alternatives: (0a) `AWAITING_PAYMENT` → cancel immediately; nothing to refund. (1a) `PENDING` → free cancellation. (1b) `CONFIRMED` → allowed; cancellation count incremented (BR-09); refund issued if paid online (BR-25). (1c) `READY_FOR_PICKUP` or later → blocked, 422 `ORDER_NOT_CANCELLABLE`.
 
 **UC-C10 — Rate & Review Order**
-- Preconditions: Order status `DELIVERED`.
-- Main flow: Customer submits rating (1–5) and optional comment; the system shall recalculate the restaurant's aggregate rating (BR-16).
-- Alternatives: (1a) Second review for the same order → 422 `REVIEW_ALREADY_EXISTS` (BR-15).
+- Preconditions: Order status `DELIVERED`; caller is the order's own customer.
+- Main flow: Customer submits rating (1–5) and optional comment via `POST /api/v1/customers/orders/{id}/review`; the system shall recalculate the restaurant's aggregate rating (BR-16). `review` computes the new average/count from its own table and publishes `RestaurantRatingChangedEvent`; `catalog` applies the given values to `Restaurant.rating_avg`/`total_reviews` without querying `review` back — the same event-driven shape as `OrderDeliveredEvent` → popularity tracking, chosen so neither module ends up depending on the other's persistence. Reviews for a restaurant are listed publicly via `GET /api/v1/restaurants/{id}/reviews` (paginated).
+- Alternatives: (1a) Second review for the same order → 422 `REVIEW_ALREADY_EXISTS` (BR-15). (1b) Order not yet `DELIVERED` → 400 `VALIDATION_ERROR`. (1c) Caller is not the order's customer → 403 `FORBIDDEN`.
+- UC-A06 removal: `DELETE /api/v1/admin/reviews/{id}` deletes the row and republishes the recalculated rating the same way; no AuditLog entry yet (the `audit` module isn't built — matches the current gap in UC-A01/UC-A02).
 
 **UC-C11 — View Order History**
 - Main flow: Paginated list of the customer's past orders with status and totals.
@@ -753,10 +756,11 @@ GET   /api/v1/admin/analytics/overview?from=&to=
 ### 7.8 Reviews & Notifications
 
 ```
-POST  /api/v1/orders/{id}/review
-GET   /api/v1/restaurants/{id}/reviews?page=&size=
-GET   /api/v1/notifications?page=&size=
-PATCH /api/v1/notifications/{id}/read
+POST   /api/v1/customers/orders/{id}/review
+GET    /api/v1/restaurants/{id}/reviews?page=&size=
+DELETE /api/v1/admin/reviews/{id}         (UC-A06)
+GET    /api/v1/notifications?page=&size=
+PATCH  /api/v1/notifications/{id}/read
 PATCH /api/v1/notifications/read-all
 ```
 
