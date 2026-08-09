@@ -10,6 +10,8 @@ import com.foodya.foodya_backend.catalog.domain.Restaurant;
 import com.foodya.foodya_backend.catalog.domain.RestaurantStatus;
 import com.foodya.foodya_backend.catalog.persistence.RestaurantRepository;
 
+import com.foodya.foodya_backend.review.domain.event.RestaurantRatingChangedEvent;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 import java.util.Map;
@@ -44,6 +48,17 @@ public class RestaurantService {
     public Restaurant findById(@NonNull UUID id) {
         return restaurantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException( "Restaurant not found: " + id));
+    }
+
+    // BR-16: review already computed the new average/count (see
+    // RestaurantRatingChangedEvent) so this only has to apply and save —
+    // no query back into the review module, which would recreate the same
+    // kind of cycle @Lazy works around in RestaurantPopularityService.
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onRestaurantRatingChanged(RestaurantRatingChangedEvent event) {
+        Restaurant restaurant = findById(event.restaurantId());
+        restaurant.updateRating(event.newAverageRating(), event.newTotalReviews());
+        restaurantRepository.save(restaurant);
     }
 
     @Transactional

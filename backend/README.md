@@ -48,7 +48,8 @@ src/main/java/com/foodya/foodya_backend/
 │                  #   (auth + user merged: both mutate the same User aggregate)
 ├── catalog/       # restaurants, menu, categories
 ├── ordering/      # order placement, order status lifecycle
-└── cart/ delivery/ payment/ review/ notification/   # planned per roadmap, not yet implemented
+├── review/        # rate & review a delivered order; recalculates restaurant rating via event
+└── cart/ delivery/ payment/ notification/   # planned per roadmap, not yet implemented
 ```
 
 There are no separate `admin`/`merchant` packages — actor-specific endpoints live inside the
